@@ -2,12 +2,9 @@
 Credits
 =======
 
-Development Lead
-----------------
-
 * Matthew Turk <matthewturk@gmail.com>
+* Chris Havlin <chris.havlin@gmail.com>
+* Chuck Rozhon <rozhon2@illinois.edu>
 
-Contributors
-------------
-
-None yet. Why not be the first?
+Additionally, this has been worked on in pieces by many other yt contributors,
+which can be found in the main yt repository.
