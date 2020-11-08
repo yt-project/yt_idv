@@ -10,7 +10,16 @@ with open('README.rst') as readme_file:
 with open('HISTORY.rst') as history_file:
     history = history_file.read()
 
-requirements = ['Click>=7.0', ]
+requirements = ['Click>=7.0',
+                'yt>=4.0.dev0',
+                'traitlets>=5.0.5',
+                'pyOpenGL>=3.1.5',
+                'traittypes>=0.2.1',
+                'matplotlib>=3.0',
+                'numpy>=1.18.0',
+                'pyglet>=2.0.dev0',
+                'pyyaml>=5.3.1',
+                'imgui>=1.2.0']
 
 setup_requirements = ['pytest-runner', ]
 
@@ -47,7 +56,7 @@ setup(
     setup_requires=setup_requirements,
     test_suite='tests',
     tests_require=test_requirements,
-    url='https://github.com/matthewturk/yt_idv',
+    url='https://github.com/data-exp-lab/yt_idv',
     version='0.1.0',
     zip_safe=False,
 )
