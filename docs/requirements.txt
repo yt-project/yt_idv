@@ -1,0 +1,10 @@
+Click>=7.0
+yt>=4.0.dev0
+traitlets>=5.0.5
+pyOpenGL>=3.1.5
+traittypes>=0.2.1
+matplotlib>=3.0
+numpy>=1.18.0
+pyglet>=2.0.dev0
+pyyaml>=5.3.1
+imgui>=1.2.0
