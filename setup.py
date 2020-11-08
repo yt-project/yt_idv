@@ -3,6 +3,7 @@
 """The setup script."""
 
 from setuptools import setup, find_packages
+from Cython.Build import cythonize
 
 with open('README.rst') as readme_file:
     readme = readme_file.read()
@@ -21,7 +22,7 @@ requirements = ['Click>=7.0',
                 'pyyaml>=5.3.1',
                 'imgui>=1.2.0']
 
-setup_requirements = ['pytest-runner', ]
+setup_requirements = ['pytest-runner', 'cython>=0.29']
 
 test_requirements = ['pytest>=3', ]
 
@@ -59,4 +60,5 @@ setup(
     url='https://github.com/data-exp-lab/yt_idv',
     version='0.1.0',
     zip_safe=False,
+    ext_modules = cythonize("yt_idv/*.pyx")
 )

@@ -29,7 +29,7 @@ from OpenGL import GL
 from yt.data_objects.api import Dataset
 from yt.data_objects.data_containers import YTDataContainer
 from yt.utilities.lib.mesh_triangulation import triangulate_mesh
-from yt.utilities.lib.misc_utilities import update_orientation
+from .utilities import update_orientation
 from yt.utilities.math_utils import (
     get_lookat_matrix,
     get_perspective_matrix,
@@ -39,7 +39,7 @@ from yt.utilities.math_utils import (
     quaternion_to_rotation_matrix,
     rotation_matrix_to_quaternion,
 )
-from yt.utilities.traitlets_support import YTPositionTrait, ndarray_ro, ndarray_shape
+from .traitlets_support import YTPositionTrait, ndarray_ro, ndarray_shape
 
 from .input_events import EventCollection
 from .opengl_support import (

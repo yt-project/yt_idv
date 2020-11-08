@@ -9,7 +9,7 @@ import pyglet
 from OpenGL import GL
 
 from yt.visualization.image_writer import write_bitmap
-from .input_events import eventcollection
+from .input_events import EventCollection
 
 from .simple_gui import SimpleGUI
 
