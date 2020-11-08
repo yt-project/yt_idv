@@ -8,14 +8,10 @@ import numpy as np
 import pyglet
 from OpenGL import GL
 
-from ..image_writer import write_bitmap
-from .input_events import EventCollection
+from yt.visualization.image_writer import write_bitmap
+from .input_events import eventcollection
 
-try:
-    from .simple_gui import SimpleGUI
-except ImportError:
-    pass
-
+from .simple_gui import SimpleGUI
 
 class EGLRenderingContext:
     """Rendering context using EGL (experimental)

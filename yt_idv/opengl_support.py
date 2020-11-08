@@ -22,14 +22,7 @@ import traitlets
 import traittypes
 from OpenGL import GL
 
-try:
-    from contextlib import ExitStack
-except ImportError:
-    try:
-        from contextlib2 import ExitStack
-    except ImportError:
-        raise RuntimeError("IDV requires either Python 3.3+ or contextlib2")
-
+from contextlib import ExitStack
 
 # Set up a mapping from numbers to names
 
