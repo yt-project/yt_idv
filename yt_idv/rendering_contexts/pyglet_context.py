@@ -123,7 +123,7 @@ class PygletRenderingContext(pyglet.window.Window):
             return
 
         camera = self.scene.camera  # current camera
-        dPos = (
+        dpos = (
             0.1
             * (camera.position - camera.focus)
             / np.linalg.norm(camera.position - camera.focus)
@@ -133,7 +133,7 @@ class PygletRenderingContext(pyglet.window.Window):
         # +1 when scrolling "down", -1 when scrolling "up", so
         # flip it so scrolling "down" zooms out:
         zoom_inout = -1 * scroll_y
-        self.scene.camera.offsetPosition(zoom_inout * dPos)
+        self.scene.camera.offset_position(zoom_inout * dpos)
         self._do_update = True
 
     def on_key_press(self, symbol, modifiers):

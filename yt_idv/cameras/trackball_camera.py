@@ -94,10 +94,17 @@ class TrackballCamera(BaseCamera):
             self.fov, self.aspect_ratio, self.near_plane, self.far_plane
         )
 
-    def offsetPosition(self, dPos=None):
-        if dPos is None:
-            dPos = np.array([0.0, 0.0, 0.0])
-        self.position += dPos
+    def move_forward(self, move_amount):
+        dpos = (
+            (self.focus - self.position)
+            / np.linalg.norm(self.focus - self.position)
+        )
+        self.offset_position(move_amount * dpos)
+
+    def offset_position(self, dpos=None):
+        if dpos is None:
+            dpos = np.array([0.0, 0.0, 0.0])
+        self.position += dpos
         self.view_matrix = get_lookat_matrix(self.position, self.focus, self.up)
 
     def _compute_matrices(self):

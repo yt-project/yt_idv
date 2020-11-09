@@ -254,6 +254,7 @@ class SceneGraph(traitlets.HasTraits):
         near_plane = 3.0 * ds.index.get_smallest_dx().min().d
 
         c = TrackballCamera(position=pos, focus=center, near_plane=near_plane)
+        c.update_orientation(0, 0, 0, 0)
 
         scene = SceneGraph(camera=c)
         scene.add_volume(data_source, field, no_ghost=no_ghost)

@@ -1,6 +1,8 @@
 import numpy as np
 from OpenGL import GL
 from yt import write_bitmap
+from ctypes import pointer
+from ..opengl_support import Framebuffer
 
 
 class EGLRenderingContext:
@@ -18,8 +20,9 @@ class EGLRenderingContext:
 
     """
 
-    def __init__(self, width=1024, height=1024):
+    def __init__(self, width=1024, height=1024, scene = None, image_widget = None):
         from OpenGL import EGL
+        self.image_widget = image_widget
 
         self.EGL = EGL
         self.display = EGL.eglGetDisplay(EGL.EGL_DEFAULT_DISPLAY)
@@ -31,36 +34,42 @@ class EGLRenderingContext:
         # Now we create our necessary bits.
         config_attribs = np.array(
             [
-                EGL.EGL_SURFACE_TYPE,
-                EGL.EGL_PBUFFER_BIT,
-                EGL.EGL_BLUE_SIZE,
+                EGL.EGL_RED_SIZE,
                 8,
                 EGL.EGL_GREEN_SIZE,
                 8,
-                EGL.EGL_RED_SIZE,
+                EGL.EGL_BLUE_SIZE,
                 8,
                 EGL.EGL_DEPTH_SIZE,
+                24,
+                EGL.EGL_STENCIL_SIZE,
                 8,
+                EGL.EGL_COLOR_BUFFER_TYPE,
+                EGL.EGL_RGB_BUFFER,
+                EGL.EGL_SURFACE_TYPE,
+                EGL.EGL_PBUFFER_BIT,
                 EGL.EGL_RENDERABLE_TYPE,
                 EGL.EGL_OPENGL_BIT,
+                EGL.EGL_CONFIG_CAVEAT,
                 EGL.EGL_NONE,
+                EGL.EGL_NONE
             ],
             dtype="i4",
         )
-        self.config = EGL.eglChooseConfig(
-            self.display, config_attribs, config, 1, num_configs
+        EGL.eglChooseConfig(
+            self.display, config_attribs, pointer(config), 1, num_configs
         )
 
         pbuffer_attribs = np.array(
             [EGL.EGL_WIDTH, width, EGL.EGL_HEIGHT, height, EGL.EGL_NONE], dtype="i4"
         )
         self.surface = EGL.eglCreatePbufferSurface(
-            self.display, self.config, pbuffer_attribs
+            self.display, config, pbuffer_attribs
         )
         EGL.eglBindAPI(EGL.EGL_OPENGL_API)
 
         self.context = EGL.eglCreateContext(
-            self.display, self.config, EGL.EGL_NO_CONTEXT, None
+            self.display, config, EGL.EGL_NO_CONTEXT, None
         )
 
         EGL.eglMakeCurrent(self.display, self.surface, self.surface, self.context)
@@ -68,20 +77,15 @@ class EGLRenderingContext:
         GL.glClearColor(0.0, 0.0, 0.0, 0.0)
         GL.glClear(GL.GL_COLOR_BUFFER_BIT | GL.GL_DEPTH_BUFFER_BIT)
 
-    def setup_loop(self, scene, camera):
-        scene.set_camera(camera)
-        scene.update_minmax()
-        camera.compute_matrices()
-        # callbacks = EventCollection(scene, camera)
-        # callbacks.draw = True
-        # return callbacks
+        self.scene = scene
 
-    def start_loop(self, scene, camera):
-        self.setup_loop(scene, camera)
+    def draw(self):
 
-    def __call__(self, scene, camera, callbacks):
-        camera.compute_matrices()
-        scene.set_camera(camera)
-        scene.render()
-        arr = scene._retrieve_framebuffer()
-        write_bitmap(arr, "test.png")
+        if self.scene is None:
+            return
+        self.scene.render()
+        if self.image_widget is not None:
+            self.image_widget.value = write_bitmap(
+                self.scene.image[:, :, :3], None
+            )
+        return self.scene.image
