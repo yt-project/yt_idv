@@ -3,10 +3,9 @@
 """Tests for `yt_idv` package."""
 
 import pytest
-
 from click.testing import CliRunner
 
-from yt_idv import yt_idv
+# from yt_idv import yt_idv
 from yt_idv import cli
 
 
@@ -31,7 +30,7 @@ def test_command_line_interface():
     runner = CliRunner()
     result = runner.invoke(cli.main)
     assert result.exit_code == 0
-    assert 'yt_idv.cli.main' in result.output
-    help_result = runner.invoke(cli.main, ['--help'])
+    assert "yt_idv.cli.main" in result.output
+    help_result = runner.invoke(cli.main, ["--help"])
     assert help_result.exit_code == 0
-    assert '--help  Show this message and exit.' in help_result.output
+    assert "--help  Show this message and exit." in help_result.output

@@ -72,9 +72,9 @@ class EGLRenderingContext:
         scene.set_camera(camera)
         scene.update_minmax()
         camera.compute_matrices()
-        callbacks = EventCollection(scene, camera)
-        callbacks.draw = True
-        return callbacks
+        # callbacks = EventCollection(scene, camera)
+        # callbacks.draw = True
+        # return callbacks
 
     def start_loop(self, scene, camera):
         self.setup_loop(scene, camera)
