@@ -44,6 +44,7 @@ class PygletRenderingContext(pyglet.window.Window):
         position=None,
         visible=True,
         gui=False,
+        scene=None
     ):
         self.offscreen = not visible
         config = pyglet.gl.Config(
@@ -61,6 +62,7 @@ class PygletRenderingContext(pyglet.window.Window):
         if gui:
             gui = SimpleGUI(self)
         self.gui = gui
+        self.scene = scene
 
     def on_draw(self):
         self.switch_to()

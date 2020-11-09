@@ -10,6 +10,9 @@ from yt_idv.opengl_support import VertexArray, Texture2D, VertexAttribute
 from yt_idv.scene_data.base_data import SceneData
 from yt_idv.traitlets_support import FontTrait
 
+Character = namedtuple(
+    "Character", ["texture", "vbo_offset", "hori_advance", "vert_advance"]
+)
 
 class TextCharacters(SceneData):
     characters = traitlets.Dict(trait=traitlets.Instance(Character))
@@ -62,7 +65,3 @@ class TextCharacters(SceneData):
             VertexAttribute(name="quad_vertex", data=vert.astype("<f4"))
         )
 
-
-Character = namedtuple(
-    "Character", ["texture", "vbo_offset", "hori_advance", "vert_advance"]
-)

@@ -1,7 +1,6 @@
 import traitlets
 from OpenGL import GL
 
-from yt_idv.input_events import EventCollection
 from yt_idv.constants import FULLSCREEN_QUAD
 from yt_idv.opengl_support import Framebuffer, ColormapTexture, VertexArray, VertexAttribute
 from yt_idv.scene_data.base_data import SceneData
@@ -11,7 +10,6 @@ from yt_idv.shader_objects import ShaderTrait, ShaderProgram, default_shader_com
 class SceneComponent(traitlets.HasTraits):
     data = traitlets.Instance(SceneData)
     base_quad = traitlets.Instance(SceneData)
-    events = traitlets.Instance(EventCollection)
     name = "undefined"
     priority = traitlets.CInt(0)
     visible = traitlets.Bool(True)

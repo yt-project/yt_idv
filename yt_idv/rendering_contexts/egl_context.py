@@ -2,9 +2,6 @@ import numpy as np
 from OpenGL import GL
 from yt import write_bitmap
 
-from yt_idv.input_events import EventCollection
-
-
 class EGLRenderingContext:
     """Rendering context using EGL (experimental)
 
