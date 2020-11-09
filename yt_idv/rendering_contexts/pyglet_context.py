@@ -1,11 +1,12 @@
 import numpy as np
 import pyglet
 from yt import write_bitmap
+from .base_context import BaseContext
 
 from yt_idv.simple_gui import SimpleGUI
 
 
-class PygletRenderingContext(pyglet.window.Window):
+class PygletRenderingContext(pyglet.window.Window, BaseContext):
     """Basic rendering context for IDV using GLFW3, that handles the main window even loop
 
     Parameters
@@ -39,8 +40,6 @@ class PygletRenderingContext(pyglet.window.Window):
         width=1024,
         height=1024,
         title="vol_render",
-        always_on_top=False,
-        decorated=True,
         position=None,
         visible=True,
         gui=False,
@@ -148,3 +147,6 @@ class PygletRenderingContext(pyglet.window.Window):
             pass
         if symbol in [pyglet.window.key.DOWN, pyglet.window.key.S]:
             pass
+
+    def run(self):
+        pyglet.app.run()

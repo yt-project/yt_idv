@@ -1,5 +1,3 @@
-import os
-os.environ["PYOPENGL_PLATFORM"] = "egl"
 import numpy as np
 import yt
 import yt_idv
@@ -7,14 +5,13 @@ import yt_idv
 ds = yt.load_sample("IsolatedGalaxy")
 dd = ds.all_data()
 
-rc = yt_idv.EGLRenderingContext()
-sg = yt_idv.SceneGraph.from_ds(dd, "density", no_ghost=True)
-rc.scene = sg
+rc = yt_idv.render_context("egl", width = 1024, height = 1024)
+rc.add_scene(dd, "density", no_ghost=True)
 
-image = rc.draw()
+image = rc.run()
 yt.write_bitmap(image, "step1.png")
 
-sg.camera.move_forward(1.5)
+rc.scene.camera.move_forward(1.5)
 
-image = rc.draw()
+image = rc.run()
 yt.write_bitmap(image, "step2.png")

@@ -3,9 +3,10 @@ from OpenGL import GL
 from yt import write_bitmap
 from ctypes import pointer
 from ..opengl_support import Framebuffer
+from .base_context import BaseContext
 
 
-class EGLRenderingContext:
+class EGLRenderingContext(BaseContext):
     """Rendering context using EGL (experimental)
 
     Parameters
@@ -20,7 +21,7 @@ class EGLRenderingContext:
 
     """
 
-    def __init__(self, width=1024, height=1024, scene = None, image_widget = None):
+    def __init__(self, width=1024, height=1024, scene=None, image_widget=None, **kwargs):
         from OpenGL import EGL
         self.image_widget = image_widget
 
@@ -79,7 +80,7 @@ class EGLRenderingContext:
 
         self.scene = scene
 
-    def draw(self):
+    def run(self):
 
         if self.scene is None:
             return
@@ -89,3 +90,4 @@ class EGLRenderingContext:
                 self.scene.image[:, :, :3], None
             )
         return self.scene.image
+

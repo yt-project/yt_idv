@@ -9,6 +9,9 @@ __pycache__/
 # Cythonized files
 yt_idv/utilities.c
 
+# imgui files
+imgui.ini
+
 # Distribution / packaging
 .Python
 env/
