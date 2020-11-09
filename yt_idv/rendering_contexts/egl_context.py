@@ -85,4 +85,5 @@ class EGLRenderingContext(BaseContext):
         self.scene.render()
         if self.image_widget is not None:
             self.image_widget.value = write_bitmap(self.scene.image[:, :, :3], None)
+            return
         return self.scene.image
