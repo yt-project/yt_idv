@@ -33,12 +33,52 @@ class SceneGraph(traitlets.HasTraits):
     input_captured_keyboard = traitlets.Bool(False)
 
     def add_volume(self, data_source, field_name, no_ghost=False):
+        """
+        Add a BlockRendering component to volume render.
+
+        This manages both creation of the block collection data and the
+        rendering component associated with it.
+
+        Parameters
+        ----------
+        data_source: yt data container such as a sphere, region, etc
+        field_name: The field to volume render
+        no_ghost: Should we save time by skipping ghost zone generation
+
+        Returns
+        -------
+
+        component: BlockRendering
+
+        """
         self.data_objects.append(BlockCollection(data_source=data_source))
         self.data_objects[-1].add_data(field_name, no_ghost=no_ghost)
         self.components.append(BlockRendering(data=self.data_objects[-1]))
         return self.components[-1]  # Only the rendering object
 
-    def add_text(self, **kwargs):
+    def add_text(self, text="", origin=(0.0, 0.0), scale=1.0, **kwargs):
+        """
+        Add an annotation on top of the image in screen-space coordinates.
+
+        This annotation object can also be updated in-place after the fact.
+
+        Parameters
+        ----------
+        text: The text to draw
+        origin: The location to place the origin of the text in screen-space
+                coordinates (0..1)
+        scale: The scale of the font
+
+        Returns
+        -------
+        annotation: TextAnnotation
+
+        Examples
+        --------
+
+        >>> sg.add_text("Hello there!", (0.2, 0.2))
+
+        """
         if "data" not in kwargs:
             if not any(_.name == "text_overlay" for _ in self.data_objects):
                 self.data_objects.append(TextCharacters())
@@ -46,20 +86,47 @@ class SceneGraph(traitlets.HasTraits):
             kwargs["data"] = next(
                 (_ for _ in self.data_objects if _.name == "text_overlay")
             )
-        self.annotations.append(TextAnnotation(**kwargs))
+        self.annotations.append(
+            TextAnnotation(text=text, origin=origin, scale=scale, **kwargs)
+        )
         return self.annotations[-1]
 
     def add_box(self, left_edge, right_edge):
+        """
+        Add a box annotation to the scene
+
+        Parameters
+        ----------
+        left_edge: Array-like of the minimum of the box extent
+        right_edge: Array-like of the maximum of the box extent
+        """
         data = BoxData(left_edge=left_edge, right_edge=right_edge)
         self.data_objects.append(data)
         self.annotations.append(BoxAnnotation(data=data))
 
     def __iter__(self):
+        """
+        Iterate over all of the scene elements, first the components and then
+        the annotations.
+
+        Returns
+        -------
+        Iterator of the components and annotations sorted by priority.
+
+        """
         elements = self.components + self.annotations
         for element in sorted(elements, key=lambda a: a.priority):
             yield element
 
     def render(self):
+        """
+        Render the scene into its local framebuffer.
+
+        Returns
+        -------
+        Nothing, but the new image can be accessed.
+
+        """
         origin_x, origin_y, width, height = GL.glGetIntegerv(GL.GL_VIEWPORT)
         with self.bind_buffer():
             GL.glClear(GL.GL_COLOR_BUFFER_BIT | GL.GL_DEPTH_BUFFER_BIT)
@@ -88,6 +155,15 @@ class SceneGraph(traitlets.HasTraits):
 
     @contextlib.contextmanager
     def bind_buffer(self):
+        """
+        Provide a contextmanager, within which the local framebuffer is bound
+        to the output target.
+
+        Returns
+        -------
+        None
+
+        """
         if self.fb is not None:
             with self.fb.bind(clear=False):
                 yield
@@ -96,6 +172,14 @@ class SceneGraph(traitlets.HasTraits):
 
     @property
     def image(self):
+        """
+        This accesses the local framebuffer and returns the read pixels
+
+        Returns
+        -------
+        RGBA array in floating point
+
+        """
         if self.fb is not None:
             arr = self.fb.data[::-1, :, :]
             arr.swapaxes(0, 1)
@@ -107,6 +191,14 @@ class SceneGraph(traitlets.HasTraits):
 
     @property
     def depth(self):
+        """
+        This accesses the local depth buffer and returns the read pixels
+
+        Returns
+        -------
+        Depth buffer in floating point format
+
+        """
         if self.fb is not None:
             arr = self.fb.depth_data[::-1, :]
             arr.swapaxes(0, 1)
@@ -120,9 +212,39 @@ class SceneGraph(traitlets.HasTraits):
 
     @staticmethod
     def from_ds(ds, field, no_ghost=True):
-        # Here we make a bunch of guesses.  Nothing too complex -- only two
-        # arguments: dataset and field.  If you supply a rendering context,
-        # great.  If not, we'll make one.
+        """
+        Return a SceneGraph made from some best-guess values from a dataset and
+        a field.
+
+        This makes a couple assumptions, and given either a data source or a
+        dataset, it will create a block rendering, jam a camera in there, and
+        then return the scenegraph.
+
+        Parameters
+        ----------
+        ds: A yt Dataset or Data Object to use as a source
+        field: The field to render
+        no_ghost: Should we save time by skipping ghost zones?
+
+        Returns
+        -------
+
+        scene: SceneGraph
+
+        Examples
+        --------
+
+        From a dataset:
+
+        >>> sg = yt_idv.SceneGraph.from_ds(ds, "density")
+        >>> rc = yt_idv.PygletRenderingContext(scene = sg)
+
+        From a data object:
+
+        >>> sp = ds.sphere("c", (0.1, 'unitary'))
+        >>> sg = yt_idv.SceneGraph.from_ds(sp, "density")
+        >>> rc = yt_idv.PygletRenderingContext(scene = sg)
+        """
         if isinstance(ds, Dataset):
             data_source = ds.all_data()
         else:
