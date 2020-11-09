@@ -25,6 +25,9 @@ from OpenGL import GL
 from contextlib import ExitStack
 
 # Set up a mapping from numbers to names
+from yt.utilities.math_utils import get_translate_matrix, get_scale_matrix
+
+from yt_idv.constants import bbox_vertices
 
 const_types = (
     GL.constant.IntConstant,
@@ -516,3 +519,12 @@ class Texture3DIterator(traitlets.HasTraits):
             yield i
         GL.glActiveTexture(tex_target)
         GL.glBindTexture(GL.GL_TEXTURE_3D, 0)
+
+
+def compute_box_geometry(left_edge, right_edge):
+    move = get_translate_matrix(*left_edge)
+    width = right_edge - left_edge
+    scale = get_scale_matrix(*width)
+
+    transformed_box = bbox_vertices.dot(scale.T).dot(move.T).astype("float32")
+    return transformed_box

@@ -50,13 +50,13 @@ def _render_opengl(
             "packages to be installed."
         ) from e
 
-    from .interactive_loop import RenderingContext
-    from .interactive_vr import (
-        BlockCollection,
-        MeshSceneComponent,
-        SceneGraph,
-        TrackballCamera,
+    from yt_idv import PygletRenderingContext
+    from .scene_components.mesh import (
+        MeshRendering,
     )
+    from yt_idv import SceneGraph
+    from yt_idv.scene_data.block_collection import BlockCollection
+    from yt_idv.cameras.trackball_camera import TrackballCamera
 
     if isinstance(data_source, Dataset):
         dobj = data_source.all_data()
@@ -81,10 +81,10 @@ def _render_opengl(
     if cam_focus is None:
         cam_focus = dobj.ds.domain_center
 
-    rc = RenderingContext(*window_size)
+    rc = PygletRenderingContext(*window_size)
 
     if hasattr(dobj.ds.index, "meshes"):
-        scene = MeshSceneComponent(dobj, field)
+        scene = MeshRendering(dobj, field)
     else:
         scene = SceneGraph()
         collection = BlockCollection()

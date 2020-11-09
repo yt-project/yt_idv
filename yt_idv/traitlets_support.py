@@ -1,3 +1,4 @@
+import matplotlib.font_manager
 import numpy as np
 import traitlets
 
@@ -38,3 +39,16 @@ def ndarray_ro():
         return value
 
     return validator
+
+
+class FontTrait(traitlets.TraitType):
+    info_text = "A font instance from matplotlib"
+
+    def validate(self, obj, value):
+        if isinstance(value, str):
+            try:
+                font_fn = matplotlib.font_manager.findfont(value)
+                value = matplotlib.font_manager.get_font(font_fn)
+            except FileNotFoundError:
+                self.error(obj, value)
+        return value
