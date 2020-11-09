@@ -1,9 +1,10 @@
 import numpy as np
 import pyglet
 from yt import write_bitmap
-from .base_context import BaseContext
 
 from yt_idv.simple_gui import SimpleGUI
+
+from .base_context import BaseContext
 
 
 class PygletRenderingContext(pyglet.window.Window, BaseContext):
@@ -32,7 +33,6 @@ class PygletRenderingContext(pyglet.window.Window, BaseContext):
         specified, default to center.
     """
 
-    image_widget = None
     _do_update = True
 
     def __init__(

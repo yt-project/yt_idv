@@ -1,8 +1,9 @@
-import numpy as np
-from OpenGL import GL
-from yt import write_bitmap
 from ctypes import pointer
-from ..opengl_support import Framebuffer
+
+import numpy as np
+from OpenGL import EGL, GL
+from yt import write_bitmap
+
 from .base_context import BaseContext
 
 
@@ -21,9 +22,8 @@ class EGLRenderingContext(BaseContext):
 
     """
 
-    def __init__(self, width=1024, height=1024, scene=None, image_widget=None, **kwargs):
-        from OpenGL import EGL
-        self.image_widget = image_widget
+    def __init__(self, width=1024, height=1024, **kwargs):
+        super(EGLRenderingContext, self).__init__(width, height, **kwargs)
 
         self.EGL = EGL
         self.display = EGL.eglGetDisplay(EGL.EGL_DEFAULT_DISPLAY)
@@ -53,7 +53,7 @@ class EGLRenderingContext(BaseContext):
                 EGL.EGL_OPENGL_BIT,
                 EGL.EGL_CONFIG_CAVEAT,
                 EGL.EGL_NONE,
-                EGL.EGL_NONE
+                EGL.EGL_NONE,
             ],
             dtype="i4",
         )
@@ -78,16 +78,11 @@ class EGLRenderingContext(BaseContext):
         GL.glClearColor(0.0, 0.0, 0.0, 0.0)
         GL.glClear(GL.GL_COLOR_BUFFER_BIT | GL.GL_DEPTH_BUFFER_BIT)
 
-        self.scene = scene
-
     def run(self):
 
         if self.scene is None:
             return
         self.scene.render()
         if self.image_widget is not None:
-            self.image_widget.value = write_bitmap(
-                self.scene.image[:, :, :3], None
-            )
+            self.image_widget.value = write_bitmap(self.scene.image[:, :, :3], None)
         return self.scene.image
-
