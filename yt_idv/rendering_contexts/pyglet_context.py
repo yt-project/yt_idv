@@ -22,12 +22,6 @@ class PygletRenderingContext(pyglet.window.Window, BaseContext):
         powers of 2.
     title : str, optional
         The title of the Interactive Data Visualization window.
-    always_on_top : bool, optional
-        Should this window be created such that it is always on top of other
-        windows? (Default: False)
-    decorated : bool, optional
-        Does the window have operating system widgets (minimize, maximize
-        close), or is it a bare context? (Default: True)
     position : tuple of ints, optional
         What position should the window be moved to? (Upper left)  If not
         specified, default to center.

@@ -1,6 +1,4 @@
-=======
-Credits
-=======
+# Credits
 
 * Matthew Turk <matthewturk@gmail.com>
 * Chris Havlin <chris.havlin@gmail.com>
