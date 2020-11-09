@@ -44,7 +44,7 @@ class PygletRenderingContext(pyglet.window.Window):
         position=None,
         visible=True,
         gui=False,
-        scene=None
+        scene=None,
     ):
         self.offscreen = not visible
         config = pyglet.gl.Config(

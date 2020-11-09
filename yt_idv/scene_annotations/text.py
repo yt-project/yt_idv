@@ -8,6 +8,7 @@ from yt_idv.scene_data.text_characters import TextCharacters
 # This is drawn in part from
 #  https://learnopengl.com/#!In-Practice/Text-Rendering
 
+
 class TextAnnotation(SceneAnnotation):
 
     name = "text_annotation"

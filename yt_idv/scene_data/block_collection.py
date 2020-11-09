@@ -4,7 +4,12 @@ import numpy as np
 import traitlets
 from yt.data_objects.data_containers import YTDataContainer
 
-from yt_idv.opengl_support import Texture3D, VertexArray, VertexAttribute, compute_box_geometry
+from yt_idv.opengl_support import (
+    Texture3D,
+    VertexArray,
+    VertexAttribute,
+    compute_box_geometry,
+)
 from yt_idv.scene_data.base_data import SceneData
 
 

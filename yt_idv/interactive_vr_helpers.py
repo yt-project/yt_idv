@@ -51,9 +51,7 @@ def _render_opengl(
         ) from e
 
     from yt_idv import PygletRenderingContext
-    from .scene_components.mesh import (
-        MeshRendering,
-    )
+    from .scene_components.mesh import MeshRendering
     from yt_idv import SceneGraph
     from yt_idv.scene_data.block_collection import BlockCollection
     from yt_idv.cameras.trackball_camera import TrackballCamera

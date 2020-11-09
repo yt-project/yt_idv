@@ -2,9 +2,19 @@ import traitlets
 from OpenGL import GL
 
 from yt_idv.constants import FULLSCREEN_QUAD
-from yt_idv.opengl_support import Framebuffer, ColormapTexture, VertexArray, VertexAttribute
+from yt_idv.opengl_support import (
+    Framebuffer,
+    ColormapTexture,
+    VertexArray,
+    VertexAttribute,
+)
 from yt_idv.scene_data.base_data import SceneData
-from yt_idv.shader_objects import ShaderTrait, ShaderProgram, default_shader_combos, component_shaders
+from yt_idv.shader_objects import (
+    ShaderTrait,
+    ShaderProgram,
+    default_shader_combos,
+    component_shaders,
+)
 
 
 class SceneComponent(traitlets.HasTraits):

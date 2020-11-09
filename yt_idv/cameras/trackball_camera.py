@@ -1,7 +1,12 @@
 import numpy as np
 import traitlets
-from yt.utilities.math_utils import get_perspective_matrix, rotation_matrix_to_quaternion, get_lookat_matrix, \
-    quaternion_mult, quaternion_to_rotation_matrix
+from yt.utilities.math_utils import (
+    get_perspective_matrix,
+    rotation_matrix_to_quaternion,
+    get_lookat_matrix,
+    quaternion_mult,
+    quaternion_to_rotation_matrix,
+)
 
 from yt_idv.cameras.base_camera import BaseCamera
 from yt_idv.utilities import update_orientation

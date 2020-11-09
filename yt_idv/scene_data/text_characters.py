@@ -14,6 +14,7 @@ Character = namedtuple(
     "Character", ["texture", "vbo_offset", "hori_advance", "vert_advance"]
 )
 
+
 class TextCharacters(SceneData):
     characters = traitlets.Dict(trait=traitlets.Instance(Character))
     name = "text_overlay"
@@ -64,4 +65,3 @@ class TextCharacters(SceneData):
         self.vertex_array.attributes.append(
             VertexAttribute(name="quad_vertex", data=vert.astype("<f4"))
         )
-

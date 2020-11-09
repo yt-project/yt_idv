@@ -2,6 +2,7 @@ import numpy as np
 from OpenGL import GL
 from yt import write_bitmap
 
+
 class EGLRenderingContext:
     """Rendering context using EGL (experimental)
 
