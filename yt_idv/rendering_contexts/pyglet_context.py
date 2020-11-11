@@ -36,7 +36,7 @@ class PygletRenderingContext(pyglet.window.Window, BaseContext):
         title="vol_render",
         position=None,
         visible=True,
-        gui=False,
+        gui=True,
         scene=None,
     ):
         self.offscreen = not visible
