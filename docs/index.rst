@@ -1,5 +1,5 @@
-Welcome to interactive volume rendering for yt's documentation!
-======================================
+Welcome to yt_idv's documentation!
+==================================
 
 .. toctree::
    :maxdepth: 2

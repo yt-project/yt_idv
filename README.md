@@ -4,12 +4,13 @@
 
 [![Doc Status](https://readthedocs.org/projects/yt-idv/badge/?version=latest)](https://yt-idv.readthedocs.io/en/latest/?badge=latest)
 
-Interactive Volume Rendering for yt
-
+This package provides interactive visualization using OpenGL for datasets
+loaded in yt.  It is written to provide both scripting and interactive access.
 
 * Free software: BSD license
 * Documentation: https://yt-idv.readthedocs.io.
 
+![example of using yt_idv](https://i.imgur.com/Q4XPNZw.gif)
 
 ## Features
 
@@ -25,6 +26,8 @@ Interactive Volume Rendering for yt
     * Block and grid outlines
 * Support for sub-selections of data via the yt data selection interface
 * Integration with the [ipywidgets](https://ipywidgets.readthedocs.org/) ``Image`` widget.
+
+## Examples
 
 ## Credits
 
