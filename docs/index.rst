@@ -8,6 +8,7 @@ Welcome to yt_idv's documentation!
    readme
    installation
    usage
+   scene
    modules
    contributing
    authors

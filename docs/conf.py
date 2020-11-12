@@ -20,6 +20,8 @@
 import os
 import sys
 
+os.environ["PYOPENGL_PLATFORM"] = "egl"
+
 sys.path.insert(0, os.path.abspath(".."))
 
 import yt_idv  # NOQA
@@ -32,7 +34,12 @@ import yt_idv  # NOQA
 
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
-extensions = ["sphinx.ext.autodoc", "sphinx.ext.viewcode", "m2r2"]
+extensions = [
+    "sphinx.ext.autodoc",
+    "sphinx.ext.viewcode",
+    "m2r2",
+    "sphinx.ext.napoleon",
+]
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ["_templates"]
@@ -166,3 +173,9 @@ texinfo_documents = [
         "Miscellaneous",
     ),
 ]
+
+autodoc_default_options = {
+    "members": None,
+    "undoc-members": None,
+    "show-inheritance": None,
+}

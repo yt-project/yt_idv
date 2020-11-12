@@ -9,8 +9,8 @@ make it impossible (or at the very least, beyond the capabilities of the
 
 The two rendering methods at present are:
 
- * ``pyglet`` - this method utilizes `pyglet<https://pyglet.org/>`_ to draw windows, respond to events, and manage OpenGL contexts.  Drawing is still done using PyOpenGL.
- * ``EGL`` - this method utilizes `EGL<https://en.wikipedia.org/wiki/EGL_(API)>`_ via `PyOpenGL<https://pypi.org/project/PyOpenGL/>`_.  This is useful for *offscreen* rendering, for instance when running on a cluster node that has access to graphics acceleration, but which does not provide GUI access.
+ * ``pyglet`` - this method utilizes `pyglet <https://pyglet.org/>`_ to draw windows, respond to events, and manage OpenGL contexts.  Drawing is still done using PyOpenGL.
+ * ``EGL`` - this method utilizes `EGL <https://en.wikipedia.org/wiki/EGL_(API)>`_ via `PyOpenGL <https://pypi.org/project/PyOpenGL/>`_.  This is useful for *offscreen* rendering, for instance when running on a cluster node that has access to graphics acceleration, but which does not provide GUI access.
 
 These two methods are wrapped by the function :func:`yt_idv.render_context` function, which accepts its first argument as either the string ``egl`` or ``pyglet``.
 
@@ -73,11 +73,8 @@ To utilize off-screen rendering, you can request the "egl" render context::
     import yt_idv
 
     ds = yt.load_sample("IsolatedGalaxy")
-    dd = ds.all_data()
-
     rc = yt_idv.render_context("egl", width = 1024, height = 1024)
-    rc.add_scene(dd, "density")
-
+    rc.add_scene(ds, "density")
     image = rc.run()
     yt.write_bitmap(image, "idv.png")
 
@@ -85,4 +82,18 @@ Here, we load up the dataset, create a default scene, render it without a
 window, and output the results.  When ``rc.run()`` is called, it returns an
 image array, which we then supply to ``yt.write_bitmap``.
 
+This seems a bit clunky, right?  Having to save the image?  Well, if you're
+running in something that can render ipywidgets (such as Jupyter lab or a
+Jupyter notebook) you can create an auto-updating image widget::
 
+    rc.add_image()
+
+This will return an image widget, which is then associated with the render
+context.  Whenever ``rc.run()`` is called next, the image widget will update.
+
+.. note:: Only the most recent image widget is retained!  So, if you call
+          ``add_image`` multiple times, the new ones will be updated but the
+          old ones will be frozen in time, like a bug stuck in amber.
+
+This is useful if, for instance, you modify the position or focal point of the
+camera, the bounds of the image, annotations, and so forth.
