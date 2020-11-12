@@ -179,3 +179,5 @@ autodoc_default_options = {
     "undoc-members": None,
     "show-inheritance": None,
 }
+
+autodoc_mock_imports = ["pyopengl", "pyglet", "imgui"]
