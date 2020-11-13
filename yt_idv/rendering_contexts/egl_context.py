@@ -87,3 +87,9 @@ class EGLRenderingContext(BaseContext):
             self.image_widget.value = write_bitmap(self.scene.image[:, :, :3], None)
             return
         return self.scene.image
+
+    def snap(self, *args, **kwargs):
+        if self.scene is None:
+            return
+        self.scene.render()
+        super().snap(*args, **kwargs)

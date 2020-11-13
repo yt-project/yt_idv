@@ -4,6 +4,7 @@ import yt
 
 class BaseContext:
     image_widget = None
+    snap_count = 0
 
     def __init__(self, width, height, **kwargs):
         self.width = width
@@ -27,3 +28,7 @@ class BaseContext:
             value = yt.write_bitmap(np.zeros((width, height, 3)), None)
         self.image_widget = ipywidgets.Image(width=width, height=height, value=value)
         return self.image_widget
+
+    def snap(self, template=r"snap_%04i.png"):
+        yt.write_bitmap(self.scene.image[:, :, :3], template % self.snap_count)
+        self.snap_count += 1
