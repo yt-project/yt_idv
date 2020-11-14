@@ -4,7 +4,7 @@ import numpy as np
 import traitlets
 import traittypes
 
-from yt_idv.traitlets_support import YTPositionTrait, ndarray_shape, ndarray_ro
+from yt_idv.traitlets_support import YTPositionTrait, ndarray_ro, ndarray_shape
 
 
 class BaseCamera(traitlets.HasTraits):
@@ -38,7 +38,7 @@ class BaseCamera(traitlets.HasTraits):
         ndarray_shape(3), ndarray_ro()
     )
     fov = traitlets.Float(45.0)
-    near_plane = traitlets.Float(0.01)
+    near_plane = traitlets.Float(0.001)
     far_plane = traitlets.Float(20.0)
     aspect_ratio = traitlets.Float(8.0 / 6.0)
 
