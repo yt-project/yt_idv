@@ -97,3 +97,18 @@ context.  Whenever ``rc.run()`` is called next, the image widget will update.
 
 This is useful if, for instance, you modify the position or focal point of the
 camera, the bounds of the image, annotations, and so forth.
+
+You can also have the render context run *and* output an image simultaneously
+by using the ``rc.snap()`` function::
+
+    rc.snap()
+
+It will use a default template, and track how many snapshots have been made, but you can also supply a format string to it to output.
+
+----------------------
+Snapshots into a Movie
+----------------------
+
+If you want to turn your snapshots into a movie (x264 in mkv), this command (requires ``mencoder``) is a quick way to do it::
+
+    mencoder mf://"snap*.png" -oac copy -of lavf -ovc x264 -x264encopts preset=veryslow:tune=film:crf=15:frameref=15:fast_pskip=0:global_header:threads=auto -o output_video.mkv
