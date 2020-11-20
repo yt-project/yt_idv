@@ -1,2 +1,9 @@
 [build-system]
 requires = ["setuptools", "wheel", "Cython"]
+
+# To be kept consistent with "Import Formatting" section in CONTRIBUTING.rst
+[tool.isort]
+profile = "black"
+combine_as_imports = true
+# isort can't be applied to yt/__init__.py because it creates circular imports
+skip =  ["setup.py"]

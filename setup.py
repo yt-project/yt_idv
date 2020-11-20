@@ -2,8 +2,8 @@
 
 """The setup script."""
 
+from setuptools import Extension, find_packages, setup  # NOQA
 from Cython.Build import cythonize
-from setuptools import find_packages, setup
 
 with open("README.md") as readme_file:
     readme = readme_file.read()
