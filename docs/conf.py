@@ -54,7 +54,7 @@ source_suffix = [".rst", ".md"]
 master_doc = "index"
 
 # General information about the project.
-project = "interactive volume rendering for yt"
+project = "yt_idv"
 copyright = "2020, Matthew Turk"
 author = "Matthew Turk"
 

@@ -9,6 +9,7 @@ Welcome to yt_idv's documentation!
    installation
    usage
    scene
+   examples
    modules
    contributing
    authors
