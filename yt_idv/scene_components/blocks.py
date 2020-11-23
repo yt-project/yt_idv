@@ -1,4 +1,4 @@
-from math import floor, ceil
+from math import ceil, floor
 
 import numpy as np
 import traitlets
@@ -109,7 +109,9 @@ class BlockRendering(SceneComponent):
     def _set_uniforms(self, scene, shader_program):
         cam = scene.camera
         shader_program._set_uniform("projection", cam.projection_matrix)
-        shader_program._set_uniform("modelview", cam.view_matrix)
+        shader_program._set_uniform(
+            "modelview", cam.view_matrix @ self.data.scale_matrix
+        )
         shader_program._set_uniform(
             "viewport", np.array(GL.glGetIntegerv(GL.GL_VIEWPORT), dtype="f4")
         )

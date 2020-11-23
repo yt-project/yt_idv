@@ -22,6 +22,11 @@ class BlockCollection(SceneData):
     scale = traitlets.Bool(False)
     blocks_by_grid = traitlets.Instance(defaultdict, (list,))
     grids_by_block = traitlets.Dict(default_value=())
+    scale_matrix = traitlets.Instance(np.ndarray)
+
+    @traitlets.default("scale_matrix")
+    def _default_scale_matrix(self):
+        return np.eye(4)
 
     @traitlets.default("vertex_array")
     def _default_vertex_array(self):
@@ -48,19 +53,11 @@ class BlockCollection(SceneData):
         vert, dx, le, re = [], [], [], []
         self.min_val = +np.inf
         self.max_val = -np.inf
-        if self.scale:
-            left_min = np.ones(3, "f8") * np.inf
-            right_max = np.ones(3, "f8") * -np.inf
-            for block in self.data_source.tiles.traverse():
-                np.minimum(left_min, block.LeftEdge, left_min)
-                np.maximum(right_max, block.LeftEdge, right_max)
-            scale = right_max.max() - left_min.min()
-            for block in self.data_source.tiles.traverse():
-                block.LeftEdge -= left_min
-                block.LeftEdge /= scale
-                block.RightEdge -= left_min
-                block.RightEdge /= scale
+        left_min = np.ones(3, "f8") * np.inf
+        right_max = np.ones(3, "f8") * -np.inf
         for i, block in enumerate(self.data_source.tiles.traverse()):
+            np.minimum(left_min, block.LeftEdge, left_min)
+            np.maximum(right_max, block.RightEdge, right_max)
             self.min_val = min(self.min_val, np.nanmin(np.abs(block.my_data[0]).min()))
             self.max_val = max(self.max_val, np.nanmax(np.abs(block.my_data[0]).max()))
             self.blocks[id(block)] = (i, block)
@@ -88,6 +85,11 @@ class BlockCollection(SceneData):
         dx = np.concatenate(dx)
         le = np.concatenate(le)
         re = np.concatenate(re)
+        scale = np.ones(4)
+        scale[:3] = 1.0 / (right_max - left_min).max()
+        translate = np.eye(4)
+        translate[:3, 3] = (right_max + left_min) / 2.0
+        self.scale_matrix = (np.eye(4) * scale) @ translate
 
         self.vertex_array.attributes.append(
             VertexAttribute(name="model_vertex", data=vert)
