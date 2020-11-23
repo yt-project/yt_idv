@@ -2,7 +2,7 @@ import traitlets
 from yt.data_objects.data_containers import YTDataContainer
 from yt.utilities.lib.mesh_triangulation import triangulate_mesh
 
-from yt_idv.opengl_support import Texture3D, VertexAttribute, VertexArray
+from yt_idv.opengl_support import Texture3D, VertexArray, VertexAttribute
 from yt_idv.scene_data.base_data import SceneData
 
 
