@@ -14,7 +14,7 @@ class YTPositionTrait(traitlets.TraitType):
             value = value.in_units("unitary").d
         if not isinstance(value, np.ndarray):
             self.error(obj, value)
-        return value.astype("f4")
+        return value.astype("f8")
 
 
 def ndarray_shape(*dimensions):
