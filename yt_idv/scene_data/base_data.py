@@ -1,6 +1,6 @@
 import traitlets
 
-from yt_idv.opengl_support import VertexArray, Texture
+from yt_idv.opengl_support import Texture, VertexArray
 
 
 class SceneData(traitlets.HasTraits):

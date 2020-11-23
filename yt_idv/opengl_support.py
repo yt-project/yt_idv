@@ -14,7 +14,7 @@ in Interactive Data Visualization
 
 # This is a part of the experimental Interactive Data Visualization
 
-from contextlib import contextmanager
+from contextlib import ExitStack, contextmanager
 
 import matplotlib.cm as cm
 import numpy as np
@@ -22,10 +22,8 @@ import traitlets
 import traittypes
 from OpenGL import GL
 
-from contextlib import ExitStack
-
 # Set up a mapping from numbers to names
-from yt.utilities.math_utils import get_translate_matrix, get_scale_matrix
+from yt.utilities.math_utils import get_scale_matrix, get_translate_matrix
 
 from yt_idv.constants import bbox_vertices
 

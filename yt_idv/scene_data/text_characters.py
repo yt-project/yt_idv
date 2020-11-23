@@ -3,10 +3,10 @@ from collections import namedtuple
 
 import numpy as np
 import traitlets
-from OpenGL import GL
 from matplotlib.ft2font import LOAD_FORCE_AUTOHINT
+from OpenGL import GL
 
-from yt_idv.opengl_support import VertexArray, Texture2D, VertexAttribute
+from yt_idv.opengl_support import Texture2D, VertexArray, VertexAttribute
 from yt_idv.scene_data.base_data import SceneData
 from yt_idv.traitlets_support import FontTrait
 

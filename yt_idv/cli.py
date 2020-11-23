@@ -1,5 +1,6 @@
 """Console script for yt_idv."""
 import sys
+
 import click
 
 

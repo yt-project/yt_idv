@@ -2,8 +2,8 @@ import imgui
 import matplotlib.pyplot as plt
 import numpy as np
 from imgui.integrations.pyglet import create_renderer
-
 from yt.visualization.image_writer import write_bitmap
+
 from .opengl_support import Texture2D
 
 

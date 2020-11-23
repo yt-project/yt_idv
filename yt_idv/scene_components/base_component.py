@@ -3,17 +3,17 @@ from OpenGL import GL
 
 from yt_idv.constants import FULLSCREEN_QUAD
 from yt_idv.opengl_support import (
-    Framebuffer,
     ColormapTexture,
+    Framebuffer,
     VertexArray,
     VertexAttribute,
 )
 from yt_idv.scene_data.base_data import SceneData
 from yt_idv.shader_objects import (
-    ShaderTrait,
     ShaderProgram,
-    default_shader_combos,
+    ShaderTrait,
     component_shaders,
+    default_shader_combos,
 )
 
 
