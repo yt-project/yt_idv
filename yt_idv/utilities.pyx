@@ -1,6 +1,8 @@
 import numpy as np
+
 cimport libc.math as math
 cimport numpy as np
+
 
 def update_orientation(np.ndarray[np.float64_t, ndim=1] q1,
                         np.float64_t start_x, np.float64_t start_y,

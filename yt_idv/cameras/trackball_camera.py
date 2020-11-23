@@ -1,11 +1,11 @@
 import numpy as np
 import traitlets
 from yt.utilities.math_utils import (
-    get_perspective_matrix,
-    rotation_matrix_to_quaternion,
     get_lookat_matrix,
+    get_perspective_matrix,
     quaternion_mult,
     quaternion_to_rotation_matrix,
+    rotation_matrix_to_quaternion,
 )
 
 from yt_idv.cameras.base_camera import BaseCamera
@@ -95,10 +95,7 @@ class TrackballCamera(BaseCamera):
         )
 
     def move_forward(self, move_amount):
-        dpos = (
-            (self.focus - self.position)
-            / np.linalg.norm(self.focus - self.position)
-        )
+        dpos = (self.focus - self.position) / np.linalg.norm(self.focus - self.position)
         self.offset_position(move_amount * dpos)
 
     def offset_position(self, dpos=None):

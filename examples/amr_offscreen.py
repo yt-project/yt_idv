@@ -1,11 +1,11 @@
-import numpy as np
 import yt
+
 import yt_idv
 
 ds = yt.load_sample("IsolatedGalaxy")
 dd = ds.all_data()
 
-rc = yt_idv.render_context("egl", width = 1024, height = 1024)
+rc = yt_idv.render_context("egl", width=1024, height=1024)
 rc.add_scene(dd, "density", no_ghost=True)
 
 image = rc.run()

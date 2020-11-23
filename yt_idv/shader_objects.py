@@ -12,7 +12,6 @@ from collections import OrderedDict
 import traitlets
 import yaml
 from OpenGL import GL
-
 from yt.units.yt_array import YTQuantity
 from yt.utilities.exceptions import (
     YTInvalidShaderType,
