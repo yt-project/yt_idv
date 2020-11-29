@@ -103,12 +103,19 @@ shader_definitions:
     passthrough:
       info: A second pass vertex shader that performs no operations on vertices
       source: passthrough.vert.glsl
+    grid_position:
+      info: Pass some grid positions on through
+      source: grid_position.vert.glsl
     draw_lines:
       info: A line drawing vertex shader
       source: draw_lines.vert.glsl
     text_overlay:
       info: A simple text overlay shader
       source: textoverlay.vert.glsl
+  geometry:
+    grid_expand:
+      info: Expand grid left and right edges into a set of triangles
+      source: grid_expand.geom.glsl
 component_shaders:
   block_rendering:
     default_value: max_intensity
@@ -135,6 +142,15 @@ component_shaders:
     default:
       description: Default
       first_vertex: default
+      first_fragment: draw_blocks
+      second_vertex: passthrough
+      second_fragment: passthrough
+  grid_outline:
+    default_value: default
+    default:
+      description: Default
+      first_vertex: grid_position
+      first_geometry: grid_expand
       first_fragment: draw_blocks
       second_vertex: passthrough
       second_fragment: passthrough

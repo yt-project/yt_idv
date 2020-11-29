@@ -28,6 +28,7 @@ class SceneComponent(traitlets.HasTraits):
 
     render_method = traitlets.Unicode(allow_none=True)
     fragment_shader = ShaderTrait(allow_none=True).tag(shader_type="fragment")
+    geometry_shader = ShaderTrait(allow_none=True).tag(shader_type="geometry")
     vertex_shader = ShaderTrait(allow_none=True).tag(shader_type="vertex")
     fb = traitlets.Instance(Framebuffer)
     colormap_fragment = ShaderTrait(allow_none=True).tag(shader_type="fragment")
@@ -72,6 +73,7 @@ class SceneComponent(traitlets.HasTraits):
         with self.hold_trait_notifications():
             self.vertex_shader = new_combo["first_vertex"]
             self.fragment_shader = new_combo["first_fragment"]
+            self.geometry_shader = new_combo.get("first_geometry", None)
             self.colormap_vertex = new_combo["second_vertex"]
             self.colormap_fragment = new_combo["second_fragment"]
 
@@ -87,6 +89,10 @@ class SceneComponent(traitlets.HasTraits):
     @traitlets.observe("vertex_shader")
     def _change_vertex(self, change):
         # Even if old/new are the same
+        self._program1_invalid = True
+
+    @traitlets.observe("geometry_shader")
+    def _change_geometry(self, change):
         self._program1_invalid = True
 
     @traitlets.observe("colormap_vertex")
@@ -113,6 +119,11 @@ class SceneComponent(traitlets.HasTraits):
     def _fragment_shader_default(self):
         return component_shaders[self.name][self.render_method]["first_fragment"]
 
+    @traitlets.default("geometry_shader")
+    def _geometry_shader_default(self):
+        _ = component_shaders[self.name][self.render_method]
+        return _.get("first_geometry", None)
+
     @traitlets.default("colormap_vertex")
     def _colormap_vertex_default(self):
         return component_shaders[self.name][self.render_method]["second_vertex"]
@@ -137,7 +148,10 @@ class SceneComponent(traitlets.HasTraits):
         if self._program1_invalid:
             if self._program1 is not None:
                 self._program1.delete_program()
-            self._program1 = ShaderProgram(self.vertex_shader, self.fragment_shader)
+            self._fragment_shader_default()
+            self._program1 = ShaderProgram(
+                self.vertex_shader, self.fragment_shader, self.geometry_shader
+            )
             self._program1_invalid = False
         return self._program1
 

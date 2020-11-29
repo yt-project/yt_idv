@@ -287,7 +287,7 @@ class Shader(traitlets.HasTraits):
 
 class ShaderTrait(traitlets.TraitType):
     default_value = None
-    info_text = "A shader (vertex or fragment)"
+    info_text = "A shader (vertex, fragment or geometry)"
 
     def validate(self, obj, value):
         if isinstance(value, str):
