@@ -8,9 +8,9 @@ out vec3 v_camera_pos;
 flat out mat4 inverse_proj;
 flat out mat4 inverse_mvm;
 flat out mat4 inverse_pmvm;
-out vec3 dx;
-out vec3 left_edge;
-out vec3 right_edge;
+flat out vec3 dx;
+flat out vec3 left_edge;
+flat out vec3 right_edge;
 
 //// Uniforms
 uniform vec3 camera_pos;

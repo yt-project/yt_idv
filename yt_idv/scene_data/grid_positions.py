@@ -24,7 +24,6 @@ class GridPositions(SceneData):
         dx = np.array(dx).astype("f4")
         le = np.array(le).astype("f4")
         re = np.array(re).astype("f4")
-        dx = re - le
         va.attributes.append(VertexAttribute(name="model_vertex", data=positions))
         va.attributes.append(VertexAttribute(name="in_left_edge", data=le))
         va.attributes.append(VertexAttribute(name="in_dx", data=dx))

@@ -1,7 +1,7 @@
 #version 330 core
 
 layout ( points ) in;
-layout ( triangle_strip, max_vertices = 36 ) out;
+layout ( triangle_strip, max_vertices = 14 ) out;
 
 uniform mat4 modelview;
 uniform mat4 projection;
@@ -22,68 +22,40 @@ flat in mat4 vinverse_proj[];
 flat in mat4 vinverse_mvm[];
 flat in mat4 vinverse_pmvm[];
 
-uniform vec4 arrangement[36] = vec4[](
-   vec4(0.0, 0.0, 0.0, 1.0),
-   vec4(0.0, 0.0, 1.0, 1.0),
-   vec4(0.0, 1.0, 1.0, 1.0),
-   vec4(1.0, 1.0, 0.0, 1.0),
-   vec4(0.0, 0.0, 0.0, 1.0),
-   vec4(0.0, 1.0, 0.0, 1.0),
-   vec4(1.0, 0.0, 1.0, 1.0),
-   vec4(0.0, 0.0, 0.0, 1.0),
-   vec4(1.0, 0.0, 0.0, 1.0),
-   vec4(1.0, 1.0, 0.0, 1.0),
-   vec4(1.0, 0.0, 0.0, 1.0),
-   vec4(0.0, 0.0, 0.0, 1.0),
-   vec4(0.0, 0.0, 0.0, 1.0),
-   vec4(0.0, 1.0, 1.0, 1.0),
-   vec4(0.0, 1.0, 0.0, 1.0),
-   vec4(1.0, 0.0, 1.0, 1.0),
-   vec4(0.0, 0.0, 1.0, 1.0),
-   vec4(0.0, 0.0, 0.0, 1.0),
-   vec4(0.0, 1.0, 1.0, 1.0),
-   vec4(0.0, 0.0, 1.0, 1.0),
-   vec4(1.0, 0.0, 1.0, 1.0),
-   vec4(1.0, 1.0, 1.0, 1.0),
-   vec4(1.0, 0.0, 0.0, 1.0),
-   vec4(1.0, 1.0, 0.0, 1.0),
-   vec4(1.0, 0.0, 0.0, 1.0),
-   vec4(1.0, 1.0, 1.0, 1.0),
-   vec4(1.0, 0.0, 1.0, 1.0),
-   vec4(1.0, 1.0, 1.0, 1.0),
-   vec4(1.0, 1.0, 0.0, 1.0),
-   vec4(0.0, 1.0, 0.0, 1.0),
-   vec4(1.0, 1.0, 1.0, 1.0),
-   vec4(0.0, 1.0, 0.0, 1.0),
-   vec4(0.0, 1.0, 1.0, 1.0),
-   vec4(1.0, 1.0, 1.0, 1.0),
-   vec4(0.0, 1.0, 1.0, 1.0),
-   vec4(1.0, 0.0, 1.0, 1.0));
+// https://stackoverflow.com/questions/28375338/cube-using-single-gl-triangle-strip
+// suggests that the triangle strip we want for the cube is
+
+uniform vec3 arrangement[8] = vec3[](
+    vec3(0, 0, 0),
+    vec3(1, 0, 0),
+    vec3(0, 1, 0),
+    vec3(1, 1, 0),
+    vec3(0, 0, 1),
+    vec3(1, 0, 1),
+    vec3(0, 1, 1),
+    vec3(1, 1, 1)
+);
+
+uniform int aindex[14] = int[](6, 7, 4, 5, 1, 7, 3, 6, 2, 4, 0, 1, 2, 3);
 
 void main() {
-    // gl_PositionIn[0] is left edge
-    // gl_PositionIn[1] is right edge
 
-    //left_edge = (inverse_pmvm[0] * gl_in[0].gl_Position).xyz;
-    //right_edge = (inverse_pmvm[1] * gl_in[1].gl_Position).xyz;
+    vec4 center = gl_in[0].gl_Position;
 
     vec3 width = vright_edge[0] - vleft_edge[0];
 
-    vec4 newPos = vec4(0,0,0,1.0);
+    vec4 newPos;
 
-    for (int i = 0; i < 12; i++) {
-        for (int j = 0; j < 3; j++) {
-            newPos = vec4(vleft_edge[0] + width * arrangement[i*3+j].xyz, 1.0);
-            gl_Position = projection * modelview * newPos;
-            left_edge = vleft_edge[0];
-            right_edge = vright_edge[0];
-            inverse_pmvm = vinverse_pmvm[0];
-            inverse_proj = vinverse_proj[0];
-            inverse_mvm = vinverse_mvm[0];
-            dx = vdx[0];
-            EmitVertex();
-        }
-        EndPrimitive();
+    for (int i = 0; i < 14; i++) {
+        newPos = vec4(vleft_edge[0] + width * arrangement[aindex[i]], 1.0);
+        gl_Position = projection * modelview * newPos;
+        left_edge = vleft_edge[0];
+        right_edge = vright_edge[0];
+        inverse_pmvm = vinverse_pmvm[0];
+        inverse_proj = vinverse_proj[0];
+        inverse_mvm = vinverse_mvm[0];
+        dx = vdx[0];
+        EmitVertex();
     }
 
 }

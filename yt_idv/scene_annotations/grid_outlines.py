@@ -13,7 +13,7 @@ class GridOutlines(SceneAnnotation):
 
     name = "grid_outline"
     data = traitlets.Instance(GridPositions)
-    box_width = traitlets.CFloat(0.05)
+    box_width = traitlets.CFloat(0.25)  # quarter of a dx
     box_color = traitlets.Tuple((1.0, 1.0, 1.0), trait=traitlets.CFloat())
     box_alpha = traitlets.CFloat(1.0)
 
