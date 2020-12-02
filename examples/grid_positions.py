@@ -20,4 +20,4 @@ go = GridOutlines(data=gp)
 rc.scene.components.append(go)
 
 image = rc.run()
-yt.write_bitmap(image, "step1.png")
+yt.write_bitmap(image, "grid_outline.png")
