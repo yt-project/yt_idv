@@ -5,9 +5,9 @@ in vec3 in_left_edge;
 in vec3 in_right_edge;
 out vec4 v_model;
 out vec3 v_camera_pos;
-flat out mat4 inverse_proj;
-flat out mat4 inverse_mvm;
-flat out mat4 inverse_pmvm;
+flat out mat4 vinverse_proj;
+flat out mat4 vinverse_mvm;
+flat out mat4 vinverse_pmvm;
 flat out vec3 vdx;
 flat out vec3 vleft_edge;
 flat out vec3 vright_edge;
@@ -24,10 +24,10 @@ void main()
 {
     v_model = model_vertex;
     v_camera_pos = camera_pos;
-    inverse_proj = inverse(projection);
+    vinverse_proj = inverse(projection);
     // inverse model-view-matrix
-    inverse_mvm = inverse(modelview);
-    inverse_pmvm = inverse(projection * modelview);
+    vinverse_mvm = inverse(modelview);
+    vinverse_pmvm = inverse(projection * modelview);
     gl_Position = projection * modelview * model_vertex;
     vdx = vec3(in_dx);
     vleft_edge = vec3(in_left_edge);

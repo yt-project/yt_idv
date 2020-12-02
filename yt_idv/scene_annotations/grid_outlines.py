@@ -13,9 +13,9 @@ class GridOutlines(SceneAnnotation):
 
     name = "grid_outline"
     data = traitlets.Instance(GridPositions)
-    box_width = traitlets.CFloat(0.001)
+    box_width = traitlets.CFloat(0.05)
     box_color = traitlets.Tuple((1.0, 1.0, 1.0), trait=traitlets.CFloat())
-    box_alpha = traitlets.CFloat(0.1)
+    box_alpha = traitlets.CFloat(1.0)
 
     def draw(self, scene, program):
         GL.glDrawArrays(GL.GL_POINTS, 0, len(self.data.grid_list))
