@@ -1,9 +1,7 @@
 #version 330
-in vec4 v_model;
-in vec3 v_camera_pos;
-in vec3 dx;
-in vec3 left_edge;
-in vec3 right_edge;
+flat in vec3 dx;
+flat in vec3 left_edge;
+flat in vec3 right_edge;
 flat in mat4 inverse_proj;
 flat in mat4 inverse_mvm;
 flat in mat4 inverse_pmvm;
@@ -35,7 +33,7 @@ void main()
 
     vec3 dist = min(abs(ray_position - right_edge),
                     abs(ray_position - left_edge));
-    
+
     // We need to be close to more than one edge.
 
     int count = 0;

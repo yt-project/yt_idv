@@ -1,9 +1,9 @@
 #version 330
-in vec4 v_model;
-in vec3 v_camera_pos;
-in vec3 dx;
-in vec3 left_edge;
-in vec3 right_edge;
+flat in vec4 v_model;
+flat in vec3 v_camera_pos;
+flat in vec3 dx;
+flat in vec3 left_edge;
+flat in vec3 right_edge;
 flat in mat4 inverse_proj;
 flat in mat4 inverse_mvm;
 flat in mat4 inverse_pmvm;
@@ -65,7 +65,7 @@ void main()
     vec3 tr = (right_edge - ray_position)*idir;
 
     vec3 tmin = min(tl, tr);
-    vec3 tmax = max(tl, tr); 
+    vec3 tmax = max(tl, tr);
 
     vec2 temp_t;
 

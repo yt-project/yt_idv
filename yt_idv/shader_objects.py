@@ -37,35 +37,47 @@ class ShaderProgram:
     fragment_shader : string
         or :class:`yt.visualization.volume_rendering.shader_objects.FragmentShader`
         The fragment shader used in the Interactive Data Visualization pipeline.
+
+    geometry_shader : string
+        or :class:`yt_idv.shader_objects.GeometryShader`
+        The geometry shader used in the pipeline; optional.
     """
 
-    def __init__(self, vertex_shader=None, fragment_shader=None):
+    def __init__(self, vertex_shader=None, fragment_shader=None, geometry_shader=None):
         # Don't allow just one.  Either neither or both.
         if vertex_shader is None and fragment_shader is None:
             pass
         elif None not in (vertex_shader, fragment_shader):
-            self.link(vertex_shader, fragment_shader)
+            # Geometry is optional
+            self.link(vertex_shader, fragment_shader, geometry_shader)
         else:
             raise RuntimeError
         self._uniform_funcs = OrderedDict()
 
-    def link(self, vertex_shader, fragment_shader):
-        # There are more types of shaders, but for now we only allow v&f.
+    def link(self, vertex_shader, fragment_shader, geometry_shader=None):
+        # We allow an optional geometry shader, but not tesselation (yet?)
         self.program = GL.glCreateProgram()
         if not isinstance(vertex_shader, Shader):
             vertex_shader = Shader(source=vertex_shader)
         if not isinstance(fragment_shader, Shader):
             fragment_shader = Shader(source=fragment_shader)
+        if geometry_shader is not None and not isinstance(geometry_shader, Shader):
+            geometry_shader = Shader(source=geometry_shader)
         self.vertex_shader = vertex_shader
         self.fragment_shader = fragment_shader
+        self.geometry_shader = geometry_shader
         GL.glAttachShader(self.program, vertex_shader.shader)
         GL.glAttachShader(self.program, fragment_shader.shader)
+        if geometry_shader is not None:
+            GL.glAttachShader(self.program, geometry_shader.shader)
         GL.glLinkProgram(self.program)
         result = GL.glGetProgramiv(self.program, GL.GL_LINK_STATUS)
         if not result:
             raise RuntimeError(GL.glGetProgramInfoLog(self.program))
         vertex_shader.delete_shader()
         fragment_shader.delete_shader()
+        if geometry_shader is not None:
+            geometry_shader.delete_shader()
         self.introspect()
 
     def introspect(self):
@@ -185,7 +197,7 @@ class Shader(traitlets.HasTraits):
     source = traitlets.Any()
     shader_name = traitlets.CUnicode()
     info = traitlets.CUnicode()
-    shader_type = traitlets.CaselessStrEnum(("vertex", "fragment"))
+    shader_type = traitlets.CaselessStrEnum(("vertex", "fragment", "geometry"))
     blend_func = traitlets.Tuple(
         GLValue(), GLValue(), default_value=("src alpha", "dst alpha")
     )
@@ -275,7 +287,7 @@ class Shader(traitlets.HasTraits):
 
 class ShaderTrait(traitlets.TraitType):
     default_value = None
-    info_text = "A shader (vertex or fragment)"
+    info_text = "A shader (vertex, fragment or geometry)"
 
     def validate(self, obj, value):
         if isinstance(value, str):
