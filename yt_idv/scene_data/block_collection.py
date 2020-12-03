@@ -4,12 +4,7 @@ import numpy as np
 import traitlets
 from yt.data_objects.data_containers import YTDataContainer
 
-from yt_idv.opengl_support import (
-    Texture3D,
-    VertexArray,
-    VertexAttribute,
-    compute_box_geometry,
-)
+from yt_idv.opengl_support import Texture3D, VertexArray, VertexAttribute
 from yt_idv.scene_data.base_data import SceneData
 
 
@@ -30,7 +25,7 @@ class BlockCollection(SceneData):
 
     @traitlets.default("vertex_array")
     def _default_vertex_array(self):
-        return VertexArray(name="block_info", each=36)
+        return VertexArray(name="block_info", each=1)
 
     def add_data(self, field, no_ghost=False):
         r"""Adds a source of data for the block collection.
@@ -59,13 +54,11 @@ class BlockCollection(SceneData):
             self.min_val = min(self.min_val, np.nanmin(np.abs(block.my_data[0]).min()))
             self.max_val = max(self.max_val, np.nanmax(np.abs(block.my_data[0]).max()))
             self.blocks[id(block)] = (i, block)
-            vert.append(compute_box_geometry(block.LeftEdge, block.RightEdge))
-            dds = (block.RightEdge - block.LeftEdge) / block.my_data[0].shape
-            n = int(vert[-1].size) // 4
-            dx.append([dds.astype("f4") for _ in range(n)])
-            le.append([block.LeftEdge.astype("f4") for _ in range(n)])
-            re.append([block.RightEdge.astype("f4") for _ in range(n)])
-            # Compute the extent
+            vert.append([1.0, 1.0, 1.0, 1.0])
+            dds = (block.RightEdge - block.LeftEdge) / block.source_mask.shape
+            dx.append(dds.tolist())
+            le.append(block.LeftEdge.tolist())
+            re.append(block.RightEdge.tolist())
             left_extent = []
             right_extent = []
             if not block.source_mask.any():
@@ -94,10 +87,10 @@ class BlockCollection(SceneData):
         RE = np.array([b.RightEdge for i, b in self.blocks.values()]).max(axis=0)
         self.diagonal = np.sqrt(((RE - LE) ** 2).sum())
         # Now we set up our buffer
-        vert = np.concatenate(vert)
-        dx = np.concatenate(dx)
-        le = np.concatenate(le)
-        re = np.concatenate(re)
+        vert = np.array(vert, dtype="f4")
+        dx = np.array(dx, dtype="f4")
+        le = np.array(le, dtype="f4")
+        re = np.array(re, dtype="f4")
         scale = np.ones(4)
         scale[:3] = 1.0 / (right_max - left_min).max()
         translate = np.eye(4)
