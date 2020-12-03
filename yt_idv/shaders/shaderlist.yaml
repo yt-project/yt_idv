@@ -121,19 +121,22 @@ component_shaders:
     default_value: max_intensity
     max_intensity:
       description: Maximum Intensity
-      first_vertex: default
+      first_vertex: grid_position
+      first_geometry: grid_expand
       first_fragment: max_intensity
       second_vertex: passthrough
       second_fragment: apply_colormap
     projection:
       description: Projective integration
-      first_vertex: default
+      first_vertex: grid_position
+      first_geometry: grid_expand
       first_fragment: projection
       second_vertex: passthrough
       second_fragment: apply_colormap
     transfer_function:
       description: Color transfer function
-      first_vertex: default
+      first_vertex: grid_position
+      first_geometry: grid_expand
       first_fragment: transfer_function
       second_vertex: passthrough
       second_fragment: passthrough
@@ -141,7 +144,8 @@ component_shaders:
     default_value: default
     default:
       description: Default
-      first_vertex: default
+      first_vertex: grid_position
+      first_geometry: grid_expand
       first_fragment: draw_blocks
       second_vertex: passthrough
       second_fragment: passthrough
