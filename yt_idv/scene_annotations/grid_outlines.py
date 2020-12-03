@@ -3,31 +3,22 @@ import traitlets
 from OpenGL import GL
 
 from yt_idv.scene_annotations.base_annotation import SceneAnnotation
-from yt_idv.scene_data.box import BoxData
+from yt_idv.scene_data.grid_positions import GridPositions
 
 
-class BoxAnnotation(SceneAnnotation):
-    name = "box_outline"
-    data = traitlets.Instance(BoxData)
-    box_width = traitlets.CFloat(0.05)
+class GridOutlines(SceneAnnotation):
+    """
+    A class that renders outlines of grid positions.
+    """
+
+    name = "grid_outline"
+    data = traitlets.Instance(GridPositions)
+    box_width = traitlets.CFloat(0.25)  # quarter of a dx
     box_color = traitlets.Tuple((1.0, 1.0, 1.0), trait=traitlets.CFloat())
     box_alpha = traitlets.CFloat(1.0)
 
     def draw(self, scene, program):
-        each = self.data.vertex_array.each
-        GL.glDrawArrays(GL.GL_TRIANGLES, 0, each)
-
-    def render_gui(self, imgui, renderer):
-        changed = super(BoxAnnotation, self).render_gui(imgui, renderer)
-        _, bw = imgui.slider_float("Width", self.box_width, 0.001, 0.250)
-        if _:
-            self.box_width = bw
-        changed = changed or _
-        _, ba = imgui.slider_float("Alpha", self.box_alpha, 0.0, 1.0)
-        if _:
-            self.box_alpha = ba
-        changed = changed or _
-        return changed
+        GL.glDrawArrays(GL.GL_POINTS, 0, len(self.data.grid_list))
 
     def _set_uniforms(self, scene, shader_program):
         cam = scene.camera
@@ -38,5 +29,5 @@ class BoxAnnotation(SceneAnnotation):
         )
         shader_program._set_uniform("camera_pos", cam.position)
         shader_program._set_uniform("box_width", self.box_width)
-        shader_program._set_uniform("box_alpha", self.box_alpha)
         shader_program._set_uniform("box_color", np.array(self.box_color))
+        shader_program._set_uniform("box_alpha", self.box_alpha)
