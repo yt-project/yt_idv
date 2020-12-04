@@ -1,10 +1,10 @@
 #version 330 core
 
-in float fragmentData;
-out vec4 color;
+in float fragment_data;
+out vec4 output_color;
 
 void main()
 {
-    color = vec4(fragmentData);
-    color.a = 1.0;
+    output_color = vec4(fragment_data);
+    output_color.a = 1.0;
 }

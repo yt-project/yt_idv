@@ -1,3 +1,4 @@
+import numpy as np
 import traitlets
 from yt.data_objects.data_containers import YTDataContainer
 from yt.utilities.lib.mesh_triangulation import triangulate_mesh
@@ -41,13 +42,14 @@ class MeshData(SceneData):
     def add_data(self, field):
         v, d, i = self.get_mesh_data(self.data_source, field)
         v.shape = (v.size // 3, 3)
+        v = np.concatenate([v, np.ones((v.shape[0], 1))], axis=-1)
         d.shape = (d.size, 1)
         i.shape = (i.size, 1)
         i = i.astype("uint32")
         self.vertex_array.attributes.append(
-            VertexAttribute(name="vertexPosition_modelspace", data=v)
+            VertexAttribute(name="model_vertex", data=v)
         )
-        self.vertex_array.attributes.append(VertexAttribute(name="vertexData", data=d))
+        self.vertex_array.attributes.append(VertexAttribute(name="vertex_data", data=d))
         self.vertex_array.indices = i
         self.size = i.size
 
