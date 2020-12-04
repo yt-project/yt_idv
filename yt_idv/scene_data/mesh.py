@@ -42,14 +42,17 @@ class MeshData(SceneData):
     def add_data(self, field):
         v, d, i = self.get_mesh_data(self.data_source, field)
         v.shape = (v.size // 3, 3)
-        v = np.concatenate([v, np.ones((v.shape[0], 1))], axis=-1)
+        v = np.concatenate([v, np.ones((v.shape[0], 1))], axis=-1).astype("f4")
         d.shape = (d.size, 1)
         i.shape = (i.size, 1)
         i = i.astype("uint32")
+        # d[:] = np.mgrid[0.0:1.0:1j*d.size].astype("f4")[:,None]
         self.vertex_array.attributes.append(
             VertexAttribute(name="model_vertex", data=v)
         )
-        self.vertex_array.attributes.append(VertexAttribute(name="vertex_data", data=d))
+        self.vertex_array.attributes.append(
+            VertexAttribute(name="vertex_data", data=d.astype("f4"))
+        )
         self.vertex_array.indices = i
         self.size = i.size
 
