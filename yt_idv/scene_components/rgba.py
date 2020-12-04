@@ -13,7 +13,7 @@ class RGBADisplay(SceneComponent):
     priority = 20
 
     def _set_uniforms(self, scene, shader_program):
-        shader_program._set_uniform("cm_texture", 0)
+        shader_program._set_uniform("cm_tex", 0)
 
     def draw(self, scene, program):
         with self.data.colormap_texture.bind(0):

@@ -197,8 +197,8 @@ class SceneComponent(traitlets.HasTraits):
                 with self.program2.enable() as p2:
                     with scene.bind_buffer():
                         p2._set_uniform("cmap", 0)
-                        p2._set_uniform("fb_texture", 1)
-                        p2._set_uniform("db_texture", 2)
+                        p2._set_uniform("fb_tex", 1)
+                        p2._set_uniform("db_tex", 2)
                         # Note that we use cmap_min/cmap_max, not
                         # self.cmap_min/self.cmap_max.
                         p2._set_uniform("cmap_min", cmap_min)
