@@ -41,3 +41,8 @@ jobs:
       run: source ./tests/ci_install.sh
     - name: Run Tests
       run: pytest --html=report.html --self-contained-html
+    - uses: actions/upload-artifact@v2
+      name: Upload pytest report
+      with:
+        name: pytest-report
+        path: report.html
