@@ -18,10 +18,11 @@ jobs:
         python-version: ${{ matrix.python-version }}
     - name: Install dependencies
       run: |
+        sudo apt install libgl1-mesa-dri libegl1-mesa libgbm1
         python -m pip install --upgrade pip
         python -m pip install flake8 pytest
         if [ -f tests/test_requirements.txt ]; then python -m pip install -r tests/test_requirements.txt; fi
-        python -m pip install --upgrade numpy
+        python -m pip install --upgrade numpy PyOpenGL_accelerate
     - name: Setup yt_idv
       run: |
         python -m pip install -e .
