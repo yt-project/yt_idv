@@ -19,8 +19,8 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install flake8 pytest
-        if [ -f tests/test_requirements.txt ]; then pip install -r tests/test_requirements.txt; fi
+        python -m pip install flake8 pytest
+        if [ -f tests/test_requirements.txt ]; then python -m pip install -r tests/test_requirements.txt; fi
     - name: Setup yt_idv
       run: |
         python -m pip install -e .
