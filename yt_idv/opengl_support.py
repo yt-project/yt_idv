@@ -221,7 +221,9 @@ class ColormapTexture(Texture1D):
 
     @traitlets.validate("colormap_name")
     def _validate_name(self, proposal):
-        if proposal["value"] not in cm.cmap_d:
+        try:
+            cm.get_cmap(proposal["value"])
+        except ValueError:
             raise traitlets.TraitError(
                 "Colormap name needs to be known by" "matplotlib"
             )

@@ -10,7 +10,12 @@ class BoxAnnotation(SceneAnnotation):
     name = "box_outline"
     data = traitlets.Instance(BoxData)
     box_width = traitlets.CFloat(0.05)
-    box_color = traitlets.Tuple((1.0, 1.0, 1.0), trait=traitlets.CFloat())
+    box_color = traitlets.Tuple(
+        traitlets.CFloat(),
+        traitlets.CFloat(),
+        traitlets.CFloat(),
+        default_value=(1.0, 1.0, 1.0),
+    )
     box_alpha = traitlets.CFloat(1.0)
 
     def draw(self, scene, program):
