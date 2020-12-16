@@ -23,7 +23,13 @@ class SceneComponent(traitlets.HasTraits):
     name = "undefined"
     priority = traitlets.CInt(0)
     visible = traitlets.Bool(True)
-    display_bounds = traitlets.Tuple((0.0, 1.0, 0.0, 1.0), trait=traitlets.CFloat())
+    display_bounds = traitlets.Tuple(
+        traitlets.CFloat(),
+        traitlets.CFloat(),
+        traitlets.CFloat(),
+        traitlets.CFloat(),
+        default_value=(0.0, 1.0, 0.0, 1.0),
+    )
     clear_region = traitlets.Bool(False)
 
     render_method = traitlets.Unicode(allow_none=True)

@@ -257,5 +257,6 @@ class SceneGraph(traitlets.HasTraits):
         c.update_orientation(0, 0, 0, 0)
 
         scene = SceneGraph(camera=c)
-        scene.add_volume(data_source, field, no_ghost=no_ghost)
+        if field is not None:
+            scene.add_volume(data_source, field, no_ghost=no_ghost)
         return scene

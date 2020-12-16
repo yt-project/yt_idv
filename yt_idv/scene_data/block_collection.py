@@ -11,8 +11,8 @@ from yt_idv.scene_data.base_data import SceneData
 class BlockCollection(SceneData):
     name = "block_collection"
     data_source = traitlets.Instance(YTDataContainer)
-    texture_objects = traitlets.Dict(trait=traitlets.Instance(Texture3D))
-    bitmap_objects = traitlets.Dict(trait=traitlets.Instance(Texture3D))
+    texture_objects = traitlets.Dict(value_trait=traitlets.Instance(Texture3D))
+    bitmap_objects = traitlets.Dict(value_trait=traitlets.Instance(Texture3D))
     blocks = traitlets.Dict(default_value=())
     scale = traitlets.Bool(False)
     blocks_by_grid = traitlets.Instance(defaultdict, (list,))
