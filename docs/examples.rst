@@ -59,3 +59,6 @@ widget that is auto-updated when the scene runs.
    rc.add_scene(dd, "density", no_ghost=True)
    rc.run()
    rc.add_image()
+
+Note that if you have access to OSMesa but not EGL, you can use the OSMesa
+rendering context instead.
