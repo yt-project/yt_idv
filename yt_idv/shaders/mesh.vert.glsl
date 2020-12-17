@@ -1,11 +1,8 @@
-#version 330 core
-
-in vec3 vertexPosition_modelspace;
-in float vertexData;
-out float fragmentData;
-uniform mat4 model_to_clip;
+in vec4 model_vertex;
+in float vertex_data;
+out float fragment_data;
 void main()
 {
-    gl_Position = model_to_clip * vec4(vertexPosition_modelspace, 1);
-    fragmentData = vertexData;
+    gl_Position = projection * modelview * model_vertex;
+    fragment_data = vertex_data;
 }

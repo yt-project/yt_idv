@@ -1,5 +1,3 @@
-#version 330 core
-
 // Input vertex data, different for all executions of this shader.
 in vec3 vertexPosition_modelspace;
 
