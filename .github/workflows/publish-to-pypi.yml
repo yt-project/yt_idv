@@ -18,12 +18,11 @@ jobs:
           pip install
           build
           --user
-    - name: Build wheel and source tarball
+    - name: Build source tarball
       run: >-
           python -m
           build
           --sdist
-          --wheel
           --outdir dist/
           .
     - name: Publish distribution to Test PyPI
