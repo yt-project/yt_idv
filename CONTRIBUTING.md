@@ -127,3 +127,9 @@ $ git push --tags
 ```
 
 Travis will then deploy to PyPI if tests pass.
+
+## Releasing
+
+When a new tag is pushed, a new source release will be pushed up to PyPI.  You
+don't need to do much else besides that -- the github action should take care
+of it!
