@@ -1,4 +1,3 @@
-#version 330
 flat in vec4 v_model;
 flat in vec3 v_camera_pos;
 flat in vec3 dx;
@@ -8,15 +7,6 @@ flat in mat4 inverse_proj;
 flat in mat4 inverse_mvm;
 flat in mat4 inverse_pmvm;
 out vec4 output_color;
-
-uniform vec3 camera_pos;
-uniform mat4 modelview;
-uniform mat4 projection;
-
-uniform sampler3D ds_tex;
-uniform sampler3D bitmap_tex;
-//layout (binding = 1) uniform sampler2D depth_tex;
-uniform vec4 viewport; // (offset_x, offset_y, 1 / screen_x, 1 / screen_y)
 
 bool within_bb(vec3 pos)
 {

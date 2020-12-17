@@ -1,8 +1,5 @@
-#version 330 core
-
 in vec4 rgba_values;
 in float x_coord;
-uniform int channel;
 
 void main() {
     // our *actual* viewport goes from -1 to 1 in x and y, with 0 everywhere for z.

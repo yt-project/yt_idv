@@ -4,6 +4,7 @@
 
 from setuptools import Extension, find_packages, setup  # NOQA
 from Cython.Build import cythonize
+import numpy
 
 with open("README.md") as readme_file:
     readme = readme_file.read()
@@ -61,4 +62,5 @@ setup(
     version="0.1.0",
     zip_safe=False,
     ext_modules=cythonize("yt_idv/*.pyx"),
+    include_dirs=[numpy.get_include()],
 )

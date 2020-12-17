@@ -13,29 +13,23 @@ class OSMesaRenderingContext(OffscreenRenderingContext):
         # Now we create our necessary bits.
         config_attribs = np.array(
             [
-                osmesa.OSMESA_RED_SIZE,
-                8,
-                osmesa.OSMESA_GREEN_SIZE,
-                8,
-                osmesa.OSMESA_BLUE_SIZE,
-                8,
-                osmesa.OSMESA_DEPTH_SIZE,
+                osmesa.OSMESA_DEPTH_BITS,
                 24,
-                osmesa.OSMESA_STENCIL_SIZE,
+                osmesa.OSMESA_STENCIL_BITS,
                 8,
-                osmesa.OSMESA_COLOR_BUFFER_TYPE,
-                osmesa.OSMESA_RGB_BUFFER,
-                osmesa.OSMESA_SURFACE_TYPE,
-                osmesa.OSMESA_PBUFFER_BIT,
-                osmesa.OSMESA_RENDERABLE_TYPE,
-                osmesa.OSMESA_OPENGL_BIT,
-                osmesa.OSMESA_CONFIG_CAVEAT,
-                osmesa.OSMESA_NONE,
-                osmesa.OSMESA_NONE,
+                osmesa.OSMESA_FORMAT,
+                osmesa.OSMESA_RGBA,
+                osmesa.OSMESA_PROFILE,
+                osmesa.OSMESA_CORE_PROFILE,
+                0,
             ],
             dtype="i4",
         )
-        self.config_attribs = config_attribs
+        self.context = osmesa.OSMesaCreateContextAttribs(config_attribs, None)
+        self._buffer = np.zeros((self.height, self.width, 4), dtype="u1")
+        osmesa.OSMesaMakeCurrent(
+            self.context, self._buffer, GL.GL_UNSIGNED_BYTE, self.height, self.width
+        )
 
         GL.glClearColor(0.0, 0.0, 0.0, 0.0)
         GL.glClear(GL.GL_COLOR_BUFFER_BIT | GL.GL_DEPTH_BUFFER_BIT)

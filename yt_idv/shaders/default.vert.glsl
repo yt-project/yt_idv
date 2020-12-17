@@ -1,4 +1,3 @@
-#version 330
 in vec4 model_vertex; // The location of the vertex in model space
 in vec3 in_dx;
 in vec3 in_left_edge;
@@ -11,14 +10,6 @@ flat out mat4 inverse_pmvm;
 flat out vec3 dx;
 flat out vec3 left_edge;
 flat out vec3 right_edge;
-
-//// Uniforms
-uniform vec3 camera_pos;
-uniform mat4 modelview;
-uniform mat4 projection;
-
-uniform float near_plane;
-uniform float far_plane;
 
 void main()
 {
