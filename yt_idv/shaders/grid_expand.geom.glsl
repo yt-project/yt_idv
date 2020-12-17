@@ -1,10 +1,5 @@
-#version 330 core
-
 layout ( points ) in;
 layout ( triangle_strip, max_vertices = 14 ) out;
-
-uniform mat4 modelview;
-uniform mat4 projection;
 
 flat in vec3 vdx[];
 flat in vec3 vleft_edge[];

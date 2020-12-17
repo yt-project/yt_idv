@@ -1,15 +1,6 @@
-#version 330 core
-
 in vec2 UV;
 
 out vec4 color;
-
-uniform sampler2D fb_tex;
-uniform sampler2D db_tex;
-uniform sampler1D cm_tex;
-uniform float cmap_min;
-uniform float cmap_max;
-uniform float cmap_log;
 
 void main(){
    float scaled = texture(fb_tex, UV).x;

@@ -1,10 +1,6 @@
-#version 330 core
-
 in vec2 UV;
 
 out vec4 color;
-uniform sampler2D fb_tex;
-uniform sampler2D db_tex;
 
 void main(){
    float val = texture(fb_tex, UV).r;

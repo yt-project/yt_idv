@@ -1,4 +1,3 @@
-#version 330
 flat in vec3 dx;
 flat in vec3 left_edge;
 flat in vec3 right_edge;
@@ -6,15 +5,6 @@ flat in mat4 inverse_proj;
 flat in mat4 inverse_mvm;
 flat in mat4 inverse_pmvm;
 out vec4 output_color;
-
-uniform vec4 viewport; // (offset_x, offset_y, 1 / screen_x, 1 / screen_y)
-uniform float box_width;
-uniform vec3 box_color;
-uniform float box_alpha;
-
-uniform vec3 camera_pos;
-uniform mat4 modelview;
-uniform mat4 projection;
 
 void main()
 {

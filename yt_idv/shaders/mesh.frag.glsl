@@ -1,5 +1,3 @@
-#version 330 core
-
 in float fragment_data;
 out vec4 output_color;
 
