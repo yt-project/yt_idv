@@ -59,7 +59,7 @@ setup(
     setup_requires=setup_requirements,
     test_suite="tests",
     tests_require=test_requirements,
-    url="https://github.com/data-exp-lab/yt_idv",
+    url="https://github.com/yt-project/yt_idv",
     version="0.2.1",
     zip_safe=False,
     ext_modules=cythonize("yt_idv/*.pyx"),
