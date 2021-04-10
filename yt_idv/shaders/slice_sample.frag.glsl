@@ -40,7 +40,6 @@ void main()
     vec3 ray_position = (inverse_pmvm * clipPos).xyz;
 
     // Five samples
-    vec3 step_size = dx/5.0;
     vec3 dir = normalize(v_camera_pos.xyz - ray_position);
     dir = max(abs(dir), 0.0001) * sign(dir);
     vec4 curr_color = vec4(0.0);

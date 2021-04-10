@@ -131,8 +131,8 @@ class BlockRendering(SceneComponent):
         shader_program._set_uniform("tf_min", self.tf_min)
         shader_program._set_uniform("tf_max", self.tf_max)
         shader_program._set_uniform("tf_log", float(self.tf_log))
-        shader_program._set_uniform("slice_normal", np.array(self.slice_position))
-        shader_program._set_uniform("slice_position", np.array(self.slice_normal))
+        shader_program._set_uniform("slice_normal", np.array(self.slice_normal))
+        shader_program._set_uniform("slice_position", np.array(self.slice_position))
 
     def _get_sanitized_iso_layers(self):
         # return the sanitized layers
