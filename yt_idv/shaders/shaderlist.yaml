@@ -125,6 +125,13 @@ shader_definitions:
       blend_func:
       - one
       - one
+    slice_sample:
+      info: Slice through a block collection
+      source: slice_sample.frag.glsl
+      depth_test: less
+      blend_func:
+      - one
+      - zero
       blend_equation: func add
   vertex:
     default:
@@ -227,6 +234,13 @@ component_shaders:
       first_fragment: transfer_function
       second_vertex: passthrough
       second_fragment: passthrough
+    slice:
+      description: Slice
+      first_vertex: grid_position
+      first_geometry: grid_expand
+      first_fragment: slice_sample
+      second_vertex: passthrough
+      second_fragment: apply_colormap
   block_outline:
     default_value: default
     default:

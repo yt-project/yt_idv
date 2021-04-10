@@ -26,6 +26,8 @@ class BlockRendering(SceneComponent):
     tf_min = traitlets.CFloat(0.0)
     tf_max = traitlets.CFloat(1.0)
     tf_log = traitlets.Bool(True)
+    slice_position = traitlets.Tuple((0.5, 0.5, 0.5), trait=traitlets.CFloat())
+    slice_normal = traitlets.Tuple((1.0, 0.0, 0.0), trait=traitlets.CFloat())
 
     priority = 10
 
@@ -129,6 +131,8 @@ class BlockRendering(SceneComponent):
         shader_program._set_uniform("tf_min", self.tf_min)
         shader_program._set_uniform("tf_max", self.tf_max)
         shader_program._set_uniform("tf_log", float(self.tf_log))
+        shader_program._set_uniform("slice_normal", np.array(self.slice_position))
+        shader_program._set_uniform("slice_position", np.array(self.slice_normal))
 
     def _get_sanitized_iso_layers(self):
         # return the sanitized layers
