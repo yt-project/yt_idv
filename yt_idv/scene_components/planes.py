@@ -2,12 +2,12 @@ import traitlets
 from OpenGL import GL
 
 from yt_idv.scene_components.base_component import SceneComponent
-from yt_idv.scene_data.plane import PlaneData
+from yt_idv.scene_data.plane import BasePlane
 
 
 class Plane(SceneComponent):
     name = "image_plane"
-    data = traitlets.Instance(PlaneData)
+    data = traitlets.Instance(BasePlane)
     _plane_data_uniforms = ["plane_pt", "basis_u", "basis_v"]
 
     def draw(self, scene, program):
