@@ -10,5 +10,6 @@ void main()
     gl_FragDepth = 0.0;
     if(val == 0) discard;
     output_color = vec4(val);
+    output_color[3] = 1.0;
 }
 

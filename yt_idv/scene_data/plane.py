@@ -37,52 +37,33 @@ class BasePlane(SceneData):
 
     def _set_plane(self):
 
-        # the plane's definition
-
-        # these should all come from input
-
-        # doing in normalized units... would need to scale all these when
-        # pulling from data
-        # normal = np.array([0., 1., 1.])  # normal vector to plane
         plane_origin = self.center  # true center point of the plane, will use this to translate
         self.plane_width = self.width  # in-plane width
         self.plane_height = self.height  # in-plane height
 
-
-        # build the in-plane coordinate vectors
+        # set the in-plane coordinate vectors, basis_u = east, basis_v = north
         unit_normal = self.normal / np.linalg.norm(self.normal)
-        if unit_normal[0] == 0 and unit_normal[1] == 0:
-            # we're aligned with the z-axis! no need for fancy calculations
-            basis_u = np.array([1., 0., 0.])
-            basis_v = np.array([0., 1., 0.])
+        if self.basis_u is None and self.basis_v is None:
+            if unit_normal[0] == 0 and unit_normal[1] == 0:
+                basis_u = np.array([1., 0., 0.])
+                basis_v = np.array([0., 1., 0.])
+            elif unit_normal[1] == 0 and unit_normal[2] == 0:
+                basis_u = np.array([0., 1., 0.])
+                basis_v = np.array([0., 0., 1.])
+            elif unit_normal[0] == 0 and unit_normal[2] == 0:
+                basis_u = np.array([1., 0., 0.])
+                basis_v = np.array([0., 0., 1.])
         else:
-            # first basis vector is the normal rotated 90 degrees into the plane.
-            # pythagoras results in:
-            a0, b0, c0 = [unit_normal[i] for i in range(3)]
-            absqr = a0**2 + b0**2
-            a1 = -c0 * a0 / np.sqrt(absqr)
-            b1 = -c0 * np.sqrt(1 - a0**2/absqr)
-            c1 = np.sqrt(absqr)
-            basis_v = np.array([a1, b1, c1], dtype="f4")
-            # use cross product to find second basis vector
-            basis_u = np.cross(basis_v, unit_normal)
-
-        # print("\n\n\n\n\n")
-        # print(basis_v)
-        # print(basis_u)
-        # print(unit_normal)
-        # print("\n\n\n\n\n")
+            basis_u = self.basis_u
+            basis_v = self.basis_v
 
         # all of these will get set as uniforms for the vertex shader (that
         # happens in scene_components.planes.ImagePlane._set_uniforms when adding
         # data to the scene).
         self.plane_normal = unit_normal.astype("f4")
-        self.basis_u = basis_u.astype("f4")
-        self.basis_v = basis_v.astype("f4")
-        # gaphics origin is 0.5, 0.5, 0.5, so offset our plane_origin! maybe this
-        # should go in the shader tho?
-        self.plane_pt = (plane_origin + np.array([.5, .5, .5])).astype("f4")
-        # self.plane_pt = plane_origin.astype("f4")
+        self.basis_u = basis_u.astype("f4")  # east
+        self.basis_v = basis_v.astype("f4")  # north
+        self.plane_pt = plane_origin.astype("f4")
 
 
 
@@ -145,16 +126,18 @@ class PlaneData(BasePlane):
             center = np.zeros((3,))
             center[self.data_source.axis] = self.data_source.coord
         elif dstype == YTCuttingPlane:
-            normal = self.data_source.normal.value
+            self.basis_v = self.data_source.orienter.north_vector
+            normal = self.data_source.orienter.normal_vector
+            self.basis_u = np.cross(normal, self.basis_v)
             center = self.data_source.center.value
         elif isinstance(self.data_source, YTProj):
             normal = np.zeros((3,))
             normal[self.data_source.axis] = 1.
             center = np.zeros((3,))
-            center[self.data_source.axis] = 1. # always on the edge
+            center[self.data_source.axis] = 1.
         else:
             raise ValueError(f"Unexpected data_source type. data_source must be one of"
-                             f" YTSlice, YTCuttingPlane or YTproj but found {dstype}.")
+                             f" YTSlice or YTproj but found {dstype}.")
 
         self.center = center
         self.normal = normal

@@ -14,7 +14,7 @@ rc.scene = SceneGraph(camera=c)
 
 ds = yt.load("Enzo_64/RD0005/RedshiftOutput0005")
 
-slc = ds.slice(0,0.5)
+slc = ds.slice(0, 0.5)
 slice_data = PlaneData(data_source=slc)
 slice_data.add_data(("enzo", "Density"), 1., (400, 400))
 slice_render = Plane(data=slice_data, cmap_log=True)
