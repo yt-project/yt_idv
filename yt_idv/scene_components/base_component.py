@@ -339,3 +339,6 @@ class SceneComponent(traitlets.HasTraits):
         else:
             print(f"Computed new cmap values {self.cmap_min} - {self.cmap_max}")
         self._cmap_bounds_invalid = False
+
+
+_cmaps = ["arbre", "viridis", "magma", "doom"]

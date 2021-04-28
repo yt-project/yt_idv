@@ -6,7 +6,7 @@ from OpenGL import GL
 
 from yt_idv.gui_support import add_popup_help
 from yt_idv.opengl_support import TransferFunctionTexture
-from yt_idv.scene_components.base_component import SceneComponent
+from yt_idv.scene_components.base_component import SceneComponent, _cmaps
 from yt_idv.scene_data.block_collection import BlockCollection
 from yt_idv.shader_objects import component_shaders
 
@@ -165,3 +165,4 @@ class BlockRendering(SceneComponent):
             (iso_val - data_min) / (data_max - data_min) for iso_val in self.iso_layers
         ]
         return normalized_isovals
+

@@ -1,7 +1,7 @@
 import traitlets
 from OpenGL import GL
 
-from yt_idv.scene_components.base_component import SceneComponent
+from yt_idv.scene_components.base_component import SceneComponent, _cmaps
 from yt_idv.scene_data.plane import BasePlane
 
 
@@ -22,3 +22,12 @@ class Plane(SceneComponent):
         for attstr in self._plane_data_uniforms:
             shader_program._set_uniform(attstr, getattr(self.data, attstr))
 
+    def render_gui(self, imgui, renderer):
+        changed = super().render_gui(imgui, renderer)
+        _, self.cmap_log = imgui.checkbox("Take log", self.cmap_log)
+        changed = changed or _
+        _, cmap_index = imgui.listbox(
+            "Colormap", _cmaps.index(self.colormap.colormap_name), _cmaps
+        )
+        if _:
+            self.colormap.colormap_name = _cmaps[cmap_index]
