@@ -8,7 +8,7 @@ from yt_idv.scene_data.plane import BasePlane
 class Plane(SceneComponent):
     name = "image_plane"
     data = traitlets.Instance(BasePlane)
-    _plane_data_uniforms = ["plane_pt", "basis_u", "basis_v"]
+    _plane_data_uniforms = ["plane_pt", "north_vec", "east_vec"]
 
     def draw(self, scene, program):
         the_tex = self.data.the_texture

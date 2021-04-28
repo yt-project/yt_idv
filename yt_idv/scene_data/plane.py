@@ -30,8 +30,8 @@ class BasePlane(SceneData):
     # calculated or sterialized:
     plane_normal = None  # sanitized
     plane_pt = None  # sanitized
-    basis_u = None   # calculated
-    basis_v = None   # calculated
+    east_vec = None   # calculated
+    north_vec = None   # calculated
     plane_width = None  # sanitized
     plane_height = None  # sanitized
 
@@ -43,34 +43,34 @@ class BasePlane(SceneData):
 
         # set the in-plane coordinate vectors, basis_u = east, basis_v = north
         unit_normal = self.normal / np.linalg.norm(self.normal)
-        if self.basis_u is None and self.basis_v is None:
+        if self.east_vec is None or self.north_vec is None:
             if unit_normal[0] == 0 and unit_normal[1] == 0:
-                basis_u = np.array([1., 0., 0.])
-                basis_v = np.array([0., 1., 0.])
+                east_vec = np.array([1., 0., 0.])
+                north_vec = np.array([0., 1., 0.])
             elif unit_normal[1] == 0 and unit_normal[2] == 0:
-                basis_u = np.array([0., 1., 0.])
-                basis_v = np.array([0., 0., 1.])
+                east_vec = np.array([0., 1., 0.])
+                north_vec = np.array([0., 0., 1.])
             elif unit_normal[0] == 0 and unit_normal[2] == 0:
-                basis_u = np.array([1., 0., 0.])
-                basis_v = np.array([0., 0., 1.])
+                east_vec = np.array([1., 0., 0.])
+                north_vec = np.array([0., 0., 1.])
+            else:
+                raise ValueError("It looks like your plane is not normal to an axis, please"
+                                 " set east_vec and north_vec before calling add_data().")
         else:
-            basis_u = self.basis_u
-            basis_v = self.basis_v
+            east_vec = self.east_vec
+            north_vec = self.north_vec
 
         # all of these will get set as uniforms for the vertex shader (that
         # happens in scene_components.planes.ImagePlane._set_uniforms when adding
         # data to the scene).
         self.plane_normal = unit_normal.astype("f4")
-        self.basis_u = basis_u.astype("f4")  # east
-        self.basis_v = basis_v.astype("f4")  # north
+        self.east_vec = east_vec.astype("f4")  # east
+        self.north_vec = north_vec.astype("f4")  # north
         self.plane_pt = plane_origin.astype("f4")
-
-
 
     def add_data(self):
 
         self._set_plane()
-
         # our in-plane coordinates. same as texture coordinates
         verts = np.array([
             [1, 0],
@@ -126,9 +126,9 @@ class PlaneData(BasePlane):
             center = np.zeros((3,))
             center[self.data_source.axis] = self.data_source.coord
         elif dstype == YTCuttingPlane:
-            self.basis_v = self.data_source.orienter.north_vector
+            self.north_vec = self.data_source.orienter.north_vector
             normal = self.data_source.orienter.normal_vector
-            self.basis_u = np.cross(normal, self.basis_v)
+            self.east_vec = np.cross(normal, self.north_vec)
             center = self.data_source.center.value
         elif isinstance(self.data_source, YTProj):
             normal = np.zeros((3,))
