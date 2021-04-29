@@ -14,12 +14,13 @@ rc.scene = SceneGraph(camera=c)
 
 ds = yt.load("Enzo_64/RD0005/RedshiftOutput0005")
 
-slc = ds.slice(0, 0.5)
-slice_data = PlaneData(data_source=slc)
-slice_data.add_data(("enzo", "Density"), 1., (400, 400))
-slice_render = Plane(data=slice_data, cmap_log=True)
+for slice_axis in [0, 1]:
+    slc = ds.slice(slice_axis, 0.5)
+    slice_data = PlaneData(data_source=slc)
+    slice_data.add_data(("enzo", "Density"), 1., (400, 400))
+    slice_render = Plane(data=slice_data, cmap_log=True)
 
-rc.scene.data_objects.append(slice_data)
-rc.scene.components.append(slice_render)
+    rc.scene.data_objects.append(slice_data)
+    rc.scene.components.append(slice_render)
 
 rc.run()

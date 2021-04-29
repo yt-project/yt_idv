@@ -14,32 +14,26 @@ class BasePlane(SceneData):
     """
     name = "image_plane_data"
 
-    texture_objects = traitlets.Dict(trait=traitlets.Instance(Texture2D))
+    # calculated or sterilized:
+    plane_normal = None
+    plane_pt = None
+    east_vec = None
+    north_vec = None
 
-    # blocks = traitlets.Dict(default_value=())
-    scale = traitlets.Bool(False)
+    # shader-related objects
+    texture_object = traitlets.Instance(Texture2D)
+    texture_id = traitlets.CInt()
     size = traitlets.CInt(-1)
 
-    # required!
-    normal = traitlets.Instance(np.ndarray)
-    center = traitlets.Instance(np.ndarray)
-    data = traitlets.Instance(np.ndarray)
-    width = traitlets.Float()
-    height = traitlets.Float()
+    # required arguments
+    normal = traitlets.Instance(np.ndarray, allow_none=False)
+    center = traitlets.Instance(np.ndarray, allow_none=False)
+    data = traitlets.Instance(np.ndarray, allow_none=False)
+    width = traitlets.Float(allow_none=False)
+    height = traitlets.Float(allow_none=False)
 
-    # calculated or sterialized:
-    plane_normal = None  # sanitized
-    plane_pt = None  # sanitized
-    east_vec = None   # calculated
-    north_vec = None   # calculated
-    plane_width = None  # sanitized
-    plane_height = None  # sanitized
 
     def _set_plane(self):
-
-        plane_origin = self.center  # true center point of the plane, will use this to translate
-        self.plane_width = self.width  # in-plane width
-        self.plane_height = self.height  # in-plane height
 
         # set the in-plane coordinate vectors, basis_u = east, basis_v = north
         unit_normal = self.normal / np.linalg.norm(self.normal)
@@ -60,13 +54,36 @@ class BasePlane(SceneData):
             east_vec = self.east_vec
             north_vec = self.north_vec
 
-        # all of these will get set as uniforms for the vertex shader (that
-        # happens in scene_components.planes.ImagePlane._set_uniforms when adding
-        # data to the scene).
-        self.plane_normal = unit_normal.astype("f4")
-        self.east_vec = east_vec.astype("f4")  # east
-        self.north_vec = north_vec.astype("f4")  # north
-        self.plane_pt = plane_origin.astype("f4")
+        # homogenous scaling matrix from UV texture coords to in-plane coords
+        scale = np.eye(4)
+        scale[0, 0] = self.width
+        scale[1, 1] = self.height
+
+        # homogenous projection matrix from in-plane coords to world at origin
+        to_world = np.eye(4)
+        to_world[0:3, 0] = east_vec
+        to_world[0:3, 1] = north_vec
+        to_world[0:3, 2] = unit_normal
+
+        # homogenous translation matrix
+        translate = np.eye(4)
+        translate[0:3, 3] = self.center
+
+        # combined homogenous projection matrix
+        self.to_worldview = np.matmul(translate, np.matmul(to_world, scale))
+
+        if type(self.data_source) == YTCuttingPlane:
+            # the cutting plane "center" is actually not the true center. So here,
+            # we apply our current projection matrix to the center texture coordinates
+            # to get the true center of our cutting plane. We then add an additional
+            # translation to our to_worldview matrix to get from the cutting plane
+            # "center" to the true center
+            true_center = np.matmul(self.to_worldview, np.array([0.5, 0.5, 0., 1.]).T)
+            extra_translate = np.eye(4)
+            extra_translate[0:3, 3] = self.center - true_center[0:3]
+            self.to_worldview = np.matmul(extra_translate, self.to_worldview)
+
+        self.to_worldview = self.to_worldview.astype("f4")
 
     def add_data(self):
 
@@ -91,7 +108,6 @@ class BasePlane(SceneData):
 
         self.vertex_array.indices = i.astype("uint32")
         self.size = i.size
-        # OOPS https://learnopengl.com/Advanced-OpenGL/Face-culling
         self.build_textures()
 
     @traitlets.default("vertex_array")
@@ -105,7 +121,7 @@ class BasePlane(SceneData):
             texture_name=tex_id, data=bitmap, boundary_x="clamp", boundary_y="clamp"
         )
         self.texture_id = tex_id
-        self.the_texture = texture
+        self.texture_object = texture
 
 
 class PlaneData(BasePlane):
@@ -114,7 +130,7 @@ class PlaneData(BasePlane):
     """
     data_source = traitlets.Instance(YTDataContainer)
 
-    def add_data(self, field, width, frb_dims=(400, 400)):
+    def add_data(self, field, width, frb_dims=(400, 400), translate=0.):
 
         # set our image plane data
         frb = self.data_source.to_frb(width, resolution=frb_dims)
@@ -127,7 +143,9 @@ class PlaneData(BasePlane):
             center[self.data_source.axis] = self.data_source.coord
         elif dstype == YTCuttingPlane:
             self.north_vec = self.data_source.orienter.north_vector
+            self.north_vec = self.north_vec / np.linalg.norm(self.north_vec)
             normal = self.data_source.orienter.normal_vector
+            normal = normal / np.linalg.norm(normal)  # make sure it's a unit normal
             self.east_vec = np.cross(normal, self.north_vec)
             center = self.data_source.center.value
         elif isinstance(self.data_source, YTProj):
@@ -139,13 +157,13 @@ class PlaneData(BasePlane):
             raise ValueError(f"Unexpected data_source type. data_source must be one of"
                              f" YTSlice or YTproj but found {dstype}.")
 
+        if translate != 0:
+            center += translate * normal
+
         self.center = center
         self.normal = normal
-        self.width = frb_dims[0]
-        self.height = frb_dims[1]
+        self.width = width
+        self.height = width
 
         super().add_data()
 
-
-# class MultiPlane(BasePlane)
-# for unifying colormap application

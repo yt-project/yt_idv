@@ -24,19 +24,16 @@ def colormap_list(imgui, scene_obj):
 class Plane(SceneComponent):
     name = "image_plane"
     data = traitlets.Instance(BasePlane)
-    _plane_data_uniforms = ["plane_pt", "north_vec", "east_vec"]
 
     def draw(self, scene, program):
-        the_tex = self.data.the_texture
-        with the_tex.bind(0):
+        with self.data.texture_object.bind(0):
             GL.glDrawElements(GL.GL_TRIANGLES, self.data.size, GL.GL_UNSIGNED_INT, None)
 
     def _set_uniforms(self, scene, shader_program):
         cam = scene.camera
         shader_program._set_uniform("projection", cam.projection_matrix)
         shader_program._set_uniform("modelview", cam.view_matrix)
-        for attstr in self._plane_data_uniforms:
-            shader_program._set_uniform(attstr, getattr(self.data, attstr))
+        shader_program._set_uniform("to_worldview", self.data.to_worldview)
 
     def render_gui(self, imgui, renderer):
         changed = super().render_gui(imgui, renderer)

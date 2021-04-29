@@ -31,6 +31,14 @@ proj_render_2 = Plane(data=proj_data_2, cmap_log=True)
 rc.scene.data_objects.append(proj_data_2)
 rc.scene.components.append(proj_render_2)
 
+# add another projection, shifted to other axis
+proj_3 = ds.proj(("enzo", "Density"), 1.)
+proj_data_3 = PlaneData(data_source=proj_3)
+proj_data_3.add_data(("enzo", "Density"), 1., (400, 400), translate=-1.)
+proj_render_3 = Plane(data=proj_data_3, cmap_log=True)
+rc.scene.data_objects.append(proj_data_3)
+rc.scene.components.append(proj_render_3)
+
 # add an axis-normal slice
 slc = ds.slice(0, 0.5)
 slice_data = PlaneData(data_source=slc)
@@ -40,7 +48,7 @@ rc.scene.data_objects.append(slice_data)
 rc.scene.components.append(slice_render)
 
 # add a cutting plane
-normal = np.array([1., 1., 0.],dtype='float64')
+normal = np.array([1., 1., 0.], dtype='float64')
 center = ds.domain_center.to('code_length').value
 cut = ds.cutting(normal, center)
 cut_data = PlaneData(data_source=cut)

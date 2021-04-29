@@ -1,14 +1,15 @@
-in vec2 model_vertex; // position in model space (in coordinates of the plane)
+in vec2 model_vertex; // position is in-plane coordinates
 out vec2 UV;
-
-uniform vec3 east_vec; // world coordinates of in-plane "y" basis vector
-uniform vec3 north_vec; // world coordinates of in-plane "x" basis vector
-uniform vec3 plane_pt; // world position of plane origin (with origin offset???)
+uniform mat4 to_worldview; // homogenous projection matrix from in-plane to world
 
 void main()
 {
-    vec3 world_vertex = model_vertex[0] * east_vec + model_vertex[1] * north_vec + plane_pt;
-    gl_Position = projection * modelview * vec4(world_vertex, 1.0);
+    // first get the vertex position in world coordinates from the in-plane coords
+    vec4 world_vertex = to_worldview * vec4(model_vertex, 0., 1.0);
 
-    UV = model_vertex ; // we're actually passing in our texture coords already!!
+    // calculate and return the final screen view position
+    gl_Position = projection * modelview * world_vertex;
+
+    // our in-plane coordinates ARE the texture coordinates, just pass those out
+    UV = model_vertex;
 }
