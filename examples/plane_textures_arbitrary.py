@@ -13,18 +13,20 @@ c = TrackballCamera(position=[3.5, 3.5, 3.5], focus=[0.0, 0.0, 0.0])
 rc.scene = SceneGraph(camera=c)
 
 # create some arbitrary 2d data
-x,y = np.meshgrid(np.linspace(0,1,200), np.linspace(0,1,300))
+x, y = np.meshgrid(np.linspace(0, 1, 200), np.linspace(0, 1, 300))
 dist = np.sqrt((x-0.5)**2 + (y-0.5)**2)
-test_data = np.exp( - (dist/0.25) ** 2)
+test_data = np.exp(-(dist/0.25) ** 2)
 
 # create a plane for our 2d data, add the data
 image_plane = BasePlane(
-    normal = np.array([1., 1., 0.]),
-    center = np.array([0., 0., 0.]),
-    data = test_data,
-    width = test_data.shape[0],
-    height = test_data.shape[1]
+    normal=np.array([1., 0., 0.]),
+    center=np.array([0., 0., 0.]),
+    data=test_data,
+    width=1,
+    height=1,
 )
+image_plane.east_vec = np.array([0., 1., 0.])
+image_plane.north_vec = np.array([0., 0., 1.])
 image_plane.add_data()
 
 # add the rendering object, data to the scene

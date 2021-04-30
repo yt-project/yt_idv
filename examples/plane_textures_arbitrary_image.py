@@ -17,12 +17,14 @@ im = np.array(Image.open(requests.get(im_url, stream=True).raw).convert('LA'))[:
 
 # create a plane for our 2d data, add the data
 image_plane = BasePlane(
-    normal = np.array([1., 1., 0.]),
-    center = np.array([0., 0., 0.]),
-    data = im,
-    width = im.shape[0],
-    height = im.shape[1]
+    normal=np.array([1., 0., 0.]),
+    center=np.array([0., 0., 0.]),
+    data=im,
+    width=1,
+    height=1,
 )
+image_plane.east_vec = np.array([0., 1., 0.])
+image_plane.north_vec = np.array([0., 0., 1.])
 image_plane.add_data()
 
 # add the rendering object, data to the scene

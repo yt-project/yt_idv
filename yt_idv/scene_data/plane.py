@@ -6,6 +6,8 @@ from yt.data_objects.selection_objects.slices import YTSlice, YTCuttingPlane
 from yt_idv.opengl_support import Texture2D, VertexArray, VertexAttribute
 from yt_idv.scene_data.base_data import SceneData
 from OpenGL import GL
+from unyt.exceptions import UnitParseError
+from unyt import unyt_quantity
 
 class BasePlane(SceneData):
     """
@@ -31,7 +33,7 @@ class BasePlane(SceneData):
     data = traitlets.Instance(np.ndarray, allow_none=False)
     width = traitlets.Float(allow_none=False)
     height = traitlets.Float(allow_none=False)
-
+    _calculate_translation = False
 
     def _set_plane(self):
 
@@ -54,35 +56,39 @@ class BasePlane(SceneData):
             east_vec = self.east_vec
             north_vec = self.north_vec
 
+        # total transformation
+        #    M * [U, V, 0., 1], where M = T * W * S
+        #    S = scale matrix, to scale distance from UV texture coord to in-plane coord
+        #    W = projection matrix to go from in-plane coords to cartesian coords centered
+        #        at the world origin
+        #    T = translation matrix to go from world origin to plane center
+
         # homogenous scaling matrix from UV texture coords to in-plane coords
-        scale = np.eye(4)
-        scale[0, 0] = self.width
-        scale[1, 1] = self.height
+        S = np.eye(4)
+        S[0, 0] = self.width
+        S[1, 1] = self.height
 
         # homogenous projection matrix from in-plane coords to world at origin
-        to_world = np.eye(4)
-        to_world[0:3, 0] = east_vec
-        to_world[0:3, 1] = north_vec
-        to_world[0:3, 2] = unit_normal
+        W = np.eye(4)
+        W[0:3, 0] = east_vec
+        W[0:3, 1] = north_vec
+        W[0:3, 2] = unit_normal
+
+        to_world = np.matmul(W, S)
 
         # homogenous translation matrix
-        translate = np.eye(4)
-        translate[0:3, 3] = self.center
+        T = np.eye(4)
+        if self._calculate_translation:
+            # aligns the center of the UV coords with the true center for when
+            # the image data array center is not the center. alternatively,
+            # could adjust the vertex points, but this seems easier.
+            current_center = np.matmul(to_world, np.array([.5, .5, 0., 1.]).T)
+            T[0:3, 3] = self.center - current_center[0:3]
+        else:
+            T[0:3, 3] = self.center
 
         # combined homogenous projection matrix
-        self.to_worldview = np.matmul(translate, np.matmul(to_world, scale))
-
-        if type(self.data_source) == YTCuttingPlane:
-            # the cutting plane "center" is actually not the true center. So here,
-            # we apply our current projection matrix to the center texture coordinates
-            # to get the true center of our cutting plane. We then add an additional
-            # translation to our to_worldview matrix to get from the cutting plane
-            # "center" to the true center
-            true_center = np.matmul(self.to_worldview, np.array([0.5, 0.5, 0., 1.]).T)
-            extra_translate = np.eye(4)
-            extra_translate[0:3, 3] = self.center - true_center[0:3]
-            self.to_worldview = np.matmul(extra_translate, self.to_worldview)
-
+        self.to_worldview = np.matmul(T, to_world)
         self.to_worldview = self.to_worldview.astype("f4")
 
     def add_data(self):
@@ -129,41 +135,81 @@ class PlaneData(BasePlane):
     a 2D plane built from a yt slice, cutting plane or projection
     """
     data_source = traitlets.Instance(YTDataContainer)
+    _calculate_translation = True
 
-    def add_data(self, field, width, frb_dims=(400, 400), translate=0.):
+    def _sanitize_length_var(self, var, return_scalar=True):
+        # pulls out the code_length value for var if it is a unyt quantity
+        if hasattr(var, "units"):
+            try:
+                var = var.to('code_length')
+            except UnitParseError:
+                var = unyt_quantity(var.value, var.units, registry=self.data_source.ds.unit_registry)
+                var = var.to('code_length')
+            var = var.value
+            if return_scalar:
+                var = float(var)
+        return var
 
-        # set our image plane data
-        frb = self.data_source.to_frb(width, resolution=frb_dims)
+    def add_data(self, field, width=1., frb_dims=(400, 400), height=None, translate=0., center=None):
+
+        # get our image plane data
+        frb_kw_args = dict(resolution=frb_dims)
+        for kw, val in [("height", height), ("center", center)]:
+            if np.any(val):
+                frb_kw_args[kw] = val
+
+        frb = self.data_source.to_frb(width, **frb_kw_args)
+
         self.data = frb[field]
+        if np.any(center):
+            center = self._sanitize_length_var(center, return_scalar=False)
+            self._calculate_translation = True
+
+        def calc_center(axis_coord_val):
+            center = np.zeros((3,))
+            for ax, dim in enumerate(['x', 'y', 'z']):
+                if ax == self.data_source.axis:
+                    center[ax] = axis_coord_val
+                else:
+                    val = np.mean([frb.limits[dim][0].to('code_length').value,
+                                   frb.limits[dim][1].to('code_length').value])
+                    center[ax] = val
+            return center
+
+        # store the parameters defining the plane
         dstype = type(self.data_source)
         if dstype == YTSlice:
             normal = np.zeros((3,))
             normal[self.data_source.axis] = 1.
-            center = np.zeros((3,))
-            center[self.data_source.axis] = self.data_source.coord
+            if np.any(center) is None:
+                center = calc_center(self.data_source.coord)
         elif dstype == YTCuttingPlane:
             self.north_vec = self.data_source.orienter.north_vector
             self.north_vec = self.north_vec / np.linalg.norm(self.north_vec)
             normal = self.data_source.orienter.normal_vector
             normal = normal / np.linalg.norm(normal)  # make sure it's a unit normal
             self.east_vec = np.cross(normal, self.north_vec)
-            center = self.data_source.center.value
+            self._calculate_translation = True
+            if np.any(center) is None:
+                center = self.data_source.center.value
         elif isinstance(self.data_source, YTProj):
             normal = np.zeros((3,))
             normal[self.data_source.axis] = 1.
-            center = np.zeros((3,))
-            center[self.data_source.axis] = 1.
+            if np.any(center) is None:
+                center = calc_center(1.)
         else:
             raise ValueError(f"Unexpected data_source type. data_source must be one of"
                              f" YTSlice or YTproj but found {dstype}.")
 
         if translate != 0:
-            center += translate * normal
+            center += self._sanitize_length_var(translate) * normal
 
         self.center = center
         self.normal = normal
-        self.width = width
-        self.height = width
+        if height is None:
+            height = width
+        for dimstr, dim in [("width", width), ("height", height)]:
+            setattr(self, dimstr, self._sanitize_length_var(dim))
 
         super().add_data()
 
