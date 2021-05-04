@@ -1,8 +1,9 @@
 # example showing how to add a static cutting plane to an amr rendering
-import yt
 import numpy as np
-import yt_idv
+import yt
 from unyt import unyt_quantity
+
+import yt_idv
 from yt_idv.scene_components.plane import Plane  # NOQA
 from yt_idv.scene_data.plane import PlaneData  # NOQA
 

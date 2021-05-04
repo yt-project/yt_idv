@@ -1,13 +1,14 @@
 import numpy as np
 import traitlets
-from yt.data_objects.data_containers import YTDataContainer
+from OpenGL import GL
+from unyt import unyt_quantity
+from unyt.exceptions import UnitParseError
 from yt.data_objects.construction_data_containers import YTProj
-from yt.data_objects.selection_objects.slices import YTSlice, YTCuttingPlane
+from yt.data_objects.data_containers import YTDataContainer
+from yt.data_objects.selection_objects.slices import YTCuttingPlane, YTSlice
+
 from yt_idv.opengl_support import Texture2D, VertexArray, VertexAttribute
 from yt_idv.scene_data.base_data import SceneData
-from OpenGL import GL
-from unyt.exceptions import UnitParseError
-from unyt import unyt_quantity
 
 
 class BasePlane(SceneData):

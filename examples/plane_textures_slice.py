@@ -1,14 +1,12 @@
+import numpy as np
 import yt
+from unyt import unyt_quantity
+
 from yt_idv import render_context
 from yt_idv.cameras.trackball_camera import TrackballCamera
-from yt_idv.scene_graph import SceneGraph
-from unyt import unyt_quantity
-import numpy as np
-
-
 from yt_idv.scene_components.plane import Plane  # NOQA
 from yt_idv.scene_data.plane import PlaneData  # NOQA
-
+from yt_idv.scene_graph import SceneGraph
 
 rc = render_context(height=800, width=800, gui=True)
 c = TrackballCamera(position=[3.5, 3.5, 3.5], focus=[0.0, 0.0, 0.0])

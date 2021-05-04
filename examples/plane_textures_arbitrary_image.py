@@ -1,10 +1,11 @@
 import numpy as np
-from PIL import Image
 import requests
+import yt
+from PIL import Image
+
+import yt_idv
 from yt_idv.scene_components.plane import Plane
 from yt_idv.scene_data.plane import BasePlane
-import yt
-import yt_idv
 
 # create a volume rendering
 ds = yt.load("IsolatedGalaxy/galaxy0030/galaxy0030")
