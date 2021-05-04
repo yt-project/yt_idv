@@ -3,7 +3,7 @@ import yt
 import numpy as np
 import yt_idv
 from unyt import unyt_quantity
-from yt_idv.scene_components.planes import Plane  # NOQA
+from yt_idv.scene_components.plane import Plane  # NOQA
 from yt_idv.scene_data.plane import PlaneData  # NOQA
 
 ds = yt.load_sample("IsolatedGalaxy")

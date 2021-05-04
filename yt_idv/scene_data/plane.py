@@ -12,7 +12,39 @@ from unyt import unyt_quantity
 
 class BasePlane(SceneData):
     """
-    base class for a plane.
+    base class for a rendering a plane in 3d space using a 2d texture.
+
+    While BasePlane can be used to plot arbitrary image data (see
+    plane_textures_arbitrary.py and plane_textures_arbitrary_images.py in examples/),
+    the child class PlaneData is easier to use if plotting yt slice, cutting or
+    projection objects.
+
+    Parameters
+    ----------
+    normal: ndarray with shape (3,)
+        normal vector to the plane in 3d cartesian image coordinates
+    center: ndarray with shape (3,)
+        the center point within the plane in 3d cartesian image coordinates
+    width: float
+        the width of our 2d plane (the euclidean distance covered along the
+        "east" dimension by our plane)
+    height: float
+        the height of our 2d plane (the euclidean distance covered along the
+        "north" axis by our plane)
+    data: 2D ndarray
+        the data to sample on the plane.
+
+    Some important attributes
+    -------------------------
+
+    north_vec: ndarray with shape (3,)
+        the north vector lying within the plane in 3d cartesian image coordinates
+    east_vec: ndarray with shape (3,)
+        the east vector lying within the plane in 3d cartesian image coordinates.
+        (should equal the cross product between plane_normal and north_vec)
+
+    Both of these must be set manually if the normal vector is not aligned with
+    the usual cartesian axes.
 
     """
 
@@ -20,7 +52,7 @@ class BasePlane(SceneData):
 
     # calculated or sterilized:
     plane_normal = None
-    plane_pt = None
+    # plane_pt = None
     east_vec = None
     north_vec = None
 
@@ -35,10 +67,14 @@ class BasePlane(SceneData):
     data = traitlets.Instance(np.ndarray, allow_none=False)
     width = traitlets.Float(allow_none=False)
     height = traitlets.Float(allow_none=False)
+
     _calculate_translation = False
 
-    def _set_plane(self):
-
+    def _set_transformation(self):
+        """
+        here we build the transformation matrix that when applied to the in-plane
+        coordinates returns the world coordinates.
+        """
         # set the in-plane coordinate vectors, basis_u = east, basis_v = north
         unit_normal = self.normal / np.linalg.norm(self.normal)
         if self.east_vec is None or self.north_vec is None:
@@ -97,7 +133,7 @@ class BasePlane(SceneData):
 
     def add_data(self):
 
-        self._set_plane()
+        self._set_transformation()
         # our in-plane coordinates. same as texture coordinates
         verts = np.array([[1, 0], [0, 0], [0, 1], [1, 1]])
 
@@ -128,7 +164,35 @@ class BasePlane(SceneData):
 
 class PlaneData(BasePlane):
     """
-    a 2D plane built from a yt slice, cutting plane or projection
+    a 2D plane built from a yt slice, cutting plane or projection.
+
+    Parameters
+    ----------
+    data_source: YTDataContainer
+        Must be a ds.slice, ds.cutting or ds.proj, where ds is a yt dataset.
+
+    To add a projection to an existing volume rendering scene:
+
+    >>> import yt
+    >>> import yt_idv
+    >>> from yt_idv.scene_components.planes import Plane
+    >>> from yt_idv.scene_data.plane import PlaneData
+
+    >>> ds = yt.load_sample("IsolatedGalaxy")
+
+    >>> # add the volume rendering to the scene
+    >>> rc = yt_idv.render_context(height=800, width=800, gui=True)
+    >>> sg = rc.add_scene(ds, "density", no_ghost=True)
+
+    >>> # calculate and add a projection through the volume to our 3D rendering
+    >>> proj = ds.proj("density", 0)
+    >>> proj_data = PlaneData(data_source=proj)
+    >>> proj_data.add_data("density", 1.0, (400, 400))
+    >>> proj_render = Plane(data=proj_data, cmap_log=True)
+    >>> rc.scene.data_objects.append(proj_data)
+    >>> rc.scene.components.append(proj_render)
+
+    >>> rc.run()
     """
 
     data_source = traitlets.Instance(YTDataContainer)
@@ -153,14 +217,41 @@ class PlaneData(BasePlane):
         self,
         field,
         width=1.0,
-        frb_dims=(400, 400),
+        resolution=(400, 400),
         height=None,
         translate=0.0,
         center=None,
     ):
+        """
+        generates a fixed resolution buffer from the data_source and adds it
+        as a plane in 3D space.
 
+        Parameters
+        ----------
+        field: tuple
+            a yt field tuple, ("field_type", "field")
+        translate: float in "code_length" or unyt quantity
+            moves the plane by this value in the direction normal to the plane.
+            useful for controlling where a projection through a 3D volume is
+            displayed.
+
+        The remaining parameters all control the fixed resolution buffer (frb)
+        generated from the data_source. See yt's documentation on .to_frb() for
+        more details.
+
+        width: float in "code_length" or unyt quantity
+            the width of the frb
+        resolution: (int, int)
+            the resolution of the frb
+        height: float in "code_length" or unyt quantity
+            the height of the frb
+        center: None, ndarray in "code_length", or unyt array
+            the center of the frb, must lie within the plane of the data_source
+            default None.
+
+        """
         # get our image plane data
-        frb_kw_args = dict(resolution=frb_dims)
+        frb_kw_args = dict(resolution=resolution)
         for kw, val in [("height", height), ("center", center)]:
             if np.any(val):
                 frb_kw_args[kw] = val

@@ -4,7 +4,7 @@ import numpy as np
 from yt_idv import render_context
 from yt_idv.cameras.trackball_camera import TrackballCamera
 from yt_idv.scene_graph import SceneGraph
-from yt_idv.scene_components.planes import Plane
+from yt_idv.scene_components.plane import Plane
 from yt_idv.scene_data.plane import BasePlane
 
 # create an empty scene with a camera

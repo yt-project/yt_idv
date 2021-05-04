@@ -6,7 +6,7 @@ from unyt import unyt_quantity
 import numpy as np
 
 
-from yt_idv.scene_components.planes import Plane  # NOQA
+from yt_idv.scene_components.plane import Plane  # NOQA
 from yt_idv.scene_data.plane import PlaneData  # NOQA
 
 

@@ -1,7 +1,7 @@
 import numpy as np
 from PIL import Image
 import requests
-from yt_idv.scene_components.planes import Plane
+from yt_idv.scene_components.plane import Plane
 from yt_idv.scene_data.plane import BasePlane
 import yt
 import yt_idv
