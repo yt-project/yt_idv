@@ -19,7 +19,7 @@ ds = yt.load("Enzo_64/RD0005/RedshiftOutput0005")
 for slice_axis in [0, 1]:
     slc = ds.slice(slice_axis, 0.5)
     slice_data = PlaneData(data_source=slc)
-    slice_data.add_data(("enzo", "Density"), 1., (400, 400))
+    slice_data.add_data(("enzo", "Density"), 1.0, (400, 400))
     slice_render = Plane(data=slice_data, cmap_log=True)
 
     rc.scene.data_objects.append(slice_data)
@@ -28,10 +28,12 @@ for slice_axis in [0, 1]:
 # another slice covering a smaller distance
 slc = ds.slice(2, 0.5)
 slice_data = PlaneData(data_source=slc)
-slice_data.add_data(("enzo", "Density"),
-                    unyt_quantity(45, 'Mpc'),
-                    (400, 400),
-                    height=unyt_quantity(45, 'Mpc'))
+slice_data.add_data(
+    ("enzo", "Density"),
+    unyt_quantity(45, "Mpc"),
+    (400, 400),
+    height=unyt_quantity(45, "Mpc"),
+)
 slice_render = Plane(data=slice_data, cmap_log=True)
 rc.scene.data_objects.append(slice_data)
 rc.scene.components.append(slice_render)
@@ -39,11 +41,13 @@ rc.scene.components.append(slice_render)
 # another small slice, at a different center
 slc = ds.slice(2, 0.25)
 slice_data = PlaneData(data_source=slc)
-slice_data.add_data(("enzo", "Density"),
-                    unyt_quantity(45, 'Mpc'),
-                    (400, 400),
-                    height=unyt_quantity(45, 'Mpc'),
-                    center=np.array([0.75, 0.75, 0.25]))
+slice_data.add_data(
+    ("enzo", "Density"),
+    unyt_quantity(45, "Mpc"),
+    (400, 400),
+    height=unyt_quantity(45, "Mpc"),
+    center=np.array([0.75, 0.75, 0.25]),
+)
 slice_render = Plane(data=slice_data, cmap_log=True)
 rc.scene.data_objects.append(slice_data)
 rc.scene.components.append(slice_render)

@@ -9,11 +9,13 @@ from OpenGL import GL
 from unyt.exceptions import UnitParseError
 from unyt import unyt_quantity
 
+
 class BasePlane(SceneData):
     """
     base class for a plane.
 
     """
+
     name = "image_plane_data"
 
     # calculated or sterilized:
@@ -41,17 +43,19 @@ class BasePlane(SceneData):
         unit_normal = self.normal / np.linalg.norm(self.normal)
         if self.east_vec is None or self.north_vec is None:
             if unit_normal[0] == 0 and unit_normal[1] == 0:
-                east_vec = np.array([1., 0., 0.])
-                north_vec = np.array([0., 1., 0.])
+                east_vec = np.array([1.0, 0.0, 0.0])
+                north_vec = np.array([0.0, 1.0, 0.0])
             elif unit_normal[1] == 0 and unit_normal[2] == 0:
-                east_vec = np.array([0., 1., 0.])
-                north_vec = np.array([0., 0., 1.])
+                east_vec = np.array([0.0, 1.0, 0.0])
+                north_vec = np.array([0.0, 0.0, 1.0])
             elif unit_normal[0] == 0 and unit_normal[2] == 0:
-                east_vec = np.array([1., 0., 0.])
-                north_vec = np.array([0., 0., 1.])
+                east_vec = np.array([1.0, 0.0, 0.0])
+                north_vec = np.array([0.0, 0.0, 1.0])
             else:
-                raise ValueError("It looks like your plane is not normal to an axis, please"
-                                 " set east_vec and north_vec before calling add_data().")
+                raise ValueError(
+                    "It looks like your plane is not normal to an axis, please"
+                    " set east_vec and north_vec before calling add_data()."
+                )
         else:
             east_vec = self.east_vec
             north_vec = self.north_vec
@@ -59,8 +63,8 @@ class BasePlane(SceneData):
         # total transformation
         #    M * [U, V, 0., 1], where M = T * W * S
         #    S = scale matrix, to scale distance from UV texture coord to in-plane coord
-        #    W = projection matrix to go from in-plane coords to cartesian coords centered
-        #        at the world origin
+        #    W = projection matrix to go from in-plane coords to cartesian coords
+        #        centered at the world origin
         #    T = translation matrix to go from world origin to plane center
 
         # homogenous scaling matrix from UV texture coords to in-plane coords
@@ -82,7 +86,7 @@ class BasePlane(SceneData):
             # aligns the center of the UV coords with the true center for when
             # the image data array center is not the center. alternatively,
             # could adjust the vertex points, but this seems easier.
-            current_center = np.matmul(to_world, np.array([.5, .5, 0., 1.]).T)
+            current_center = np.matmul(to_world, np.array([0.5, 0.5, 0.0, 1.0]).T)
             T[0:3, 3] = self.center - current_center[0:3]
         else:
             T[0:3, 3] = self.center
@@ -95,17 +99,9 @@ class BasePlane(SceneData):
 
         self._set_plane()
         # our in-plane coordinates. same as texture coordinates
-        verts = np.array([
-            [1, 0],
-            [0, 0],
-            [0, 1],
-            [1, 1]
-        ])
+        verts = np.array([[1, 0], [0, 0], [0, 1], [1, 1]])
 
-        i = np.array([
-            [0, 1, 2],
-            [0, 2, 3]
-        ])
+        i = np.array([[0, 1, 2], [0, 2, 3]])
         i.shape = (i.size, 1)
 
         self.vertex_array.attributes.append(
@@ -134,6 +130,7 @@ class PlaneData(BasePlane):
     """
     a 2D plane built from a yt slice, cutting plane or projection
     """
+
     data_source = traitlets.Instance(YTDataContainer)
     _calculate_translation = True
 
@@ -141,16 +138,26 @@ class PlaneData(BasePlane):
         # pulls out the code_length value for var if it is a unyt quantity
         if hasattr(var, "units"):
             try:
-                var = var.to('code_length')
+                var = var.to("code_length")
             except UnitParseError:
-                var = unyt_quantity(var.value, var.units, registry=self.data_source.ds.unit_registry)
-                var = var.to('code_length')
+                var = unyt_quantity(
+                    var.value, var.units, registry=self.data_source.ds.unit_registry
+                )
+                var = var.to("code_length")
             var = var.value
             if return_scalar:
                 var = float(var)
         return var
 
-    def add_data(self, field, width=1., frb_dims=(400, 400), height=None, translate=0., center=None):
+    def add_data(
+        self,
+        field,
+        width=1.0,
+        frb_dims=(400, 400),
+        height=None,
+        translate=0.0,
+        center=None,
+    ):
 
         # get our image plane data
         frb_kw_args = dict(resolution=frb_dims)
@@ -167,12 +174,16 @@ class PlaneData(BasePlane):
 
         def calc_center(axis_coord_val):
             center = np.zeros((3,))
-            for ax, dim in enumerate(['x', 'y', 'z']):
+            for ax, dim in enumerate(["x", "y", "z"]):
                 if ax == self.data_source.axis:
                     center[ax] = axis_coord_val
                 else:
-                    val = np.mean([frb.limits[dim][0].to('code_length').value,
-                                   frb.limits[dim][1].to('code_length').value])
+                    val = np.mean(
+                        [
+                            frb.limits[dim][0].to("code_length").value,
+                            frb.limits[dim][1].to("code_length").value,
+                        ]
+                    )
                     center[ax] = val
             return center
 
@@ -180,7 +191,7 @@ class PlaneData(BasePlane):
         dstype = type(self.data_source)
         if dstype == YTSlice:
             normal = np.zeros((3,))
-            normal[self.data_source.axis] = 1.
+            normal[self.data_source.axis] = 1.0
             if np.any(center) is None:
                 center = calc_center(self.data_source.coord)
         elif dstype == YTCuttingPlane:
@@ -194,12 +205,14 @@ class PlaneData(BasePlane):
                 center = self.data_source.center.value
         elif isinstance(self.data_source, YTProj):
             normal = np.zeros((3,))
-            normal[self.data_source.axis] = 1.
+            normal[self.data_source.axis] = 1.0
             if np.any(center) is None:
-                center = calc_center(1.)
+                center = calc_center(1.0)
         else:
-            raise ValueError(f"Unexpected data_source type. data_source must be one of"
-                             f" YTSlice or YTproj but found {dstype}.")
+            raise ValueError(
+                f"Unexpected data_source type. data_source must be one of"
+                f" YTSlice or YTproj but found {dstype}."
+            )
 
         if translate != 0:
             center += self._sanitize_length_var(translate) * normal
@@ -212,4 +225,3 @@ class PlaneData(BasePlane):
             setattr(self, dimstr, self._sanitize_length_var(dim))
 
         super().add_data()
-

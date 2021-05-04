@@ -14,9 +14,9 @@ rc.scene = SceneGraph(camera=c)
 
 ds = yt.load("Enzo_64/RD0005/RedshiftOutput0005")
 
-proj = ds.proj(("enzo", "Density"), 1.)
+proj = ds.proj(("enzo", "Density"), 1.0)
 proj_data = PlaneData(data_source=proj)
-proj_data.add_data(("enzo", "Density"), 1., (400, 400))
+proj_data.add_data(("enzo", "Density"), 1.0, (400, 400))
 proj_render = Plane(data=proj_data, cmap_log=True)
 
 rc.scene.data_objects.append(proj_data)

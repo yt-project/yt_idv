@@ -38,7 +38,7 @@ class Plane(SceneComponent):
     def render_gui(self, imgui, renderer):
         changed = super().render_gui(imgui, renderer)
         ui_changes = [
-                        take_log_checkbox(imgui, self),
-                        colormap_list(imgui, self),
-                     ]
+            take_log_checkbox(imgui, self),
+            colormap_list(imgui, self),
+        ]
         changed = changed or any(ui_changes)
