@@ -208,6 +208,7 @@ class PlaneData(BasePlane):
                     var.value, var.units, registry=self.data_source.ds.unit_registry
                 )
                 var = var.to("code_length")
+            var = var / self.data_source.ds.domain_width
             var = var.value
             if return_scalar:
                 var = float(var)
@@ -257,7 +258,9 @@ class PlaneData(BasePlane):
                 frb_kw_args[kw] = val
 
         frb = self.data_source.to_frb(width, **frb_kw_args)
-
+        # field_vals = frb[field]
+        # if hasattr(field_vals, 'units'):
+        #     field_vals = field_vals.value
         self.data = frb[field]
         if np.any(center):
             center = self._sanitize_length_var(center, return_scalar=False)
@@ -275,6 +278,7 @@ class PlaneData(BasePlane):
                             frb.limits[dim][1].to("code_length").value,
                         ]
                     )
+                    val = val / self.data_source.ds.domain_width[ax]
                     center[ax] = val
             return center
 
