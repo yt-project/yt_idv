@@ -48,6 +48,13 @@ class BlockRendering(SceneComponent):
         if _:
             self.render_method = shader_combos[shader_ind]
         changed = changed or _
+        if imgui.button("Recompile Shader"):
+            self.fragment_shader.delete_shader()
+            self.geometry_shader.delete_shader()
+            self.vertex_shader.delete_shader()
+            self.colormap_fragment.delete_shader()
+            self.colormap_vertex.delete_shader()
+            self._program1_invalid = self._program2_invalid = True
 
         # Now for the transfer function stuff
         imgui.image_button(
