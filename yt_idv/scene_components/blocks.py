@@ -28,8 +28,8 @@ class BlockRendering(SceneComponent):
 
     priority = 10
 
-    def render_gui(self, imgui, renderer):
-        changed = super(BlockRendering, self).render_gui(imgui, renderer)
+    def render_gui(self, imgui, renderer, scene):
+        changed = super(BlockRendering, self).render_gui(imgui, renderer, scene)
         _, self.cmap_log = imgui.checkbox("Take log", self.cmap_log)
         changed = changed or _
         _, cmap_index = imgui.listbox(
@@ -55,50 +55,63 @@ class BlockRendering(SceneComponent):
             self.colormap_fragment.delete_shader()
             self.colormap_vertex.delete_shader()
             self._program1_invalid = self._program2_invalid = True
+        if imgui.button("Add Block Outline"):
+            from ..scene_annotations.block_outline import BlockOutline
 
-        # Now for the transfer function stuff
-        imgui.image_button(
-            self.transfer_function.texture_name, 256, 32, frame_padding=0
-        )
-        imgui.text("Right click and drag to change")
-        update = False
-        data = self.transfer_function.data.astype("f4") / 255
-        for i, c in enumerate("rgba"):
-            imgui.plot_lines(
-                f"## {c}",
-                data[:, 0, i].copy(),
-                scale_min=0.0,
-                scale_max=1.0,
-                graph_size=(256, 32),
+            block_outline = BlockOutline(data=self.data)
+            scene.annotations.append(block_outline)
+        if imgui.button("Add Grid Outline"):
+            from ..scene_annotations.grid_outlines import GridOutlines
+            from ..scene_data.grid_positions import GridPositions
+
+            grids = self.data.data_source.ds.index.grids.tolist()
+            gp = GridPositions(grid_list=grids)
+            scene.data_objects.append(gp)
+            scene.components.append(GridOutlines(data=gp))
+        if self.render_method == "transfer_function":
+            # Now for the transfer function stuff
+            imgui.image_button(
+                self.transfer_function.texture_name, 256, 32, frame_padding=0
             )
-            if imgui.is_item_hovered() and imgui.is_mouse_dragging(2):
-                update = True
-                dx, dy = renderer.io.mouse_delta
-                dy = -dy
-                mi = imgui.get_item_rect_min()
-                ma = imgui.get_item_rect_max()
-                x, y = renderer.io.mouse_pos
-                x = x - mi.x
-                y = (ma.y - mi.y) - (y - mi.y)
-                xb1 = floor(min(x + dx, x) * data.shape[0] / (ma.x - mi.x))
-                xb2 = ceil(max(x + dx, x) * data.shape[0] / (ma.x - mi.x))
-                yv1 = y / (ma.y - mi.y)
-                yv2 = (y + dy) / (ma.y - mi.y)
-                yv1, yv2 = (max(min(_, 1.0), 0.0) for _ in (yv1, yv2))
-                if dx < 0:
-                    yv2, yv1 = yv1, yv2
-                    xb1 -= 1
-                elif dx > 0:
-                    xb2 += 1
-                xb1 = max(0, xb1)
-                xb2 = min(255, xb2)
-                if renderer.io.key_shift:
-                    yv1 = yv2 = 1.0
-                elif renderer.io.key_ctrl:
-                    yv1 = yv2 = 0.0
-                data[xb1:xb2, 0, i] = np.mgrid[yv1 : yv2 : (xb2 - xb1) * 1j]
-        if update:
-            self.transfer_function.data = (data * 255).astype("u1")
+            imgui.text("Right click and drag to change")
+            update = False
+            data = self.transfer_function.data.astype("f4") / 255
+            for i, c in enumerate("rgba"):
+                imgui.plot_lines(
+                    f"## {c}",
+                    data[:, 0, i].copy(),
+                    scale_min=0.0,
+                    scale_max=1.0,
+                    graph_size=(256, 32),
+                )
+                if imgui.is_item_hovered() and imgui.is_mouse_dragging(2):
+                    update = True
+                    dx, dy = renderer.io.mouse_delta
+                    dy = -dy
+                    mi = imgui.get_item_rect_min()
+                    ma = imgui.get_item_rect_max()
+                    x, y = renderer.io.mouse_pos
+                    x = x - mi.x
+                    y = (ma.y - mi.y) - (y - mi.y)
+                    xb1 = floor(min(x + dx, x) * data.shape[0] / (ma.x - mi.x))
+                    xb2 = ceil(max(x + dx, x) * data.shape[0] / (ma.x - mi.x))
+                    yv1 = y / (ma.y - mi.y)
+                    yv2 = (y + dy) / (ma.y - mi.y)
+                    yv1, yv2 = (max(min(_, 1.0), 0.0) for _ in (yv1, yv2))
+                    if dx < 0:
+                        yv2, yv1 = yv1, yv2
+                        xb1 -= 1
+                    elif dx > 0:
+                        xb2 += 1
+                    xb1 = max(0, xb1)
+                    xb2 = min(255, xb2)
+                    if renderer.io.key_shift:
+                        yv1 = yv2 = 1.0
+                    elif renderer.io.key_ctrl:
+                        yv1 = yv2 = 0.0
+                    data[xb1:xb2, 0, i] = np.mgrid[yv1 : yv2 : (xb2 - xb1) * 1j]
+            if update:
+                self.transfer_function.data = (data * 255).astype("u1")
 
     @traitlets.default("transfer_function")
     def _default_transfer_function(self):
