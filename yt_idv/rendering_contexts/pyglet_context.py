@@ -83,11 +83,11 @@ class PygletRenderingContext(pyglet.window.Window, BaseContext):
         if 0 < xpos < 1:
             # We're being fed relative coords.  We offset these for the window
             # center.
-            xpos = max(xpos * max_width - 0.5 * win_width, 0)
+            xpos = max(self.screen.x + xpos * max_width - 0.5 * win_width, 0)
         if 0 < ypos < 1:
             # We're being fed relative coords.  We offset these for the window
             # center.
-            ypos = max(ypos * max_height - 0.5 * win_height, 0)
+            ypos = max(self.screen.y + ypos * max_height - 0.5 * win_height, 0)
         print("Setting position", xpos, ypos)
         self.set_location(int(xpos), int(ypos))
 
