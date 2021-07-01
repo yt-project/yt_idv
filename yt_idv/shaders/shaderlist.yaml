@@ -91,6 +91,13 @@ shader_definitions:
       blend_equation_separate:
       - func add
       - func add
+    particle:
+      info: Particle constant-color fragment shader
+      source: particle.frag.glsl
+      blend_func:
+      - one
+      - one
+      blend_equation: max
   vertex:
     default:
       info: A first pass vertex shader that tranlates the location of vertices from
@@ -112,6 +119,9 @@ shader_definitions:
     text_overlay:
       info: A simple text overlay shader
       source: textoverlay.vert.glsl
+    particle:
+      info: A point-based default vertex shader
+      source: particle.vert.glsl
   geometry:
     grid_expand:
       info: Expand grid left and right edges into a set of triangles
@@ -196,5 +206,13 @@ component_shaders:
       description: Display an image
       first_vertex: passthrough
       first_fragment: expand_1d
+      second_vertex: passthrough
+      second_fragment: passthrough
+  particle_rendering:
+    default_value: default
+    default:
+      description: Display the particles as constant boxes
+      first_vertex: particle
+      first_fragment: particle
       second_vertex: passthrough
       second_fragment: passthrough
