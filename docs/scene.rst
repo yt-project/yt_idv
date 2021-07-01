@@ -91,8 +91,8 @@ can be added by manually constructing an annotation:
 
    from yt_idv.scene_annotations.block_outline import BlockOutline
 
-   rc.add_scene(dd, "density")
-   block_data = rc.data_objects[0]
+   sg = rc.add_scene(dd, "density")
+   block_data = rc.scene.data_objects[0]
    rc.scene.annotations.append(BlockOutline(data = block_data))
 
 The block outlines here will match the textures rendered, which will likely be

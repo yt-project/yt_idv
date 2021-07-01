@@ -65,7 +65,7 @@ class SceneComponent(traitlets.HasTraits):
         if old_width != new_width or old_height != new_height:
             self.fb = Framebuffer()
 
-    def render_gui(self, imgui, renderer):
+    def render_gui(self, imgui, renderer, scene):
         changed, self.visible = imgui.checkbox("Visible", self.visible)
         return changed
 

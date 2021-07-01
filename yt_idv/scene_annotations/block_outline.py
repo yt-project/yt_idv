@@ -18,12 +18,13 @@ class BlockOutline(SceneAnnotation):
     box_alpha = traitlets.CFloat(1.0)
 
     def draw(self, scene, program):
+        GL.glDisable(GL.GL_CULL_FACE)
         each = self.data.vertex_array.each
         for tex_ind, _tex, _bitmap_tex in self.data.viewpoint_iter(scene.camera):
-            GL.glDrawArrays(GL.GL_TRIANGLES, tex_ind * each, each)
+            GL.glDrawArrays(GL.GL_POINTS, tex_ind * each, each)
 
-    def render_gui(self, imgui, renderer):
-        changed = super(BlockOutline, self).render_gui(imgui, renderer)
+    def render_gui(self, imgui, renderer, scene):
+        changed = super(BlockOutline, self).render_gui(imgui, renderer, scene)
         _, bw = imgui.slider_float("Width", self.box_width, 0.001, 0.250)
         if _:
             self.box_width = bw

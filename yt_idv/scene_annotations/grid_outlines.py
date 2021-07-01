@@ -18,6 +18,7 @@ class GridOutlines(SceneAnnotation):
     box_alpha = traitlets.CFloat(1.0)
 
     def draw(self, scene, program):
+        GL.glDisable(GL.GL_CULL_FACE)
         GL.glDrawArrays(GL.GL_POINTS, 0, len(self.data.grid_list))
 
     def _set_uniforms(self, scene, shader_program):
