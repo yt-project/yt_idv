@@ -97,7 +97,7 @@ shader_definitions:
       blend_func:
       - one
       - one
-      blend_equation: max
+      blend_equation: func add
   vertex:
     default:
       info: A first pass vertex shader that tranlates the location of vertices from
@@ -215,4 +215,4 @@ component_shaders:
       first_vertex: particle
       first_fragment: particle
       second_vertex: passthrough
-      second_fragment: passthrough
+      second_fragment: apply_colormap

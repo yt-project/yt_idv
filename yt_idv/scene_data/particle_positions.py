@@ -11,6 +11,7 @@ class ParticlePositions(SceneData):
     data_source = traitlets.Instance(YTDataContainer)
     particle_type = traitlets.Unicode("all")
     radius_field = traitlets.Unicode("particle_ones")
+    color_field = traitlets.Unicode("particle_ones")
     size = traitlets.CInt(-1)
 
     @traitlets.default("vertex_array")
@@ -24,11 +25,16 @@ class ParticlePositions(SceneData):
         )
         radii = self.data_source[self.particle_type, self.radius_field].astype("f4").d
         radii.shape = (radii.size, 1)
+        color_field = (
+            self.data_source[self.particle_type, self.color_field].astype("f4").d
+        )
+        color_field.shape = (color_field.size, 1)
         self.size = radii.size
         positions = np.concatenate(
             [positions, np.ones((self.size, 1), dtype="f4")], axis=1
         )
         va.attributes.append(VertexAttribute(name="model_vertex", data=positions))
         va.attributes.append(VertexAttribute(name="in_radius", data=radii))
+        va.attributes.append(VertexAttribute(name="in_field_value", data=color_field))
 
         return va

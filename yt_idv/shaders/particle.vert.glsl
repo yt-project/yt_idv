@@ -1,5 +1,7 @@
 in vec4 model_vertex; // The location of the vertex in model space
 in float in_radius;
+in float in_field_value;
+flat out float field_value;
 flat out vec4 v_model;
 flat out mat4 inverse_proj;
 flat out mat4 inverse_mvm;
@@ -14,5 +16,6 @@ void main()
     inverse_pmvm = inverse(projection * modelview);
     gl_Position = projection * modelview * model_vertex;
     gl_PointSize = in_radius * scale;
+    field_value = in_field_value;
 
 }
