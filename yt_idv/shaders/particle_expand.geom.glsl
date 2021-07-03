@@ -1,5 +1,5 @@
 layout ( points ) in;
-layout ( triangle_strip, max_vertices = 6 ) out;
+layout ( triangle_strip, max_vertices = 4 ) out;
 
 flat in float vradius[];
 flat in float vfield_value[];
@@ -52,12 +52,12 @@ void main() {
     }
 
     // https://stackoverflow.com/questions/12239876/fastest-way-of-converting-a-quad-to-a-triangle-strip
-    // A B C D is our quad
-    // A B C and A C D
+    // or: https://en.wikipedia.org/wiki/Triangle_strip
+    // in section "OpenGL implementation" this corresponds to A = 1, B = 2, C = 3, D = 4 
     vec4 A = vec4(fragLeftCorner.xy, gl_in[0].gl_Position.zw);
-    vec4 B = vec4(fragRightCorner.x, fragLeftCorner.y, gl_in[0].gl_Position.zw);
-    vec4 C = vec4(fragRightCorner.xy, gl_in[0].gl_Position.zw);
-    vec4 D = vec4(fragLeftCorner.x, fragRightCorner.y, gl_in[0].gl_Position.zw);
+    vec4 B = vec4(fragLeftCorner.x, fragRightCorner.y, gl_in[0].gl_Position.zw);
+    vec4 C = vec4(fragRightCorner.x, fragLeftCorner.y, gl_in[0].gl_Position.zw);
+    vec4 D = vec4(fragRightCorner.xy, gl_in[0].gl_Position.zw);
 
     gl_Position = A;
     field_value = vfield_value[0];
@@ -77,21 +77,10 @@ void main() {
     radius = vradius[0];
     EmitVertex();
 
-    gl_Position = A;
-    field_value = vfield_value[0];
-    v_model = vv_model[0];
-    radius = vradius[0];
-    EmitVertex();
-
-    gl_Position = C;
-    field_value = vfield_value[0];
-    v_model = vv_model[0];
-    radius = vradius[0];
-    EmitVertex();
-
     gl_Position = D;
     field_value = vfield_value[0];
     v_model = vv_model[0];
     radius = vradius[0];
     EmitVertex();
+
 }

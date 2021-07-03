@@ -28,7 +28,8 @@ class ParticleRendering(SceneComponent):
         return changed
 
     def draw(self, scene, program):
-        GL.glDisable(GL.GL_CULL_FACE)
+        # We should batch this rendering somehow, and
+        # also figure out the right face culling
         GL.glDrawArrays(GL.GL_POINTS, 0, self.data.size)
 
     def _set_uniforms(self, scene, shader_program):
