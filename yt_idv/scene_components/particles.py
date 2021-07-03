@@ -28,7 +28,7 @@ class ParticleRendering(SceneComponent):
         return changed
 
     def draw(self, scene, program):
-        GL.glEnable(GL.GL_PROGRAM_POINT_SIZE)
+        GL.glDisable(GL.GL_CULL_FACE)
         GL.glDrawArrays(GL.GL_POINTS, 0, self.data.size)
 
     def _set_uniforms(self, scene, shader_program):
