@@ -1,10 +1,14 @@
 import math
 
+import numpy as np
 import traitlets
 from OpenGL import GL
+from yt.utilities.lib.pixelization_routines import SPHKernelInterpolationTable
 
 from yt_idv.scene_components.base_component import SceneComponent
 from yt_idv.scene_data.particle_positions import ParticlePositions
+
+from ..opengl_support import Texture1D
 
 
 class ParticleRendering(SceneComponent):
@@ -12,6 +16,24 @@ class ParticleRendering(SceneComponent):
     data = traitlets.Instance(ParticlePositions)
     scale = traitlets.CFloat(1.0)
     max_particle_size = traitlets.CFloat(1e-3)
+    kernel_name = traitlets.Unicode("cubic")
+    kernel_table = traitlets.Instance(SPHKernelInterpolationTable)
+    interpolation_texture = traitlets.Instance(Texture1D)
+
+    @traitlets.observe("kernel_name")
+    def _change_kernel_name(self, change):
+        self.kernel_table = SPHKernelInterpolationTable(change["new"])
+        values = self.kernel_table.interpolate_array(np.mgrid[0.0:1.0:256j])
+        self.interpolation_texture = Texture1D(data=values.astype("f4"))
+
+    @traitlets.default("kernel_table")
+    def _default_kernel_table(self):
+        return SPHKernelInterpolationTable(self.kernel_name)
+
+    @traitlets.default("interpolation_texture")
+    def _default_interpolation_texture(self):
+        values = self.kernel_table.interpolate_array(np.mgrid[0.0:1.0:256j])
+        return Texture1D(data=values.astype("f4"))
 
     def render_gui(self, imgui, renderer, scene):
         changed = super(ParticleRendering, self).render_gui(imgui, renderer, scene)
@@ -27,7 +49,7 @@ class ParticleRendering(SceneComponent):
         _, self.cmap_log = imgui.checkbox("Take log", self.cmap_log)
         changed = changed or _
         _, new_value = imgui.slider_float(
-            "Max Inverse Fractional Size", 1.0 / self.max_particle_size, 10.0, 10000.0
+            "Max Inverse Fractional Size", 1.0 / self.max_particle_size, 1.0, 10000.0
         )
         if _:
             self.max_particle_size = 1.0 / new_value
@@ -46,7 +68,8 @@ class ParticleRendering(SceneComponent):
     def draw(self, scene, program):
         # We should batch this rendering somehow, and
         # also figure out the right face culling
-        GL.glDrawArrays(GL.GL_POINTS, 0, self.data.size)
+        with self.interpolation_texture.bind(0):
+            GL.glDrawArrays(GL.GL_POINTS, 0, self.data.size)
 
     def _set_uniforms(self, scene, shader_program):
         cam = scene.camera
