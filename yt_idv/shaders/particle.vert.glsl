@@ -15,10 +15,7 @@ void main()
 {
     v_model = position;
     vec4 clip_pos = projection * modelview * position;
-    inverse_proj = inverse(projection);
-    // inverse model-view-matrix
-    inverse_mvm = inverse(modelview);
-    inverse_pmvm = inverse(projection * modelview);
+    inverse_pmvm = inv_pmvm;
     vradius = in_radius * scale;
     field_value = in_field_value;
 

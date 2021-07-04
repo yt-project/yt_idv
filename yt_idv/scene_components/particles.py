@@ -75,3 +75,6 @@ class ParticleRendering(SceneComponent):
         shader_program._set_uniform("projection", cam.projection_matrix)
         shader_program._set_uniform("modelview", cam.view_matrix)
         shader_program._set_uniform("max_particle_size", self.max_particle_size)
+        shader_program._set_uniform(
+            "inv_pmvm", np.linalg.inv(cam.projection_matrix @ cam.view_matrix)
+        )
