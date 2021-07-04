@@ -66,10 +66,8 @@ class ParticleRendering(SceneComponent):
         return changed
 
     def draw(self, scene, program):
-        # We should batch this rendering somehow, and
-        # also figure out the right face culling
         with self.interpolation_texture.bind(0):
-            GL.glDrawArrays(GL.GL_POINTS, 0, self.data.size)
+            GL.glDrawArraysInstanced(GL.GL_TRIANGLE_STRIP, 0, 4, self.data.size)
 
     def _set_uniforms(self, scene, shader_program):
         cam = scene.camera

@@ -217,6 +217,5 @@ component_shaders:
       description: Display the particles as constant boxes
       first_vertex: particle
       first_fragment: particle
-      first_geometry: particle_expand
       second_vertex: passthrough
       second_fragment: apply_colormap

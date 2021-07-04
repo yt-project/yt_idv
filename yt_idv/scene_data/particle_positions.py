@@ -18,6 +18,9 @@ class ParticlePositions(SceneData):
 
     @traitlets.default("vertex_array")
     def _default_vertex_array(self):
+        model_vertex = np.array(
+            [[-1, -1], [-1, 1], [1, -1], [1, 1]], order="F", dtype="f4"
+        )
         va = VertexArray(name="particle_positions")
         positions = (
             self.data_source[self.particle_type, self.position_field]
@@ -38,8 +41,15 @@ class ParticlePositions(SceneData):
         positions = np.concatenate(
             [positions, np.ones((self.size, 1), dtype="f4")], axis=1
         )
-        va.attributes.append(VertexAttribute(name="model_vertex", data=positions))
-        va.attributes.append(VertexAttribute(name="in_radius", data=radii))
-        va.attributes.append(VertexAttribute(name="in_field_value", data=color_field))
+        va.attributes.append(
+            VertexAttribute(name="model_vertex", data=model_vertex, divisor=0)
+        )
+        va.attributes.append(
+            VertexAttribute(name="position", data=positions, divisor=1)
+        )
+        va.attributes.append(VertexAttribute(name="in_radius", data=radii, divisor=1))
+        va.attributes.append(
+            VertexAttribute(name="in_field_value", data=color_field, divisor=1)
+        )
 
         return va
