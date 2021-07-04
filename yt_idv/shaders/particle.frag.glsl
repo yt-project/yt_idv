@@ -7,5 +7,5 @@ varying in vec2 UV;
 void main(){
     float d = distance(UV, vec2(0.0));
     if (d > 1.0) discard;
-    color = vec4(max(1.0, 1.0/(d*d)) * field_value);
+    color = vec4(field_value);
 }

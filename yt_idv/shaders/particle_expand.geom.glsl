@@ -36,26 +36,30 @@ uniform vec3 arrangement[8] = vec3[](
 void main() {
 
     vec4 cornerPos;
-    vec4 cornerFrag;
+    vec2 cornerFrag;
     vec4 position = vv_model[0];
 
-    vec4 fragLeftCorner = vec4(projection * modelview * position);
-    vec4 fragRightCorner = vec4(projection * modelview * position);
+    mat4 pmvm = projection * modelview;
+
+    vec2 fragLeftCorner, fragRightCorner;
+    fragLeftCorner = fragRightCorner = gl_in[0].gl_Position.xy;
+
+    // This is definitely not the smartest way to do this!  We should be
+    // computing something in the clip/normal space.  We can take advantage of
+    // the fact that our sphere will always have at least one radial vector that
+    // is perpendicular to the eye vector.
 
     for (int i = 0; i < 8; i++) { 
         cornerPos = position + vec4(arrangement[i], 0.0) * vradius[0];
-        cornerFrag = projection * modelview * cornerPos;
+        cornerFrag = (projection * modelview * cornerPos).xy;
         fragLeftCorner.x = min(fragLeftCorner.x, cornerFrag.x);
         fragLeftCorner.y = min(fragLeftCorner.y, cornerFrag.y);
-        fragLeftCorner.z = min(fragLeftCorner.z, cornerFrag.z);
         fragRightCorner.x = max(fragRightCorner.x, cornerFrag.x);
         fragRightCorner.y = max(fragRightCorner.y, cornerFrag.y);
-        fragRightCorner.z = max(fragRightCorner.z, cornerFrag.z);
     }
 
     // We don't want to allow each particle to be bigger than some maximum size
     // in clip space coordinates.
-
     fragLeftCorner.x = max(fragLeftCorner.x, gl_in[0].gl_Position.x - max_particle_size/2.0);
     fragRightCorner.x = min(fragRightCorner.x, gl_in[0].gl_Position.x + max_particle_size/2.0);
 
