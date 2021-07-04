@@ -17,7 +17,7 @@ pos = ParticlePositions(
     color_field="density",
     position_field="position",
 )
-pren = ParticleRendering(data=pos, scale=1.0, max_particle_size=0.1)
+pren = ParticleRendering(data=pos, scale=1.0, max_particle_size=1.0)
 
 sg.data_objects.append(pos)
 sg.components.append(pren)

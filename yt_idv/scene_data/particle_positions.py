@@ -19,7 +19,7 @@ class ParticlePositions(SceneData):
     @traitlets.default("vertex_array")
     def _default_vertex_array(self):
         model_vertex = np.array(
-            [[-1, -1], [-1, 1], [1, -1], [1, 1]], order="F", dtype="f4"
+            [[-1, 1], [-1, -1], [1, 1], [1, -1]], order="F", dtype="f4"
         )
         va = VertexArray(name="particle_positions")
         positions = (
