@@ -65,19 +65,56 @@ class SimpleGUI:
             return
         changed = False
         with scene.camera.hold_trait_notifications():
-            for attr in ("position", "up", "focus"):
-                arr = getattr(scene.camera, attr)
-                imgui.text(f"Camera {attr}")
-                _, values = imgui.input_float3(
-                    "",
-                    arr[0],
-                    arr[1],
-                    arr[2],
-                    flags=imgui.INPUT_TEXT_ENTER_RETURNS_TRUE,
-                )
-                changed = changed or _
-                if _:
-                    setattr(scene.camera, attr, np.array(values))
+            position = scene.camera.position
+            imgui.text("Camera Position")
+            _, values = imgui.input_float3(
+                "",
+                position[0],
+                position[1],
+                position[2],
+                format="%0.4f",
+                flags=imgui.INPUT_TEXT_ENTER_RETURNS_TRUE,
+            )
+            changed = changed or _
+            if _:
+                scene.camera.position = np.array(values)
+            up = scene.camera.up
+            imgui.text("Camera Up")
+            _, values = imgui.input_float3(
+                "",
+                up[0],
+                up[1],
+                up[2],
+                format="%0.4f",
+                flags=imgui.INPUT_TEXT_ENTER_RETURNS_TRUE,
+            )
+            changed = changed or _
+            if _:
+                scene.camera.up = np.array(values)
+            focus = scene.camera.focus
+            imgui.text("Camera Focus")
+            _, values = imgui.input_float3(
+                "",
+                focus[0],
+                focus[1],
+                focus[2],
+                format="%0.4f",
+                flags=imgui.INPUT_TEXT_ENTER_RETURNS_TRUE,
+            )
+            changed = changed or _
+            if _:
+                scene.camera.focus = np.array(values)
+            _, values = imgui.input_float2(
+                "Camera Planes",
+                scene.camera.near_plane,
+                scene.camera.far_plane,
+                format="%0.6f",
+                flags=imgui.INPUT_TEXT_ENTER_RETURNS_TRUE,
+            )
+            changed = changed or _
+            if _:
+                scene.camera.near_plane = values[0]
+                scene.camera.far_plane = values[1]
         if changed:
             scene.camera._update_matrices()
         imgui.tree_pop()
