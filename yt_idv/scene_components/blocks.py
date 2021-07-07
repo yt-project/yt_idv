@@ -48,6 +48,10 @@ class BlockRendering(SceneComponent):
         if _:
             self.render_method = shader_combos[shader_ind]
         changed = changed or _
+        if imgui.button("Reset Colorbounds"):
+            self.cmap_min = self.cmap_max = None
+            changed = True
+        _, self.cmap_log = imgui.checkbox("Take log", self.cmap_log)
         if imgui.button("Recompile Shader"):
             self.fragment_shader.delete_shader()
             self.geometry_shader.delete_shader()
@@ -55,6 +59,7 @@ class BlockRendering(SceneComponent):
             self.colormap_fragment.delete_shader()
             self.colormap_vertex.delete_shader()
             self._program1_invalid = self._program2_invalid = True
+            changed = True
         if imgui.button("Add Block Outline"):
             from ..scene_annotations.block_outline import BlockOutline
 
@@ -112,6 +117,7 @@ class BlockRendering(SceneComponent):
                     data[xb1:xb2, 0, i] = np.mgrid[yv1 : yv2 : (xb2 - xb1) * 1j]
             if update:
                 self.transfer_function.data = (data * 255).astype("u1")
+        return changed
 
     @traitlets.default("transfer_function")
     def _default_transfer_function(self):

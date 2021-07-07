@@ -199,7 +199,7 @@ class Texture1D(Texture):
             gl_type, type1, type2 = TEX_CHANNELS[data.dtype.name][channels]
             GL.glPixelStorei(GL.GL_UNPACK_ALIGNMENT, 1)
             if not isinstance(change["old"], np.ndarray):
-                GL.glTexStorage1D(GL.GL_TEXTURE_1D, 1, type1, dx)
+                GL.glTexStorage1D(GL.GL_TEXTURE_1D, 6, type1, dx)
             GL.glTexSubImage1D(GL.GL_TEXTURE_1D, 0, 0, dx, type2, gl_type, data)
             GL.glTexParameterf(GL.GL_TEXTURE_1D, GL.GL_TEXTURE_WRAP_S, self.boundary_x)
             GL.glTexParameteri(
@@ -256,7 +256,7 @@ class Texture2D(Texture):
             gl_type, type1, type2 = TEX_CHANNELS[data.dtype.name][channels]
             GL.glPixelStorei(GL.GL_UNPACK_ALIGNMENT, 1)
             if not isinstance(change["old"], np.ndarray):
-                GL.glTexStorage2D(GL.GL_TEXTURE_2D, 1, type1, dx, dy)
+                GL.glTexStorage2D(GL.GL_TEXTURE_2D, 5, type1, dx, dy)
             GL.glTexSubImage2D(
                 GL.GL_TEXTURE_2D, 0, 0, 0, dx, dy, type2, gl_type, data.swapaxes(0, 1)
             )
@@ -294,6 +294,7 @@ class DepthBuffer(Texture2D):
             )
             GL.glTexParameterf(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_WRAP_S, self.boundary_x)
             GL.glTexParameterf(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_WRAP_T, self.boundary_y)
+            GL.glGenerateMipmap(GL.GL_TEXTURE_2D)
 
 
 class Texture3D(Texture):
