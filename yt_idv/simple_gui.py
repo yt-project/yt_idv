@@ -78,6 +78,14 @@ class SimpleGUI:
                 changed = changed or _
                 if _:
                     setattr(scene.camera, attr, np.array(values))
+            if imgui.button("Center"):
+                scene.camera.position = np.array([0.499, 0.499, 0.499])
+                scene.camera.focus = np.array([0.5, 0.5, 0.5])
+                changed = True
+            if imgui.button("Outside"):
+                scene.camera.position = np.array([1.5, 1.5, 1.5])
+                scene.camera.focus = np.array([0.5, 0.5, 0.5])
+                changed = True
         if changed:
             scene.camera._update_matrices()
         imgui.tree_pop()

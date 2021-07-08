@@ -53,9 +53,10 @@ void main()
 
     vec3 tl = (left_edge - ray_position)*idir;
     vec3 tr = (right_edge - ray_position)*idir;
+    vec3 tc = (v_camera_pos.xyz - ray_position)*idir;
 
-    vec3 tmin = min(tl, tr);
-    vec3 tmax = max(tl, tr);
+    vec3 tmin = min(min(tl, tc), tr);
+    vec3 tmax = max(min(tl, tc), tr);
 
     vec2 temp_t;
 
@@ -129,4 +130,5 @@ void main()
     if (ever_sampled) {
         gl_FragDepth = depth;
     }
+    //output_color = vec4(t1);
 }
