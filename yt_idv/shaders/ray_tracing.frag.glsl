@@ -41,7 +41,7 @@ void main()
 
     // Five samples
     vec3 step_size = dx/5.0;
-    vec3 dir = normalize(v_camera_pos.xyz - ray_position);
+    vec3 dir = normalize(ray_position - v_camera_pos.xyz);
     dir = max(abs(dir), 0.0001) * sign(dir);
     vec4 curr_color = vec4(0.0);
 
@@ -51,12 +51,11 @@ void main()
     vec3 idir = 1.0/dir;
     // These 't' prefixes actually mean 'parameter', as we use in grid_traversal.pyx.
 
-    vec3 tl = (left_edge - ray_position)*idir;
-    vec3 tr = (right_edge - ray_position)*idir;
-    vec3 tc = (v_camera_pos.xyz - ray_position)*idir;
+    vec3 tl = (left_edge - v_camera_pos)*idir;
+    vec3 tr = (right_edge - v_camera_pos)*idir;
 
-    vec3 tmin = min(min(tl, tc), tr);
-    vec3 tmax = max(min(tl, tc), tr);
+    vec3 tmin = min(tl, tr);
+    vec3 tmax = max(tl, tr);
 
     vec2 temp_t;
 

@@ -256,7 +256,7 @@ class Texture2D(Texture):
             gl_type, type1, type2 = TEX_CHANNELS[data.dtype.name][channels]
             GL.glPixelStorei(GL.GL_UNPACK_ALIGNMENT, 1)
             if not isinstance(change["old"], np.ndarray):
-                GL.glTexStorage2D(GL.GL_TEXTURE_2D, 5, type1, dx, dy)
+                GL.glTexStorage2D(GL.GL_TEXTURE_2D, 2, type1, dx, dy)
             GL.glTexSubImage2D(
                 GL.GL_TEXTURE_2D, 0, 0, 0, dx, dy, type2, gl_type, data.swapaxes(0, 1)
             )
