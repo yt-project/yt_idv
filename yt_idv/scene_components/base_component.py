@@ -195,6 +195,8 @@ class SceneComponent(traitlets.HasTraits):
             if data.size == 0:
                 cmap_min = 0.0
                 cmap_max = 1.0
+            else:
+                print(f"Computed new values {cmap_min=} {cmap_max=}")
         else:
             cmap_min = float(self.cmap_min)
             cmap_max = float(self.cmap_max)
