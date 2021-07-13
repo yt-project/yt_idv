@@ -31,8 +31,6 @@ class BlockRendering(SceneComponent):
 
     def render_gui(self, imgui, renderer, scene):
         changed = super(BlockRendering, self).render_gui(imgui, renderer, scene)
-        _, self.cmap_log = imgui.checkbox("Take log", self.cmap_log)
-        changed = changed or _
         _, sample_factor = imgui.slider_float(
             "Sample Factor", self.sample_factor, 1.0, 20.0
         )
@@ -43,6 +41,8 @@ class BlockRendering(SceneComponent):
         )
         if _:
             self.colormap.colormap_name = _cmaps[cmap_index]
+        changed = changed or _
+        _, self.cmap_log = imgui.checkbox("Take log", self.cmap_log)
         changed = changed or _
         # Now, shaders
         shader_combos = list(sorted(component_shaders[self.name]))
@@ -57,7 +57,6 @@ class BlockRendering(SceneComponent):
         if imgui.button("Reset Colorbounds"):
             self.cmap_min = self.cmap_max = None
             changed = True
-        _, self.cmap_log = imgui.checkbox("Take log", self.cmap_log)
         if imgui.button("Add Block Outline"):
             from ..scene_annotations.block_outline import BlockOutline
 

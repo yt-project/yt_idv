@@ -109,3 +109,6 @@ ENV/
 
 # IDE settings
 .vscode/
+
+# Screenshots
+snap_*.png
