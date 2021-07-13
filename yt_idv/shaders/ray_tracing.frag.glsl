@@ -53,9 +53,8 @@ void main()
     // smallest tmax
     temp_t = min(tmax.xx, tmax.yz);
     float t1 = min(temp_t.x, temp_t.y);
-    if (t1 <= t0) discard;
-
     t0 = max(t0, 0.0);
+    if (t1 <= t0) discard;
 
     // Some more discussion of this here:
     //  http://prideout.net/blog/?p=64
@@ -74,15 +73,10 @@ void main()
     vec3 nzones = range / dx;
     vec3 ndx = 1.0/nzones;
 
-    temp_t = max(nzones.xx, nzones.yz);
-
-    tdelta = max((t1 - t0)/(max(temp_t.x, temp_t.y)), tdelta);
-
     vec3 tex_curr_pos = vec3(0.0);
 
     bool sampled;
     bool ever_sampled = false;
-    vec3 last_sampled;
 
     vec4 v_clip_coord;
     float f_ndc_depth;
