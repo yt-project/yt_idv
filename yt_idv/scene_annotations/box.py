@@ -35,13 +35,6 @@ class BoxAnnotation(SceneAnnotation):
         return changed
 
     def _set_uniforms(self, scene, shader_program):
-        cam = scene.camera
-        shader_program._set_uniform("projection", cam.projection_matrix)
-        shader_program._set_uniform("modelview", cam.view_matrix)
-        shader_program._set_uniform(
-            "viewport", np.array(GL.glGetIntegerv(GL.GL_VIEWPORT), dtype="f4")
-        )
-        shader_program._set_uniform("camera_pos", cam.position)
         shader_program._set_uniform("box_width", self.box_width)
         shader_program._set_uniform("box_alpha", self.box_alpha)
         shader_program._set_uniform("box_color", np.array(self.box_color))

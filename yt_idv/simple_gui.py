@@ -2,7 +2,7 @@ import imgui
 import matplotlib.pyplot as plt
 import numpy as np
 from imgui.integrations.pyglet import create_renderer
-from yt.visualization.image_writer import write_bitmap
+from yt.visualization.image_writer import write_bitmap, write_image
 
 from .opengl_support import Texture2D
 
@@ -48,6 +48,15 @@ class SimpleGUI:
                     self.snapshot_format.format(count=self.snapshot_count),
                 )
                 self.snapshot_count += 1
+            if imgui.tree_node("Debug"):
+                if imgui.button("Save Depth"):
+                    scene.render()
+                    write_image(
+                        scene.depth,
+                        self.snapshot_format.format(count=self.snapshot_count),
+                    )
+                    self.snapshot_count += 1
+                imgui.tree_pop()
             _ = self.render_camera(scene)
             changed = changed or _
             # imgui.show_style_editor()
@@ -78,6 +87,14 @@ class SimpleGUI:
                 changed = changed or _
                 if _:
                     setattr(scene.camera, attr, np.array(values))
+            if imgui.button("Center"):
+                scene.camera.position = np.array([0.499, 0.499, 0.499])
+                scene.camera.focus = np.array([0.5, 0.5, 0.5])
+                changed = True
+            if imgui.button("Outside"):
+                scene.camera.position = np.array([1.5, 1.5, 1.5])
+                scene.camera.focus = np.array([0.5, 0.5, 0.5])
+                changed = True
         if changed:
             scene.camera._update_matrices()
         imgui.tree_pop()

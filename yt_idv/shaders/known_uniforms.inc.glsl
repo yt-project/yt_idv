@@ -31,6 +31,8 @@ uniform mat4 modelview;
 uniform mat4 projection;
 uniform vec3 camera_pos;
 uniform vec4 viewport; // (offset_x, offset_y, 1 / screen_x, 1 / screen_y)
+uniform float near_plane;
+uniform float far_plane;
 
 // textures we tend to use
 uniform sampler1D cm_tex;
@@ -39,3 +41,6 @@ uniform sampler2D fb_tex;
 uniform sampler2D tf_tex;
 uniform sampler3D bitmap_tex;
 uniform sampler3D ds_tex;
+
+// ray tracing control
+uniform float sample_factor;

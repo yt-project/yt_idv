@@ -1,4 +1,3 @@
-import numpy as np
 import traitlets
 from OpenGL import GL
 
@@ -31,6 +30,4 @@ class RGBALinePlot(SceneComponent):
             GL.glDrawArrays(GL.GL_LINE_STRIP, 0, self.data.n_vertices)
 
     def _set_uniforms(self, scene, shader_program):
-        shader_program._set_uniform(
-            "viewport", np.array(GL.glGetIntegerv(GL.GL_VIEWPORT), dtype="f4")
-        )
+        pass
