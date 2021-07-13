@@ -3,6 +3,7 @@ import contextlib
 import numpy as np
 import traitlets
 import traittypes
+from OpenGL import GL
 
 from yt_idv.traitlets_support import YTPositionTrait, ndarray_ro, ndarray_shape
 
@@ -99,3 +100,13 @@ class BaseCamera(traitlets.HasTraits):
 
         """
         pass
+
+    def _set_uniforms(self, scene, shader_program):
+        shader_program._set_uniform("projection", self.projection_matrix)
+        shader_program._set_uniform("modelview", self.view_matrix)
+        shader_program._set_uniform(
+            "viewport", np.array(GL.glGetIntegerv(GL.GL_VIEWPORT), dtype="f4")
+        )
+        shader_program._set_uniform("near_plane", self.near_plane)
+        shader_program._set_uniform("far_plane", self.far_plane)
+        shader_program._set_uniform("camera_pos", self.position)

@@ -30,7 +30,7 @@ void main()
     // https://www.opengl.org/wiki/Compute_eye_space_from_window_space#From_gl_FragCoord
     vec4 ndcPos;
     ndcPos.xy = ((2.0 * gl_FragCoord.xy) - (2.0 * viewport.xy)) / (viewport.zw) - 1;
-    ndcPos.z = (2.0 * gl_FragCoord.z - 1.0);
+    ndcPos.z = (2.0 * gl_FragCoord.z - near_plane - far_plane) / (far_plane - near_plane);
     ndcPos.w = 1.0;
 
     vec4 clipPos = ndcPos / gl_FragCoord.w;

@@ -135,13 +135,6 @@ class BlockRendering(SceneComponent):
                         GL.glDrawArrays(GL.GL_POINTS, tex_ind * each, each)
 
     def _set_uniforms(self, scene, shader_program):
-        cam = scene.camera
-        shader_program._set_uniform("projection", cam.projection_matrix)
-        shader_program._set_uniform("modelview", cam.view_matrix)
-        shader_program._set_uniform(
-            "viewport", np.array(GL.glGetIntegerv(GL.GL_VIEWPORT), dtype="f4")
-        )
-        shader_program._set_uniform("camera_pos", cam.position)
         shader_program._set_uniform("box_width", self.box_width)
         shader_program._set_uniform("ds_tex", 0)
         shader_program._set_uniform("bitmap_tex", 1)

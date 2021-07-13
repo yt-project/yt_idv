@@ -13,6 +13,4 @@ class MeshRendering(SceneComponent):
         GL.glDrawElements(GL.GL_TRIANGLES, self.data.size, GL.GL_UNSIGNED_INT, None)
 
     def _set_uniforms(self, scene, shader_program):
-        cam = scene.camera
-        shader_program._set_uniform("projection", cam.projection_matrix)
-        shader_program._set_uniform("modelview", cam.view_matrix)
+        pass
