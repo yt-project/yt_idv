@@ -102,6 +102,7 @@ class BaseCamera(traitlets.HasTraits):
         pass
 
     def _set_uniforms(self, scene, shader_program):
+        GL.glDepthRange(0.0, 1.0)  # Not the same as near/far plane
         shader_program._set_uniform("projection", self.projection_matrix)
         shader_program._set_uniform("modelview", self.view_matrix)
         shader_program._set_uniform(

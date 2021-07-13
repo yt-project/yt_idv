@@ -1,5 +1,4 @@
-flat in vec4 v_model;
-flat in vec3 v_camera_pos;
+in vec4 v_model;
 flat in vec3 dx;
 flat in vec3 left_edge;
 flat in vec3 right_edge;
@@ -28,20 +27,11 @@ void main()
 {
     // Obtain screen coordinates
     // https://www.opengl.org/wiki/Compute_eye_space_from_window_space#From_gl_FragCoord
-    vec4 ndcPos;
-    ndcPos.xy = ((2.0 * gl_FragCoord.xy) - (2.0 * viewport.xy)) / (viewport.zw) - 1;
-    ndcPos.z = (2.0 * gl_FragCoord.z - near_plane - far_plane) / (far_plane - near_plane);
-    ndcPos.w = 1.0;
-
-    vec4 clipPos = ndcPos / gl_FragCoord.w;
-    vec4 eyePos = inverse_proj * clipPos;
-    eyePos /= eyePos.w;
-
-    vec3 ray_position = (inverse_pmvm * clipPos).xyz;
+    vec3 ray_position = v_model.xyz;
 
     // Five samples
     vec3 step_size = dx/5.0;
-    vec3 dir = normalize(ray_position - v_camera_pos.xyz);
+    vec3 dir = -normalize(camera_pos.xyz - ray_position);
     dir = max(abs(dir), 0.0001) * sign(dir);
     vec4 curr_color = vec4(0.0);
 
@@ -49,18 +39,15 @@ void main()
     // This will help solve the left/right edge issues.
 
     vec3 idir = 1.0/dir;
+    vec3 tl = (left_edge - camera_pos)*idir;
+    vec3 tr = (right_edge - camera_pos)*idir;
+    vec3 tmin, tmax;
+    bvec3 temp_x, temp_y;
     // These 't' prefixes actually mean 'parameter', as we use in grid_traversal.pyx.
 
-    vec3 tl = (left_edge - v_camera_pos)*idir;
-    vec3 tr = (right_edge - v_camera_pos)*idir;
-
-    vec3 tmin = min(tl, tr);
-    vec3 tmax = max(tl, tr);
-
-    vec2 temp_t;
-
-    // biggest tmin
-    temp_t = max(tmin.xx, tmin.yz);
+    tmax = vec3(lessThan(dir, vec3(0.0)))*tl+vec3(greaterThanEqual(dir, vec3(0.0)))*tr;
+    tmin = vec3(greaterThanEqual(dir, vec3(0.0)))*tl+vec3(lessThan(dir, vec3(0.0)))*tr;
+    vec2 temp_t = max(tmin.xx, tmin.yz);
     float t0 = max(temp_t.x, temp_t.y);
 
     // smallest tmax
@@ -68,16 +55,15 @@ void main()
     float t1 = min(temp_t.x, temp_t.y);
     if (t1 <= t0) discard;
 
+    t0 = max(t0, 0.0);
+
     // Some more discussion of this here:
     //  http://prideout.net/blog/?p=64
 
-    t0 = max(t0, 0.0);
-    t1 = max(t1, 0.0);
+    vec3 p0 = camera_pos.xyz + dir * t0;
+    vec3 p1 = camera_pos.xyz + dir * t1;
 
-    vec3 p0 = v_camera_pos.xyz + dir * t0;
-    vec3 p1 = v_camera_pos.xyz + dir * t1;
-
-    vec3 dxidir = dx * abs(idir) / 10.0;
+    vec3 dxidir = dx * abs(idir) / 2.0;
 
     temp_t = min(dxidir.xx, dxidir.yz);
 
@@ -90,7 +76,7 @@ void main()
 
     temp_t = max(nzones.xx, nzones.yz);
 
-    tdelta = max((t1 - t0)/(5.0*max(temp_t.x, temp_t.y)), tdelta);
+    tdelta = max((t1 - t0)/(10.0*max(temp_t.x, temp_t.y)), tdelta);
 
     vec3 tex_curr_pos = vec3(0.0);
 
@@ -103,6 +89,7 @@ void main()
     float f_ndc_depth;
     float depth = 1.0;
 
+    ray_position = p0;
 
     while(t <= t1) {
         tex_curr_pos = (ray_position - left_edge) / range;  // Scale from 0 .. 1
@@ -129,5 +116,4 @@ void main()
     if (ever_sampled) {
         gl_FragDepth = depth;
     }
-    //output_color = vec4(t1);
 }
