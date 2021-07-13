@@ -21,6 +21,7 @@ class BlockRendering(SceneComponent):
     name = "block_rendering"
     data = traitlets.Instance(BlockCollection)
     box_width = traitlets.CFloat(0.1)
+    sample_factor = traitlets.CFloat(1.0)
     transfer_function = traitlets.Instance(TransferFunctionTexture)
     tf_min = traitlets.CFloat(0.0)
     tf_max = traitlets.CFloat(1.0)
@@ -32,6 +33,11 @@ class BlockRendering(SceneComponent):
         changed = super(BlockRendering, self).render_gui(imgui, renderer, scene)
         _, self.cmap_log = imgui.checkbox("Take log", self.cmap_log)
         changed = changed or _
+        _, sample_factor = imgui.slider_float(
+            "Sample Factor", self.sample_factor, 1.0, 20.0
+        )
+        if _:
+            self.sample_factor = sample_factor
         _, cmap_index = imgui.listbox(
             "Colormap", _cmaps.index(self.colormap.colormap_name), _cmaps
         )
@@ -48,13 +54,10 @@ class BlockRendering(SceneComponent):
         if _:
             self.render_method = shader_combos[shader_ind]
         changed = changed or _
-        if imgui.button("Recompile Shader"):
-            self.fragment_shader.delete_shader()
-            self.geometry_shader.delete_shader()
-            self.vertex_shader.delete_shader()
-            self.colormap_fragment.delete_shader()
-            self.colormap_vertex.delete_shader()
-            self._program1_invalid = self._program2_invalid = True
+        if imgui.button("Reset Colorbounds"):
+            self.cmap_min = self.cmap_max = None
+            changed = True
+        _, self.cmap_log = imgui.checkbox("Take log", self.cmap_log)
         if imgui.button("Add Block Outline"):
             from ..scene_annotations.block_outline import BlockOutline
 
@@ -112,6 +115,7 @@ class BlockRendering(SceneComponent):
                     data[xb1:xb2, 0, i] = np.mgrid[yv1 : yv2 : (xb2 - xb1) * 1j]
             if update:
                 self.transfer_function.data = (data * 255).astype("u1")
+        return changed
 
     @traitlets.default("transfer_function")
     def _default_transfer_function(self):
@@ -129,14 +133,8 @@ class BlockRendering(SceneComponent):
                         GL.glDrawArrays(GL.GL_POINTS, tex_ind * each, each)
 
     def _set_uniforms(self, scene, shader_program):
-        cam = scene.camera
-        shader_program._set_uniform("projection", cam.projection_matrix)
-        shader_program._set_uniform("modelview", cam.view_matrix)
-        shader_program._set_uniform(
-            "viewport", np.array(GL.glGetIntegerv(GL.GL_VIEWPORT), dtype="f4")
-        )
-        shader_program._set_uniform("camera_pos", cam.position)
         shader_program._set_uniform("box_width", self.box_width)
+        shader_program._set_uniform("sample_factor", self.sample_factor)
         shader_program._set_uniform("ds_tex", 0)
         shader_program._set_uniform("bitmap_tex", 1)
         shader_program._set_uniform("tf_tex", 2)

@@ -3,7 +3,6 @@ in vec3 in_dx;
 in vec3 in_left_edge;
 in vec3 in_right_edge;
 flat out vec4 vv_model;
-flat out vec3 vv_camera_pos;
 flat out mat4 vinverse_proj;
 flat out mat4 vinverse_mvm;
 flat out mat4 vinverse_pmvm;
@@ -14,7 +13,6 @@ flat out vec3 vright_edge;
 void main()
 {
     vv_model = model_vertex;
-    vv_camera_pos = camera_pos;
     vinverse_proj = inverse(projection);
     // inverse model-view-matrix
     vinverse_mvm = inverse(modelview);

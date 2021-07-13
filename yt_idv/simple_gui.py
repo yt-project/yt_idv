@@ -2,7 +2,7 @@ import imgui
 import matplotlib.pyplot as plt
 import numpy as np
 from imgui.integrations.pyglet import create_renderer
-from yt.visualization.image_writer import write_bitmap
+from yt.visualization.image_writer import write_bitmap, write_image
 
 from .opengl_support import Texture2D
 
@@ -48,6 +48,15 @@ class SimpleGUI:
                     self.snapshot_format.format(count=self.snapshot_count),
                 )
                 self.snapshot_count += 1
+            if imgui.tree_node("Debug"):
+                if imgui.button("Save Depth"):
+                    scene.render()
+                    write_image(
+                        scene.depth,
+                        self.snapshot_format.format(count=self.snapshot_count),
+                    )
+                    self.snapshot_count += 1
+                imgui.tree_pop()
             _ = self.render_camera(scene)
             changed = changed or _
             # imgui.show_style_editor()
@@ -65,45 +74,19 @@ class SimpleGUI:
             return
         changed = False
         with scene.camera.hold_trait_notifications():
-            position = scene.camera.position
-            imgui.text("Camera Position")
-            _, values = imgui.input_float3(
-                "",
-                position[0],
-                position[1],
-                position[2],
-                format="%0.4f",
-                flags=imgui.INPUT_TEXT_ENTER_RETURNS_TRUE,
-            )
-            changed = changed or _
-            if _:
-                scene.camera.position = np.array(values)
-            up = scene.camera.up
-            imgui.text("Camera Up")
-            _, values = imgui.input_float3(
-                "",
-                up[0],
-                up[1],
-                up[2],
-                format="%0.4f",
-                flags=imgui.INPUT_TEXT_ENTER_RETURNS_TRUE,
-            )
-            changed = changed or _
-            if _:
-                scene.camera.up = np.array(values)
-            focus = scene.camera.focus
-            imgui.text("Camera Focus")
-            _, values = imgui.input_float3(
-                "",
-                focus[0],
-                focus[1],
-                focus[2],
-                format="%0.4f",
-                flags=imgui.INPUT_TEXT_ENTER_RETURNS_TRUE,
-            )
-            changed = changed or _
-            if _:
-                scene.camera.focus = np.array(values)
+            for attr in ("position", "up", "focus"):
+                arr = getattr(scene.camera, attr)
+                imgui.text(f"Camera {attr}")
+                _, values = imgui.input_float3(
+                    "",
+                    arr[0],
+                    arr[1],
+                    arr[2],
+                    flags=imgui.INPUT_TEXT_ENTER_RETURNS_TRUE,
+                )
+                changed = changed or _
+                if _:
+                    setattr(scene.camera, attr, np.array(values))
             _, values = imgui.input_float2(
                 "Camera Planes",
                 scene.camera.near_plane,
@@ -115,6 +98,14 @@ class SimpleGUI:
             if _:
                 scene.camera.near_plane = values[0]
                 scene.camera.far_plane = values[1]
+            if imgui.button("Center"):
+                scene.camera.position = np.array([0.499, 0.499, 0.499])
+                scene.camera.focus = np.array([0.5, 0.5, 0.5])
+                changed = True
+            if imgui.button("Outside"):
+                scene.camera.position = np.array([1.5, 1.5, 1.5])
+                scene.camera.focus = np.array([0.5, 0.5, 0.5])
+                changed = True
         if changed:
             scene.camera._update_matrices()
         imgui.tree_pop()

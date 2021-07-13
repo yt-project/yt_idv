@@ -11,7 +11,10 @@ from pytest_html import extras
 
 import yt_idv
 
-os.environ["PYOPENGL_PLATFORM"] = "osmesa"
+
+@pytest.fixture(autouse=True)
+def pyopengl_setup(monkeypatch):
+    monkeypatch.setenv("PYOPENGL_PLATFORM", "osmesa")
 
 
 @pytest.fixture()
