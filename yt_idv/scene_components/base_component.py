@@ -67,6 +67,14 @@ class SceneComponent(traitlets.HasTraits):
 
     def render_gui(self, imgui, renderer, scene):
         changed, self.visible = imgui.checkbox("Visible", self.visible)
+        if imgui.button("Recompile Shader"):
+            self.fragment_shader.delete_shader()
+            self.geometry_shader.delete_shader()
+            self.vertex_shader.delete_shader()
+            self.colormap_fragment.delete_shader()
+            self.colormap_vertex.delete_shader()
+            self._program1_invalid = self._program2_invalid = True
+            changed = True
         return changed
 
     @traitlets.default("render_method")

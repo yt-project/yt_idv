@@ -41,3 +41,6 @@ uniform sampler2D fb_tex;
 uniform sampler2D tf_tex;
 uniform sampler3D bitmap_tex;
 uniform sampler3D ds_tex;
+
+// ray tracing control
+uniform float sample_factor;

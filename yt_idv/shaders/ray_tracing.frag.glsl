@@ -30,7 +30,7 @@ void main()
     vec3 ray_position = v_model.xyz;
 
     // Five samples
-    vec3 step_size = dx/5.0;
+    vec3 step_size = dx/sample_factor;
     vec3 dir = -normalize(camera_pos.xyz - ray_position);
     dir = max(abs(dir), 0.0001) * sign(dir);
     vec4 curr_color = vec4(0.0);
@@ -63,7 +63,7 @@ void main()
     vec3 p0 = camera_pos.xyz + dir * t0;
     vec3 p1 = camera_pos.xyz + dir * t1;
 
-    vec3 dxidir = dx * abs(idir) / 2.0;
+    vec3 dxidir = abs(idir)  * step_size;
 
     temp_t = min(dxidir.xx, dxidir.yz);
 
@@ -76,11 +76,10 @@ void main()
 
     temp_t = max(nzones.xx, nzones.yz);
 
-    tdelta = max((t1 - t0)/(10.0*max(temp_t.x, temp_t.y)), tdelta);
+    tdelta = max((t1 - t0)/(max(temp_t.x, temp_t.y)), tdelta);
 
     vec3 tex_curr_pos = vec3(0.0);
 
-    vec3 step = normalize(p1 - p0) * step_size;
     bool sampled;
     bool ever_sampled = false;
     vec3 last_sampled;
