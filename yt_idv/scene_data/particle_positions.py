@@ -11,8 +11,8 @@ class ParticlePositions(SceneData):
     name = "particle_positions"
     data_source = traitlets.Instance(YTDataContainer)
     particle_type = traitlets.Unicode("all")
-    radius_field = traitlets.Unicode("particle_ones")
-    color_field = traitlets.Unicode("particle_ones")
+    radius_field = traitlets.Unicode(None, allow_none=True)
+    color_field = traitlets.Unicode(None, allow_none=True)
     position_field = traitlets.Unicode("particle_position")
     size = traitlets.CInt(-1)
 
@@ -22,34 +22,21 @@ class ParticlePositions(SceneData):
             [[-1, 1], [-1, -1], [1, 1], [1, -1]], order="F", dtype="f4"
         )
         va = VertexArray(name="particle_positions")
-        positions = (
-            self.data_source[self.particle_type, self.position_field]
-            .in_units("unitary")
-            .astype("f4")
-            .d
-        )
-        radii = self.data_source[self.particle_type, self.radius_field]
-        if radii.units.dimensions is length:
-            radii.convert_to_units("unitary")
-        radii = radii.astype("f4").d
-        radii.shape = (radii.size, 1)
-        color_field = (
-            self.data_source[self.particle_type, self.color_field].astype("f4").d
-        )
-        color_field.shape = (color_field.size, 1)
-        self.size = radii.size
-        positions = np.concatenate(
-            [positions, np.ones((self.size, 1), dtype="f4")], axis=1
-        )
         va.attributes.append(
             VertexAttribute(name="model_vertex", data=model_vertex, divisor=0)
         )
-        va.attributes.append(
-            VertexAttribute(name="position", data=positions, divisor=1)
-        )
-        va.attributes.append(VertexAttribute(name="in_radius", data=radii, divisor=1))
-        va.attributes.append(
-            VertexAttribute(name="in_field_value", data=color_field, divisor=1)
-        )
-
+        for attr in ("position_field", "radius_field", "color_field"):
+            if getattr(self, attr) is None:
+                continue
+            field = self.data_source[self.particle_type, getattr(self, attr)]
+            if field.units.dimensions is length:
+                field.convert_to_units("unitary")
+            field = field.astype("f4").d
+            if field.ndim == 1:
+                field.shape = (field.size, 1)
+            else:
+                self.size = field.shape[0]  # for positions
+            print(f"Setting {attr} to a field of shape {field.shape}")
+            va.attributes.append(VertexAttribute(name=attr, data=field, divisor=1))
+        print(f"Size is now: {self.size}")
         return va

@@ -5,5 +5,5 @@ out vec4 color;
 in vec2 UV;
 
 void main(){
-    color = vec4(float(length(UV) < 1.0));
+    color = vec4(field_value * float(length(UV) < 1.0));
 }

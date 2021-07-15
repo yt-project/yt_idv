@@ -218,7 +218,7 @@ component_shaders:
       first_fragment: expand_1d
       second_vertex: passthrough
       second_fragment: passthrough
-  particle_rendering:
+  sph_rendering:
     default_value: default
     default:
       description: Display the particles as integrated SPH splats
@@ -226,7 +226,9 @@ component_shaders:
       first_fragment: sph_kernel
       second_vertex: passthrough
       second_fragment: apply_colormap
-    billboard:
+  particle_rendering:
+    default_value: default
+    default:
       description: Display the particles as constant circles
       first_vertex: particle
       first_fragment: field_value
