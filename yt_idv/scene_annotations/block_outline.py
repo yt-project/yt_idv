@@ -25,7 +25,7 @@ class BlockOutline(SceneAnnotation):
 
     def render_gui(self, imgui, renderer, scene):
         changed = super(BlockOutline, self).render_gui(imgui, renderer, scene)
-        _, bw = imgui.slider_float("Width", self.box_width, 0.001, 0.250)
+        _, bw = imgui.slider_float("Width", self.box_width, 0.001, 2.50)
         if _:
             self.box_width = bw
         changed = changed or _
