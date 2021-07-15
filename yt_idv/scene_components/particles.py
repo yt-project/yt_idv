@@ -71,24 +71,10 @@ class ParticleRendering(SceneComponent):
         if _:
             self.scale = 10 ** new_value
             changed = True
-        if imgui.button("Reset Colorbounds"):
-            self.cmap_min = self.cmap_max = None
-            changed = True
-        _, self.cmap_log = imgui.checkbox("Take log", self.cmap_log)
-        changed = changed or _
         imgui.text("Filter Particle Max Size")
         _, new_value = imgui.slider_float("", 1.0 / self.max_particle_size, 1.0, 100.0)
         if _:
             self.max_particle_size = 1.0 / new_value
-            changed = True
-        if imgui.button("Recompile Shader"):
-            self.fragment_shader.delete_shader()
-            if self.geometry_shader:
-                self.geometry_shader.delete_shader()
-            self.vertex_shader.delete_shader()
-            self.colormap_fragment.delete_shader()
-            self.colormap_vertex.delete_shader()
-            self._program1_invalid = self._program2_invalid = True
             changed = True
         return changed
 
