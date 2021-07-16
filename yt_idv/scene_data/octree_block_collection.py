@@ -1,4 +1,5 @@
 import numpy as np
+import OpenGL.GL as GL
 import traitlets
 from yt.data_objects.data_containers import YTDataContainer
 from yt.data_objects.index_subobjects.octree_subset import OctreeSubsetBlockSlice
@@ -10,8 +11,9 @@ from yt_idv.scene_data.base_data import SceneData
 class OctreeBlockCollection(SceneData):
     name = "octree_block_collection"
     data_source = traitlets.Instance(YTDataContainer)
-    data_texture = traitlets.Instance(Texture3D)
-    bitmap_texture = traitlets.Instance(Texture3D)
+    data_textures = traitlets.List(value_trait=traitlets.Instance(Texture3D))
+    bitmap_textures = traitlets.List(value_trait=traitlets.Instance(Texture3D))
+    shapes = traitlets.List(value_trait=traitlets.CInt())
 
     @traitlets.default("vertex_array")
     def _default_vertex_array(self):
@@ -65,9 +67,7 @@ class OctreeBlockCollection(SceneData):
             self.max_val = self.max_val.d
 
         self.vertex_array.attributes.append(
-            VertexAttribute(
-                name="model_vertex", data=np.ones(left_edges.shape[0] * 4, dtype="f4")
-            )
+            VertexAttribute(name="model_vertex", data=np.ones(4, dtype="f4"), divisor=0)
         )
         self.vertex_array.attributes.append(VertexAttribute(name="in_dx", data=dx))
         self.vertex_array.attributes.append(
@@ -77,6 +77,13 @@ class OctreeBlockCollection(SceneData):
             VertexAttribute(name="in_right_edge", data=right_edges)
         )
 
-        # Now we set up our textures
-        self.data_texture = Texture3D(data=data)
-        self.bitmap_texture = Texture3D(data=np.ones(data.shape, dtype="u1") * 255)
+        # Now we set up our textures; we need to break our texture up into
+        # groups of MAX_3D_TEXTURE_SIZE
+        tex_size = GL.glGetInteger(GL.GL_MAX_3D_TEXTURE_SIZE)
+        # for now, use one texture for all the bitmaps
+        bt = Texture3D(data=np.ones((3, 3, tex_size), dtype="u1") * 255)
+        for start_index in np.mgrid[0 : data.shape[-1] : tex_size]:
+            d = data[:, :, start_index : start_index + tex_size]
+            self.data_textures.append(Texture3D(data=d))
+            self.bitmap_textures.append(bt)
+            self.shapes.append(d.shape[-1])
