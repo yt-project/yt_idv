@@ -44,7 +44,7 @@ void main() {
 
     for (int i = 0; i < 14; i++) {
         newPos = vec4(vleft_edge[0] + width * arrangement[aindex[i]], 1.0);
-        gl_Position = projection * modelview * newPos;
+        gl_Position = projection * scale_matrix * modelview * newPos;
         left_edge = vleft_edge[0];
         right_edge = vright_edge[0];
         inverse_pmvm = vinverse_pmvm[0];

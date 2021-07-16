@@ -101,9 +101,12 @@ class BaseCamera(traitlets.HasTraits):
         """
         pass
 
-    def _set_uniforms(self, scene, shader_program):
+    def _set_uniforms(self, scene, shader_program, scale_matrix=None):
+        if scale_matrix is None:
+            scale_matrix = np.eye(4)
         GL.glDepthRange(0.0, 1.0)  # Not the same as near/far plane
         shader_program._set_uniform("projection", self.projection_matrix)
+        shader_program._set_uniform("scale_matrix", scale_matrix)
         shader_program._set_uniform("modelview", self.view_matrix)
         shader_program._set_uniform(
             "viewport", np.array(GL.glGetIntegerv(GL.GL_VIEWPORT), dtype="f4")

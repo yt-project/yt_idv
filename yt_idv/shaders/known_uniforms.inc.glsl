@@ -29,6 +29,7 @@ uniform mat4 model_to_clip;
 
 // Matrices for projection and positions
 uniform mat4 modelview;
+uniform mat4 scale_matrix;
 uniform mat4 projection;
 uniform vec3 camera_pos;
 uniform vec4 viewport; // (offset_x, offset_y, 1 / screen_x, 1 / screen_y)

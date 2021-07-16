@@ -17,11 +17,6 @@ class BlockCollection(SceneData):
     scale = traitlets.Bool(False)
     blocks_by_grid = traitlets.Instance(defaultdict, (list,))
     grids_by_block = traitlets.Dict(default_value=())
-    scale_matrix = traitlets.Instance(np.ndarray)
-
-    @traitlets.default("scale_matrix")
-    def _default_scale_matrix(self):
-        return np.eye(4)
 
     @traitlets.default("vertex_array")
     def _default_vertex_array(self):

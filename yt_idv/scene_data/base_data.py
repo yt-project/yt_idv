@@ -1,3 +1,4 @@
+import numpy as np
 import traitlets
 
 from yt_idv.opengl_support import Texture, VertexArray
@@ -19,3 +20,9 @@ class SceneData(traitlets.HasTraits):
 
     min_val = traitlets.CFloat(0.0)
     max_val = traitlets.CFloat(1.0)
+
+    scale_matrix = traitlets.Instance(np.ndarray)
+
+    @traitlets.default("scale_matrix")
+    def _default_scale_matrix(self):
+        return np.eye(4)

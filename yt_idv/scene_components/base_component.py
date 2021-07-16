@@ -209,7 +209,7 @@ class SceneComponent(traitlets.HasTraits):
             return
         with self.fb.bind(True):
             with self.program1.enable() as p:
-                scene.camera._set_uniforms(scene, p)
+                scene.camera._set_uniforms(scene, p, self.data.scale_matrix)
                 self._set_uniforms(scene, p)
                 with self.data.vertex_array.bind(p):
                     self.draw(scene, p)
