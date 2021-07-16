@@ -36,14 +36,6 @@ class BlockRendering(SceneComponent):
         )
         if _:
             self.sample_factor = sample_factor
-        _, cmap_index = imgui.listbox(
-            "Colormap", _cmaps.index(self.colormap.colormap_name), _cmaps
-        )
-        if _:
-            self.colormap.colormap_name = _cmaps[cmap_index]
-        changed = changed or _
-        _, self.cmap_log = imgui.checkbox("Take log", self.cmap_log)
-        changed = changed or _
         # Now, shaders
         shader_combos = list(sorted(component_shaders[self.name]))
         descriptions = [
@@ -54,9 +46,6 @@ class BlockRendering(SceneComponent):
         if _:
             self.render_method = shader_combos[shader_ind]
         changed = changed or _
-        if imgui.button("Reset Colorbounds"):
-            self.cmap_min = self.cmap_max = None
-            changed = True
         if imgui.button("Add Block Outline"):
             from ..scene_annotations.block_outline import BlockOutline
 
@@ -140,6 +129,3 @@ class BlockRendering(SceneComponent):
         shader_program._set_uniform("tf_min", self.tf_min)
         shader_program._set_uniform("tf_max", self.tf_max)
         shader_program._set_uniform("tf_log", float(self.tf_log))
-
-
-_cmaps = ["arbre", "viridis", "magma", "doom"]

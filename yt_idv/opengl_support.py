@@ -338,6 +338,7 @@ class VertexAttribute(traitlets.HasTraits):
     data = traittypes.Array(None, allow_none=True)
     each = traitlets.CInt(-1)
     opengl_type = traitlets.CInt(GL.GL_FLOAT)
+    divisor = traitlets.CInt(0)
 
     @traitlets.default("id")
     def _id_default(self):
@@ -349,6 +350,7 @@ class VertexAttribute(traitlets.HasTraits):
         if program is not None:
             loc = GL.glGetAttribLocation(program.program, self.name)
             if loc >= 0:
+                GL.glVertexAttribDivisor(loc, self.divisor)
                 _ = GL.glEnableVertexAttribArray(loc)
         _ = GL.glBindBuffer(GL.GL_ARRAY_BUFFER, self.id)
         if loc >= 0:

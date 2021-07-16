@@ -8,8 +8,9 @@ uniform float cmap_log;
 uniform float cmap_max;
 uniform float cmap_min;
 
-// Text control
+// Text and particle control
 uniform float scale;
+uniform float max_particle_size;
 uniform float x_offset;
 uniform float x_origin;
 uniform float y_offset;
@@ -31,6 +32,7 @@ uniform mat4 modelview;
 uniform mat4 projection;
 uniform vec3 camera_pos;
 uniform vec4 viewport; // (offset_x, offset_y, 1 / screen_x, 1 / screen_y)
+uniform mat4 inv_pmvm;
 uniform float near_plane;
 uniform float far_plane;
 

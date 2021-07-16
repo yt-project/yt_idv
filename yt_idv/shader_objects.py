@@ -320,6 +320,8 @@ class Shader(traitlets.HasTraits):
                 self.compile()
             except RuntimeError as exc:
                 print(exc)
+                for line_num, line in enumerate(self.shader_source.split("\n")):
+                    print(f"{line_num + 1:05}: {line}")
                 self._enable_null_shader()
         return self._shader
 

@@ -16,6 +16,8 @@ from yt_idv.shader_objects import (
     default_shader_combos,
 )
 
+_cmaps = ["arbre", "viridis", "magma", "doom"]
+
 
 class SceneComponent(traitlets.HasTraits):
     data = traitlets.Instance(SceneData)
@@ -68,12 +70,29 @@ class SceneComponent(traitlets.HasTraits):
     def render_gui(self, imgui, renderer, scene):
         changed, self.visible = imgui.checkbox("Visible", self.visible)
         if imgui.button("Recompile Shader"):
-            self.fragment_shader.delete_shader()
-            self.geometry_shader.delete_shader()
-            self.vertex_shader.delete_shader()
-            self.colormap_fragment.delete_shader()
-            self.colormap_vertex.delete_shader()
+            shaders = (
+                "vertex_shader",
+                "geometry_shader",
+                "fragment_shader",
+                "colormap_vertex",
+                "colormap_fragment",
+            )
+            for shader_name in shaders:
+                s = getattr(self, shader_name, None)
+                if s:
+                    s.delete_shader()
             self._program1_invalid = self._program2_invalid = True
+            changed = True
+        _, cmap_index = imgui.listbox(
+            "Colormap", _cmaps.index(self.colormap.colormap_name), _cmaps
+        )
+        if _:
+            self.colormap.colormap_name = _cmaps[cmap_index]
+        changed = changed or _
+        _, self.cmap_log = imgui.checkbox("Take log", self.cmap_log)
+        changed = changed or _
+        if imgui.button("Reset Colorbounds"):
+            self.cmap_min = self.cmap_max = None
             changed = True
         return changed
 
