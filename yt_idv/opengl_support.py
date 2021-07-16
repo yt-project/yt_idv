@@ -199,7 +199,7 @@ class Texture1D(Texture):
             gl_type, type1, type2 = TEX_CHANNELS[data.dtype.name][channels]
             GL.glPixelStorei(GL.GL_UNPACK_ALIGNMENT, 1)
             if not isinstance(change["old"], np.ndarray):
-                GL.glTexStorage1D(GL.GL_TEXTURE_1D, 1, type1, dx)
+                GL.glTexStorage1D(GL.GL_TEXTURE_1D, 6, type1, dx)
             GL.glTexSubImage1D(GL.GL_TEXTURE_1D, 0, 0, dx, type2, gl_type, data)
             GL.glTexParameterf(GL.GL_TEXTURE_1D, GL.GL_TEXTURE_WRAP_S, self.boundary_x)
             GL.glTexParameteri(
@@ -221,7 +221,9 @@ class ColormapTexture(Texture1D):
 
     @traitlets.validate("colormap_name")
     def _validate_name(self, proposal):
-        if proposal["value"] not in cm.cmap_d:
+        try:
+            cm.get_cmap(proposal["value"])
+        except ValueError:
             raise traitlets.TraitError(
                 "Colormap name needs to be known by" "matplotlib"
             )
@@ -254,7 +256,7 @@ class Texture2D(Texture):
             gl_type, type1, type2 = TEX_CHANNELS[data.dtype.name][channels]
             GL.glPixelStorei(GL.GL_UNPACK_ALIGNMENT, 1)
             if not isinstance(change["old"], np.ndarray):
-                GL.glTexStorage2D(GL.GL_TEXTURE_2D, 1, type1, dx, dy)
+                GL.glTexStorage2D(GL.GL_TEXTURE_2D, 2, type1, dx, dy)
             GL.glTexSubImage2D(
                 GL.GL_TEXTURE_2D, 0, 0, 0, dx, dy, type2, gl_type, data.swapaxes(0, 1)
             )
@@ -292,6 +294,7 @@ class DepthBuffer(Texture2D):
             )
             GL.glTexParameterf(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_WRAP_S, self.boundary_x)
             GL.glTexParameterf(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_WRAP_T, self.boundary_y)
+            GL.glGenerateMipmap(GL.GL_TEXTURE_2D)
 
 
 class Texture3D(Texture):
@@ -335,6 +338,7 @@ class VertexAttribute(traitlets.HasTraits):
     data = traittypes.Array(None, allow_none=True)
     each = traitlets.CInt(-1)
     opengl_type = traitlets.CInt(GL.GL_FLOAT)
+    divisor = traitlets.CInt(0)
 
     @traitlets.default("id")
     def _id_default(self):
@@ -346,6 +350,7 @@ class VertexAttribute(traitlets.HasTraits):
         if program is not None:
             loc = GL.glGetAttribLocation(program.program, self.name)
             if loc >= 0:
+                GL.glVertexAttribDivisor(loc, self.divisor)
                 _ = GL.glEnableVertexAttribArray(loc)
         _ = GL.glBindBuffer(GL.GL_ARRAY_BUFFER, self.id)
         if loc >= 0:

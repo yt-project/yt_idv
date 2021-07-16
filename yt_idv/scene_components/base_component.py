@@ -16,6 +16,8 @@ from yt_idv.shader_objects import (
     default_shader_combos,
 )
 
+_cmaps = ["arbre", "viridis", "magma", "doom"]
+
 
 class SceneComponent(traitlets.HasTraits):
     data = traitlets.Instance(SceneData)
@@ -23,7 +25,13 @@ class SceneComponent(traitlets.HasTraits):
     name = "undefined"
     priority = traitlets.CInt(0)
     visible = traitlets.Bool(True)
-    display_bounds = traitlets.Tuple((0.0, 1.0, 0.0, 1.0), trait=traitlets.CFloat())
+    display_bounds = traitlets.Tuple(
+        traitlets.CFloat(),
+        traitlets.CFloat(),
+        traitlets.CFloat(),
+        traitlets.CFloat(),
+        default_value=(0.0, 1.0, 0.0, 1.0),
+    )
     clear_region = traitlets.Bool(False)
 
     render_method = traitlets.Unicode(allow_none=True)
@@ -59,8 +67,33 @@ class SceneComponent(traitlets.HasTraits):
         if old_width != new_width or old_height != new_height:
             self.fb = Framebuffer()
 
-    def render_gui(self, imgui, renderer):
+    def render_gui(self, imgui, renderer, scene):
         changed, self.visible = imgui.checkbox("Visible", self.visible)
+        if imgui.button("Recompile Shader"):
+            shaders = (
+                "vertex_shader",
+                "geometry_shader",
+                "fragment_shader",
+                "colormap_vertex",
+                "colormap_fragment",
+            )
+            for shader_name in shaders:
+                s = getattr(self, shader_name, None)
+                if s:
+                    s.delete_shader()
+            self._program1_invalid = self._program2_invalid = True
+            changed = True
+        _, cmap_index = imgui.listbox(
+            "Colormap", _cmaps.index(self.colormap.colormap_name), _cmaps
+        )
+        if _:
+            self.colormap.colormap_name = _cmaps[cmap_index]
+        changed = changed or _
+        _, self.cmap_log = imgui.checkbox("Take log", self.cmap_log)
+        changed = changed or _
+        if imgui.button("Reset Colorbounds"):
+            self.cmap_min = self.cmap_max = None
+            changed = True
         return changed
 
     @traitlets.default("render_method")
@@ -176,6 +209,7 @@ class SceneComponent(traitlets.HasTraits):
             return
         with self.fb.bind(True):
             with self.program1.enable() as p:
+                scene.camera._set_uniforms(scene, p)
                 self._set_uniforms(scene, p)
                 with self.data.vertex_array.bind(p):
                     self.draw(scene, p)
@@ -189,6 +223,8 @@ class SceneComponent(traitlets.HasTraits):
             if data.size == 0:
                 cmap_min = 0.0
                 cmap_max = 1.0
+            else:
+                print(f"Computed new cmap values {cmap_min} - {cmap_max}")
         else:
             cmap_min = float(self.cmap_min)
             cmap_max = float(self.cmap_max)
@@ -197,8 +233,8 @@ class SceneComponent(traitlets.HasTraits):
                 with self.program2.enable() as p2:
                     with scene.bind_buffer():
                         p2._set_uniform("cmap", 0)
-                        p2._set_uniform("fb_texture", 1)
-                        p2._set_uniform("db_texture", 2)
+                        p2._set_uniform("fb_tex", 1)
+                        p2._set_uniform("db_tex", 2)
                         # Note that we use cmap_min/cmap_max, not
                         # self.cmap_min/self.cmap_max.
                         p2._set_uniform("cmap_min", cmap_min)

@@ -16,7 +16,7 @@ Character = namedtuple(
 
 
 class TextCharacters(SceneData):
-    characters = traitlets.Dict(trait=traitlets.Instance(Character))
+    characters = traitlets.Dict(value_trait=traitlets.Instance(Character))
     name = "text_overlay"
     font = FontTrait("DejaVu Sans")
     font_size = traitlets.CInt(32)

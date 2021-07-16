@@ -1,10 +1,5 @@
-#version 330 core
-
 layout ( points ) in;
 layout ( triangle_strip, max_vertices = 14 ) out;
-
-uniform mat4 modelview;
-uniform mat4 projection;
 
 flat in vec3 vdx[];
 flat in vec3 vleft_edge[];
@@ -16,14 +11,12 @@ flat out vec3 right_edge;
 flat out mat4 inverse_proj;
 flat out mat4 inverse_mvm;
 flat out mat4 inverse_pmvm;
-flat out vec4 v_model;
-flat out vec3 v_camera_pos;
+out vec4 v_model;
 
 flat in mat4 vinverse_proj[];
 flat in mat4 vinverse_mvm[];
 flat in mat4 vinverse_pmvm[];
 flat in vec4 vv_model[];
-flat in vec3 vv_camera_pos[];
 
 // https://stackoverflow.com/questions/28375338/cube-using-single-gl-triangle-strip
 // suggests that the triangle strip we want for the cube is
@@ -58,8 +51,7 @@ void main() {
         inverse_proj = vinverse_proj[0];
         inverse_mvm = vinverse_mvm[0];
         dx = vdx[0];
-        v_model = vv_model[0];
-        v_camera_pos = vv_camera_pos[0];
+        v_model = newPos;
         EmitVertex();
     }
 

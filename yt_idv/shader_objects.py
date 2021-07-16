@@ -21,6 +21,45 @@ from yt.utilities.exceptions import (
 
 from .opengl_support import GLValue, num_to_const
 
+_NULL_SOURCES = {
+    "geometry": r"""
+#version 330 core
+layout ( points ) in;
+layout ( points ) out;
+
+void main() {
+    gl_Position = gl_in[0].gl_Position;
+    EmitVertex();
+}
+    """,
+    "vertex": r"""
+#version 330 core
+
+// Input vertex data, different for all executions of this shader.
+in vec3 vertexPosition_modelspace;
+
+// Output data ; will be interpolated for each fragment.
+out vec2 UV;
+
+void main()
+{
+    gl_Position = vec4(vertexPosition_modelspace, 1.0);
+    UV = (vertexPosition_modelspace.xy+vec2(1.0,1.0))/2.0;
+}
+
+""",
+    "fragment": r"""
+#version 330 core
+
+out vec4 color;
+
+void main() {
+    color = vec4(gl_FragCoord.x, gl_FragCoord.y, gl_FragCoord.z, 1.0);
+    return;
+}
+""",
+}
+
 
 class ShaderProgram:
     """
@@ -227,6 +266,7 @@ class Shader(traitlets.HasTraits):
         # files.
         if not isinstance(source, (tuple, list)):
             source = (source,)
+        source = ("header.inc.glsl", "known_uniforms.inc.glsl",) + tuple(source)
         full_source = []
         for fn in source:
             if os.path.isfile(fn):
@@ -238,6 +278,10 @@ class Shader(traitlets.HasTraits):
                 raise YTInvalidShaderType(fn)
             full_source.append(open(fn, "r").read())
         return "\n\n".join(full_source)
+
+    def _enable_null_shader(self):
+        source = _NULL_SOURCES[self.shader_type]
+        self.compile(source=source)
 
     def compile(self, source=None, parameters=None):
         if source is None:
@@ -272,7 +316,13 @@ class Shader(traitlets.HasTraits):
     @property
     def shader(self):
         if self._shader is None:
-            self.compile()
+            try:
+                self.compile()
+            except RuntimeError as exc:
+                print(exc)
+                for line_num, line in enumerate(self.shader_source.split("\n")):
+                    print(f"{line_num + 1:05}: {line}")
+                self._enable_null_shader()
         return self._shader
 
     def delete_shader(self):

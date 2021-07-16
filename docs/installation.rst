@@ -32,13 +32,13 @@ You can either clone the public repository:
 
 .. code-block:: console
 
-    $ git clone git://github.com/data-exp-lab/yt_idv
+    $ git clone git://github.com/yt-project/yt_idv
 
 Or download the `tarball`_:
 
 .. code-block:: console
 
-    $ curl -OJL https://github.com/data-exp-lab/yt_idv/tarball/master
+    $ curl -OJL https://github.com/yt-project/yt_idv/tarball/master
 
 Once you have a copy of the source, you can install it with:
 
@@ -47,5 +47,5 @@ Once you have a copy of the source, you can install it with:
     $ python setup.py install
 
 
-.. _Github repo: https://github.com/data-exp-lab/yt_idv
-.. _tarball: https://github.com/data-exp-lab/yt_idv/tarball/master
+.. _Github repo: https://github.com/yt-project/yt_idv
+.. _tarball: https://github.com/yt-project/yt_idv/tarball/master

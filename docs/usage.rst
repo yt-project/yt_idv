@@ -7,12 +7,13 @@ Unfortunately, each of these two engines conducts some startup processes that
 make it impossible (or at the very least, beyond the capabilities of the
 ``yt_idv`` developers) to switch between them in a single session.
 
-The two rendering methods at present are:
+The three rendering methods at present are:
 
  * ``pyglet`` - this method utilizes `pyglet <https://pyglet.org/>`_ to draw windows, respond to events, and manage OpenGL contexts.  Drawing is still done using PyOpenGL.
  * ``EGL`` - this method utilizes `EGL <https://en.wikipedia.org/wiki/EGL_(API)>`_ via `PyOpenGL <https://pypi.org/project/PyOpenGL/>`_.  This is useful for *offscreen* rendering, for instance when running on a cluster node that has access to graphics acceleration, but which does not provide GUI access.
+ * ``OSMesa`` - this method utilizes `OSMesa <https://docs.mesa3d.org/osmesa.html>`_ via `PyOpenGL <https://pypi.org/project/PyOpenGL/>`_.  This is useful for *offscreen* rendering when GPUs are not available on the rendering node.  It is a good fallback for when you can't use EGL.
 
-These two methods are wrapped by the function :func:`yt_idv.render_context` function, which accepts its first argument as either the string ``egl`` or ``pyglet``.
+These two methods are wrapped by the function :func:`yt_idv.render_context` function, which accepts its first argument as either the string ``egl``, ``osmesa`` or ``pyglet``.
 
 -------------------
 Interactive Windows
@@ -67,7 +68,8 @@ made.
 Off-screen Rendering
 --------------------
 
-To utilize off-screen rendering, you can request the "egl" render context::
+To utilize off-screen rendering, you can request either the "egl" or "osmesa"
+render context::
 
     import yt
     import yt_idv

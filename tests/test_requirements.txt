@@ -1,0 +1,22 @@
+flake8==3.8.1  # keep in sync with .pre-commit-config.yaml
+mccabe~=0.6.1
+pycodestyle~=2.6.0
+pyflakes~=2.2.0
+isort==5.6.4   # keep in sync with .pre-commit-config.yaml
+black==19.10b0 # keep in sync with .pre-commit-config.yaml
+flake8-bugbear
+flynt==0.52    # keep in sync with .pre-commit-config.yaml
+pytest==6.1.2
+pytest-html==3.1.0
+git+git://github.com/yt-project/yt.git#egg=yt
+pyOpenGL==3.1.5
+Click==7.0
+traitlets>=5.0.5
+pyOpenGL==3.1.5
+traittypes>=0.2.1
+matplotlib>=3.0
+numpy>=1.18.0
+git+git://github.com/pyglet/pyglet#egg=pyglet
+pyyaml>=5.3.1
+imgui>=1.2.0
+more_itertools>=8.6.0

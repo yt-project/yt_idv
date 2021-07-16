@@ -2,7 +2,7 @@ import imgui
 import matplotlib.pyplot as plt
 import numpy as np
 from imgui.integrations.pyglet import create_renderer
-from yt.visualization.image_writer import write_bitmap
+from yt.visualization.image_writer import write_bitmap, write_image
 
 from .opengl_support import Texture2D
 
@@ -48,12 +48,21 @@ class SimpleGUI:
                     self.snapshot_format.format(count=self.snapshot_count),
                 )
                 self.snapshot_count += 1
+            if imgui.tree_node("Debug"):
+                if imgui.button("Save Depth"):
+                    scene.render()
+                    write_image(
+                        scene.depth,
+                        self.snapshot_format.format(count=self.snapshot_count),
+                    )
+                    self.snapshot_count += 1
+                imgui.tree_pop()
             _ = self.render_camera(scene)
             changed = changed or _
             # imgui.show_style_editor()
             for i, element in enumerate(scene):
                 if imgui.tree_node(f"element {i + 1}: {element.name}"):
-                    changed = changed or element.render_gui(imgui, self.renderer)
+                    changed = changed or element.render_gui(imgui, self.renderer, scene)
                     imgui.tree_pop()
             self.window._do_update = self.window._do_update or changed
             imgui.end()
@@ -78,6 +87,25 @@ class SimpleGUI:
                 changed = changed or _
                 if _:
                     setattr(scene.camera, attr, np.array(values))
+            _, values = imgui.input_float2(
+                "Camera Planes",
+                scene.camera.near_plane,
+                scene.camera.far_plane,
+                format="%0.6f",
+                flags=imgui.INPUT_TEXT_ENTER_RETURNS_TRUE,
+            )
+            changed = changed or _
+            if _:
+                scene.camera.near_plane = values[0]
+                scene.camera.far_plane = values[1]
+            if imgui.button("Center"):
+                scene.camera.position = np.array([0.499, 0.499, 0.499])
+                scene.camera.focus = np.array([0.5, 0.5, 0.5])
+                changed = True
+            if imgui.button("Outside"):
+                scene.camera.position = np.array([1.5, 1.5, 1.5])
+                scene.camera.focus = np.array([0.5, 0.5, 0.5])
+                changed = True
         if changed:
             scene.camera._update_matrices()
         imgui.tree_pop()

@@ -250,12 +250,14 @@ class SceneGraph(traitlets.HasTraits):
         else:
             ds, data_source = ds.ds, ds
         center = ds.domain_center
-        pos = center + 1.5 * ds.domain_width
-        near_plane = 3.0 * ds.index.get_smallest_dx().min().d
+        pos = center + 1.5 * ds.domain_width.in_units("unitary")
+        near_plane = 3.0 * ds.index.get_smallest_dx().min().in_units("unitary").d
+        near_plane = max(near_plane, 1e-5)
 
         c = TrackballCamera(position=pos, focus=center, near_plane=near_plane)
         c.update_orientation(0, 0, 0, 0)
 
         scene = SceneGraph(camera=c)
-        scene.add_volume(data_source, field, no_ghost=no_ghost)
+        if field is not None:
+            scene.add_volume(data_source, field, no_ghost=no_ghost)
         return scene

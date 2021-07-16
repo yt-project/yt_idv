@@ -1,6 +1,3 @@
-#version 330 core
-
-uniform int channel;
 out vec4 color;
 
 void main() {

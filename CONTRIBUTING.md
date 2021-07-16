@@ -9,7 +9,7 @@ You can contribute in many ways:
 
 ### Report Bugs
 
-Report bugs at https://github.com/data-exp-lab/yt_idv/issues.
+Report bugs at https://github.com/yt-project/yt_idv/issues.
 
 If you are reporting a bug, please include:
 
@@ -35,7 +35,7 @@ articles, and such.
 
 ### Submit Feedback
 
-The best way to send feedback is to file an issue at https://github.com/data-exp-lab/yt_idv/issues.
+The best way to send feedback is to file an issue at https://github.com/yt-project/yt_idv/issues.
 
 If you are proposing a feature:
 
@@ -102,7 +102,7 @@ Before you submit a pull request, check that it meets these guidelines:
    your new functionality into a function with a docstring, and add the
    feature to the list in README.rst.
 3. The pull request should work for Python 3.5, 3.6, 3.7 and 3.8, and for PyPy. Check
-   https://travis-ci.com/data-exp-lab/yt_idv/pull_requests
+   https://travis-ci.com/yt-project/yt_idv/pull_requests
    and make sure that the tests pass for all supported Python versions.
 
 ## Tips
@@ -127,3 +127,9 @@ $ git push --tags
 ```
 
 Travis will then deploy to PyPI if tests pass.
+
+## Releasing
+
+When a new tag is pushed, a new source release will be pushed up to PyPI.  You
+don't need to do much else besides that -- the github action should take care
+of it!

@@ -18,16 +18,10 @@ class GridOutlines(SceneAnnotation):
     box_alpha = traitlets.CFloat(1.0)
 
     def draw(self, scene, program):
+        GL.glDisable(GL.GL_CULL_FACE)
         GL.glDrawArrays(GL.GL_POINTS, 0, len(self.data.grid_list))
 
     def _set_uniforms(self, scene, shader_program):
-        cam = scene.camera
-        shader_program._set_uniform("projection", cam.projection_matrix)
-        shader_program._set_uniform("modelview", cam.view_matrix)
-        shader_program._set_uniform(
-            "viewport", np.array(GL.glGetIntegerv(GL.GL_VIEWPORT), dtype="f4")
-        )
-        shader_program._set_uniform("camera_pos", cam.position)
         shader_program._set_uniform("box_width", self.box_width)
         shader_program._set_uniform("box_color", np.array(self.box_color))
         shader_program._set_uniform("box_alpha", self.box_alpha)

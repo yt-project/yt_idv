@@ -91,6 +91,20 @@ shader_definitions:
       blend_equation_separate:
       - func add
       - func add
+    sph_kernel:
+      info: Sample pre-integrated SPH kernel
+      source: sph_kernel.frag.glsl
+      blend_func:
+      - one
+      - one
+      blend_equation: func add
+    field_value:
+      info: Use field values as input
+      source: field_value.frag.glsl
+      blend_func:
+      - one
+      - one
+      blend_equation: func add
   vertex:
     default:
       info: A first pass vertex shader that tranlates the location of vertices from
@@ -112,10 +126,16 @@ shader_definitions:
     text_overlay:
       info: A simple text overlay shader
       source: textoverlay.vert.glsl
+    particle:
+      info: A billboard particle vertex shader
+      source: particle.vert.glsl
   geometry:
     grid_expand:
       info: Expand grid left and right edges into a set of triangles
       source: grid_expand.geom.glsl
+    particle_expand:
+      info: Expand particles from points to triangulated quads
+      source: particle_expand.geom.glsl
 component_shaders:
   block_rendering:
     default_value: max_intensity
@@ -198,3 +218,19 @@ component_shaders:
       first_fragment: expand_1d
       second_vertex: passthrough
       second_fragment: passthrough
+  sph_rendering:
+    default_value: default
+    default:
+      description: Display the particles as integrated SPH splats
+      first_vertex: particle
+      first_fragment: sph_kernel
+      second_vertex: passthrough
+      second_fragment: apply_colormap
+  particle_rendering:
+    default_value: default
+    default:
+      description: Display the particles as constant circles
+      first_vertex: particle
+      first_fragment: field_value
+      second_vertex: passthrough
+      second_fragment: apply_colormap

@@ -11,8 +11,8 @@ from yt_idv.scene_data.base_data import SceneData
 class BlockCollection(SceneData):
     name = "block_collection"
     data_source = traitlets.Instance(YTDataContainer)
-    texture_objects = traitlets.Dict(trait=traitlets.Instance(Texture3D))
-    bitmap_objects = traitlets.Dict(trait=traitlets.Instance(Texture3D))
+    texture_objects = traitlets.Dict(value_trait=traitlets.Instance(Texture3D))
+    bitmap_objects = traitlets.Dict(value_trait=traitlets.Instance(Texture3D))
     blocks = traitlets.Dict(default_value=())
     scale = traitlets.Bool(False)
     blocks_by_grid = traitlets.Instance(defaultdict, (list,))
@@ -134,9 +134,11 @@ class BlockCollection(SceneData):
         for block_id in sorted(self.blocks):
             vbo_i, block = self.blocks[block_id]
             n_data = np.abs(block.my_data[0]).copy(order="F").astype("float32").d
-            n_data = (n_data - self.min_val) / (
-                (self.max_val - self.min_val)
-            )  # * self.diagonal)
+            # Avoid setting to NaNs
+            if self.max_val != self.min_val:
+                n_data = (n_data - self.min_val) / (
+                    (self.max_val - self.min_val)
+                )  # * self.diagonal)
             data_tex = Texture3D(data=n_data)
             bitmap_tex = Texture3D(
                 data=block.source_mask * 255, min_filter="nearest", mag_filter="nearest"

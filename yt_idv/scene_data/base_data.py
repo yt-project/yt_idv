@@ -13,7 +13,7 @@ class SceneData(traitlets.HasTraits):
 
     """
 
-    name = None
+    name = traitlets.Unicode()
     vertex_array = traitlets.Instance(VertexArray)
     textures = traitlets.List(trait=traitlets.Instance(Texture))
 
