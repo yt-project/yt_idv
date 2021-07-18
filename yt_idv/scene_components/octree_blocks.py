@@ -114,6 +114,7 @@ class OctreeBlockRendering(SceneComponent):
         GL.glEnable(GL.GL_CULL_FACE)
         GL.glCullFace(GL.GL_BACK)
         start = 0
+        each = self.data.vertex_array.each
         with self.transfer_function.bind(target=2):
             for i, (data_tex, bitmap_tex) in enumerate(
                 zip(self.data.data_textures, self.data.bitmap_textures)
@@ -121,8 +122,9 @@ class OctreeBlockRendering(SceneComponent):
                 with data_tex.bind(target=0):
                     with bitmap_tex.bind(target=1):
                         GL.glDrawArraysInstanced(
-                            GL.GL_POINTS, start, 4, self.data.shapes[i]
+                            GL.GL_TRIANGLE_STRIP, start, each, self.data.shapes[i]
                         )
+                        start += self.data.shapes[i]
 
     def _set_uniforms(self, scene, shader_program):
         shader_program._set_uniform("box_width", self.box_width)

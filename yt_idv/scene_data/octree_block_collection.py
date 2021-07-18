@@ -4,6 +4,7 @@ import traitlets
 from yt.data_objects.data_containers import YTDataContainer
 from yt.data_objects.index_subobjects.octree_subset import OctreeSubsetBlockSlice
 
+from yt_idv.constants import aabb_triangle_strip
 from yt_idv.opengl_support import Texture3D, VertexArray, VertexAttribute
 from yt_idv.scene_data.base_data import SceneData
 
@@ -17,7 +18,7 @@ class OctreeBlockCollection(SceneData):
 
     @traitlets.default("vertex_array")
     def _default_vertex_array(self):
-        return VertexArray(name="octree_block_info", each=1)
+        return VertexArray(name="octree_block_info", each=14)
 
     def add_data(self, field):
         r"""Adds a source of data for the block collection.
@@ -67,14 +68,16 @@ class OctreeBlockCollection(SceneData):
             self.max_val = self.max_val.d
 
         self.vertex_array.attributes.append(
-            VertexAttribute(name="model_vertex", data=np.ones(4, dtype="f4"), divisor=0)
-        )
-        self.vertex_array.attributes.append(VertexAttribute(name="in_dx", data=dx))
-        self.vertex_array.attributes.append(
-            VertexAttribute(name="in_left_edge", data=left_edges)
+            VertexAttribute(name="model_vertex", data=aabb_triangle_strip, divisor=0)
         )
         self.vertex_array.attributes.append(
-            VertexAttribute(name="in_right_edge", data=right_edges)
+            VertexAttribute(name="in_dx", data=dx, divisor=1)
+        )
+        self.vertex_array.attributes.append(
+            VertexAttribute(name="in_left_edge", data=left_edges, divisor=1)
+        )
+        self.vertex_array.attributes.append(
+            VertexAttribute(name="in_right_edge", data=right_edges, divisor=1)
         )
 
         # Now we set up our textures; we need to break our texture up into

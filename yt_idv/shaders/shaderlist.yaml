@@ -1,5 +1,12 @@
 shader_definitions:
   fragment:
+    constant:
+      info: A constant value applied
+      source: constant.frag.glsl
+      blend_func:
+      - one
+      - one
+      blend_equation: func add
     apply_colormap:
       info: A second pass fragment shader used to apply a colormap to the result of
         the first pass rendering
@@ -129,6 +136,9 @@ shader_definitions:
     particle:
       info: A billboard particle vertex shader
       source: particle.vert.glsl
+    octree_position:
+      info: Expect instanced rendering of octree nodes
+      source: octree_position.vert.glsl
   geometry:
     grid_expand:
       info: Expand grid left and right edges into a set of triangles
@@ -164,9 +174,8 @@ component_shaders:
     default_value: max_intensity
     max_intensity:
       description: Maximum Intensity
-      first_vertex: grid_position
-      first_geometry: grid_expand
-      first_fragment: max_intensity
+      first_vertex: octree_position
+      first_fragment: constant
       second_vertex: passthrough
       second_fragment: apply_colormap
   block_outline:
