@@ -49,10 +49,14 @@ class OctreeBlockCollection(SceneData):
             dx.append(bs._fwidth[-1, -1, -1, :, :].d)
             left_edges.append(LE)
             right_edges.append(RE)
-            data.append(bs.get_vertex_centered_data([field])[field])
+            d = bs.get_vertex_centered_data([field])[field]
+            data.append(
+                np.concatenate(
+                    [d[:, :, :, i] for i in range(d.shape[-1])], axis=2
+                ).copy(order="C")
+            )
 
         # Let's reshape ...
-
         left_edges = np.concatenate(left_edges, axis=0).astype("f4")
         right_edges = np.concatenate(right_edges, axis=0).astype("f4")
         dx = np.concatenate(dx, axis=0).astype("f4")
@@ -60,12 +64,17 @@ class OctreeBlockCollection(SceneData):
         data = data.reshape((3, 3, -1))
 
         self.min_val = np.nanmin(data)
-        self.min_val = np.nanmax(data)
+        self.max_val = np.nanmax(data)
 
         if hasattr(self.min_val, "in_units"):
             self.min_val = self.min_val.d
         if hasattr(self.max_val, "in_units"):
             self.max_val = self.max_val.d
+
+        if self.max_val != self.min_val:
+            data = (data - self.min_val) / (
+                (self.max_val - self.min_val)
+            )  # * self.diagonal)
 
         self.vertex_array.attributes.append(
             VertexAttribute(name="model_vertex", data=aabb_triangle_strip, divisor=0)

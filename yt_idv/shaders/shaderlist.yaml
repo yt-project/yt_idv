@@ -175,9 +175,21 @@ component_shaders:
     max_intensity:
       description: Maximum Intensity
       first_vertex: octree_position
-      first_fragment: constant
+      first_fragment: max_intensity
       second_vertex: passthrough
       second_fragment: apply_colormap
+    projection:
+      description: Projective integration
+      first_vertex: octree_position
+      first_fragment: projection
+      second_vertex: passthrough
+      second_fragment: apply_colormap
+    transfer_function:
+      description: Color transfer function
+      first_vertex: octree_position
+      first_fragment: transfer_function
+      second_vertex: passthrough
+      second_fragment: passthrough
   block_outline:
     default_value: default
     default:

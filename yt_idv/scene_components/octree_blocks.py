@@ -111,10 +111,10 @@ class OctreeBlockRendering(SceneComponent):
         return tf
 
     def draw(self, scene, program):
+        each = self.data.vertex_array.each
         GL.glEnable(GL.GL_CULL_FACE)
         GL.glCullFace(GL.GL_BACK)
         start = 0
-        each = self.data.vertex_array.each
         with self.transfer_function.bind(target=2):
             for i, shape in enumerate(self.data.shapes[:-1]):
                 with self.data.data_textures[i].bind(target=0):

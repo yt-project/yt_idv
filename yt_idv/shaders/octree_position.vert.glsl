@@ -9,6 +9,7 @@ flat out mat4 inverse_pmvm;
 flat out vec3 dx;
 flat out vec3 left_edge;
 flat out vec3 right_edge;
+flat out ivec3 texture_offset;
 
 void main()
 {
@@ -22,4 +23,5 @@ void main()
     dx = vec3(in_dx);
     left_edge = vec3(in_left_edge);
     right_edge = vec3(in_right_edge);
+    texture_offset = ivec3(0, 0, gl_InstanceID);
 }
