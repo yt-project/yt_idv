@@ -46,3 +46,15 @@ uniform sampler3D ds_tex;
 
 // ray tracing control
 uniform float sample_factor;
+
+// disk slice renderer
+// in our convention, theta runs from 0 .. 2pi and phi from 0 .. pi
+uniform vec3 disk_center;
+uniform vec3 disk_vector;
+uniform vec2 theta_bounds; 
+uniform vec2 phi_bounds;
+uniform vec2 r_bounds;
+
+const float PI = 3.1415926535897932384626433832795;
+const float PI_2 = 1.57079632679489661923;
+const float PI_4 = 0.785398163397448309616;
