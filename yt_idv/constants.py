@@ -64,3 +64,22 @@ FULLSCREEN_QUAD = np.array(
     ],
     dtype=np.float32,
 )
+
+_bbox_corners = np.array(
+    [
+        [0, 0, 0, 1.0],
+        [1, 0, 0, 1.0],
+        [0, 1, 0, 1.0],
+        [1, 1, 0, 1.0],
+        [0, 0, 1, 1.0],
+        [1, 0, 1, 1.0],
+        [0, 1, 1, 1.0],
+        [1, 1, 1, 1.0],
+    ],
+    dtype="float32",
+)
+
+aabb_triangle_strip = np.array(
+    [_bbox_corners[_] for _ in (6, 7, 4, 5, 1, 7, 3, 6, 2, 4, 0, 1, 2, 3)],
+    dtype="float32",
+)

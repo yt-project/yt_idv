@@ -5,6 +5,7 @@ flat in vec3 right_edge;
 flat in mat4 inverse_proj;
 flat in mat4 inverse_mvm;
 flat in mat4 inverse_pmvm;
+flat in ivec3 texture_offset;
 out vec4 output_color;
 
 bool within_bb(vec3 pos)
