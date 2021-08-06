@@ -147,6 +147,14 @@ shader_definitions:
       info: Expand particles from points to triangulated quads
       source: particle_expand.geom.glsl
 component_shaders:
+  curve_rendering:
+      default_value: default
+      default:
+          description: Default
+          first_vertex: mesh
+          first_fragment: constant
+          second_vertex: passthrough
+          second_fragment: passthrough
   block_rendering:
     default_value: max_intensity
     max_intensity:
