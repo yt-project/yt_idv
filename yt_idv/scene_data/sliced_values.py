@@ -2,6 +2,7 @@ import numpy as np
 import traitlets
 from yt.data_objects.data_containers import YTDataContainer
 
+from yt_idv.constants import aabb_triangle_strip
 from yt_idv.opengl_support import VertexArray, VertexAttribute
 from yt_idv.scene_data.base_data import SceneData
 
@@ -15,12 +16,9 @@ class SlicedData(SceneData):
 
     @traitlets.default("vertex_array")
     def _default_vertex_array(self):
-        model_vertex = np.array(
-            [[-1, 1], [-1, -1], [1, 1], [1, -1]], order="F", dtype="f4"
-        )
-        va = VertexArray(name="data_positions")
+        va = VertexArray(name="data_positions", each=14)
         va.attributes.append(
-            VertexAttribute(name="model_vertex", data=model_vertex, divisor=0)
+            VertexAttribute(name="model_vertex", data=aabb_triangle_strip, divisor=0)
         )
         field = self.data_source[self.field_type, self.color_field].astype("f4").d
         field.shape = (field.size, 1)
