@@ -8,10 +8,7 @@ from yt_idv.scene_data.line import CurveData
 
 class CurveRendering(SceneComponent):
     """
-    A class that renders block data.  It may do this in one of several ways,
-    including mesh outline.  This allows us to render a single collection of
-    blocks multiple times in a single scene and to separate out the memory
-    handling from the display.
+    A class that renders user-specified curves.
     """
 
     name = "curve_rendering"
