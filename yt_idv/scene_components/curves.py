@@ -38,7 +38,7 @@ class CurveRendering(SceneComponent):
     def draw(self, scene, program):
         GL.glEnable(GL.GL_CULL_FACE)
         GL.glCullFace(GL.GL_BACK)
-        GL.glDrawArrays(GL.GL_LINES, 0, self.data.n_vertices)
+        GL.glDrawArrays(GL.GL_LINE_LOOP, 0, self.data.n_vertices)
 
     def _set_uniforms(self, scene, shader_program):
         pass #shader_program._set_uniform("line_width", self.line_width)

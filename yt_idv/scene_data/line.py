@@ -36,11 +36,6 @@ class CurveData(SceneData):
     @traitlets.default("vertex_array")
     def _default_vertex_array(self):
         va = VertexArray(name="vertices")
-
-        va.attributes.append(
-            VertexAttribute(name="model_vertex", data=self.data)
-        )
-
         return va
 
     def add_data(self, curve):
@@ -55,4 +50,11 @@ class CurveData(SceneData):
 
         self.n_vertices = curve.shape[0]
         self.data = data
+
+        self.vertex_array.attributes.append(
+            VertexAttribute(name="model_vertex", data=data.astype("f4"))
+        )
+
+        self.vertex_array.indices = np.arange(0,self.n_vertices).astype("uint32")
+        self.size = self.n_vertices
 

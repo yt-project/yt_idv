@@ -10,12 +10,17 @@ ds = yt.load_sample("IsolatedGalaxy")
 rc = yt_idv.render_context(height=800, width=800, gui=True)
 sg = rc.add_scene(ds, "density", no_ghost=True)
 
+# circle in the x-y plane in model space
+r = 0.25
+c = np.array([0.5, 0.5, 0.5])
+theta = np.linspace(0, 2*np.pi, 20)
+x = r * np.cos(theta) + c[0]
+y = r * np.sin(theta) + c[1]
+z = np.full(x.shape, c[2])
+curve = np.column_stack([x,y,z])
 
-
-
-npcurve = np.array([(0,0,0), (0.5,0.5,0.24), (.8,.8,.8)])
 curved = CurveData()
-curved.add_data(npcurve)
+curved.add_data(curve)
 curver = CurveRendering(data=curved)
 rc.scene.data_objects.append(curved)
 rc.scene.components.append(curver)
