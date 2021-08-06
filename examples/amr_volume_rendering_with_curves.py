@@ -3,7 +3,7 @@ import yt
 
 import yt_idv
 from yt_idv.scene_components.curves import CurveRendering  # NOQA
-from yt_idv.scene_data.line import CurveData  # NOQA
+from yt_idv.scene_data.curve import CurveData  # NOQA
 
 ds = yt.load_sample("IsolatedGalaxy")
 
