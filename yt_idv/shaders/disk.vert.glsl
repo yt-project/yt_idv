@@ -44,11 +44,11 @@ void main()
     // theta = arctan(y/x)
     // phi = arccos(z/r)
 
-    mat3 rotation = mat3(v1, v2, v3);
-    disk_position = rotation * (v_model.xyz - disk_center);
-    r = length(disk_position) * 10;
-    theta = atan(disk_position.y, disk_position.x) + PI;
-    phi = acos(disk_position.z / r);
+    //mat3 rotation = mat3(v1, v2, v3);
+    disk_position = (v_model.xyz - disk_center);
+    r = length(cross(disk_normal, disk_position));
+    theta = atan(dot(v3, disk_position), dot(v2, disk_position)) + PI;
+    phi = acos(dot(v1, disk_position) / r);
 
     gl_Position = vec4(r * cos(theta), r * sin(theta), 1, 1);
     UV = model_vertex.xy;

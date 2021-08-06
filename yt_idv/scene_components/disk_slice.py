@@ -32,7 +32,7 @@ class DiskSlice(SceneComponent):
         if _:
             self.disk_theta = val
             changed = True
-        _, val = imgui.slider_float("disk phi", self.disk_phi, -np.pi / 2, np.pi / 2)
+        _, val = imgui.slider_float("disk phi", self.disk_phi, 0.0, np.pi)
         if _:
             self.disk_phi = val
             changed = True
