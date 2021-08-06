@@ -56,8 +56,8 @@ class BlockCollection(SceneData):
                 block.RightEdge -= left_min
                 block.RightEdge /= scale
         for i, block in enumerate(self.data_source.tiles.traverse()):
-            self.min_val = min(self.min_val, np.nanmin(np.abs(block.my_data[0]).min()))
-            self.max_val = max(self.max_val, np.nanmax(np.abs(block.my_data[0]).max()))
+            self.min_val = min(self.min_val, np.nanmin(np.abs(block.my_data[0])).min())
+            self.max_val = max(self.max_val, np.nanmax(np.abs(block.my_data[0])).max())
             self.blocks[id(block)] = (i, block)
             vert.append([1.0, 1.0, 1.0, 1.0])
             dds = (block.RightEdge - block.LeftEdge) / block.source_mask.shape
