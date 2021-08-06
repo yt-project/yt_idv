@@ -3,7 +3,7 @@ import traitlets
 from OpenGL import GL
 
 from yt_idv.scene_components.base_component import SceneComponent
-from yt_idv.scene_data.line import CurveData
+from yt_idv.scene_data.curve import CurveData
 
 
 class CurveRendering(SceneComponent):
