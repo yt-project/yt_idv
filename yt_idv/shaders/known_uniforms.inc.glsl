@@ -49,3 +49,6 @@ uniform float sample_factor;
 
 // depth buffer control
 uniform bool use_db;
+
+// curve drawing control
+uniform vec4 curve_rgba;

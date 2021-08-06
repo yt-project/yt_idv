@@ -7,6 +7,13 @@ shader_definitions:
       - one
       - one
       blend_equation: func add
+    constant_rgba:
+        info: A constant, specified RGBa value applied
+        source: constant_rgba.frag.glsl
+        blend_func:
+            - one
+            - one
+        blend_equation: func add
     apply_colormap:
       info: A second pass fragment shader used to apply a colormap to the result of
         the first pass rendering
@@ -152,7 +159,7 @@ component_shaders:
       default:
           description: Default
           first_vertex: mesh
-          first_fragment: constant
+          first_fragment: constant_rgba
           second_vertex: passthrough
           second_fragment: passthrough
   block_rendering:

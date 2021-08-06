@@ -21,7 +21,7 @@ curve = np.column_stack([x,y,z])
 
 curved = CurveData()
 curved.add_data(curve)
-curver = CurveRendering(data=curved)
+curver = CurveRendering(data=curved, curve_rgba=(1.,0., 0., 1.))
 rc.scene.data_objects.append(curved)
 rc.scene.components.append(curver)
 rc.run()

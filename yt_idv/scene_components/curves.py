@@ -21,16 +21,22 @@ class CurveRendering(SceneComponent):
     name = "curve_rendering"
     data = traitlets.Instance(CurveData)
     line_width = traitlets.CFloat(1.)
+    curve_rgba = traitlets.Tuple((1.0, 1.0, 1.0, 1.0), trait=traitlets.CFloat())
     priority = 10
 
     def render_gui(self, imgui, renderer, scene):
-        changed = super(CurveRendering, self).render_gui(imgui, renderer, scene)
+        changed, self.visible = imgui.checkbox("Visible", self.visible)
+
         _, line_width = imgui.slider_float(
-            "Line Width", self.line_width, 1.0, 2.0
+            "Line Width", self.line_width, 1.0, 10.0
         )
         if _:
             self.line_width = line_width
+        changed = changed or _
 
+        _, newRGBa = imgui.input_float4('RGBa:', *self.curve_rgba)
+        if _:
+            self.curve_rgba=tuple(newRGBa)
         changed = changed or _
 
         return changed
@@ -38,8 +44,10 @@ class CurveRendering(SceneComponent):
     def draw(self, scene, program):
         GL.glEnable(GL.GL_CULL_FACE)
         GL.glCullFace(GL.GL_BACK)
+        GL.glLineWidth(self.line_width)
         GL.glDrawArrays(GL.GL_LINE_LOOP, 0, self.data.n_vertices)
 
     def _set_uniforms(self, scene, shader_program):
-        pass #shader_program._set_uniform("line_width", self.line_width)
+        clr = np.array(self.curve_rgba).astype('f4')
+        shader_program._set_uniform("curve_rgba", clr)
 
