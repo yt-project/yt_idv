@@ -1,8 +1,10 @@
 bool sample_texture(vec3 tex_curr_pos, inout vec4 curr_color, float tdelta,
                     float t, vec3 dir) {
 
-    vec3 tex_sample = get_offset_texture_position(ds_tex, tex_curr_pos).rgb;
-    float map_sample = get_offset_texture_position(bitmap_tex, tex_curr_pos).r;
+    vec3 offset_pos = get_offset_texture_position(ds_tex, tex_curr_pos);
+    vec3 tex_sample = texture(ds_tex, offset_pos).rgb;
+    vec3 offset_bmap_pos = get_offset_texture_position(bitmap_tex, tex_curr_pos);
+    float map_sample = texture(bitmap_tex, offset_bmap_pos).r;
     if (map_sample > 0.0) {
         float val = length(tdelta * dir) * tex_sample.r + curr_color.r;
         curr_color = vec4(val, val, val, 1.0);
