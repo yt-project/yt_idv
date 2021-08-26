@@ -15,6 +15,12 @@ bool within_bb(vec3 pos)
     return all(left) && all(right);
 }
 
+vec3 get_offset_texture_position(sampler3D tex, vec3 tex_curr_pos)
+{
+    ivec3 texsize = textureSize(tex, 0); // lod (mipmap level) always 0?
+    return (tex_curr_pos * texsize + texture_offset) / texsize;
+}
+
 bool sample_texture(vec3 tex_curr_pos, inout vec4 curr_color, float tdelta,
                     float t, vec3 dir);
 vec4 cleanup_phase(in vec4 curr_color, in vec3 dir, in float t0, in float t1);
