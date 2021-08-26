@@ -1,5 +1,3 @@
-
-
 bool sample_texture(vec3 tex_curr_pos, inout vec4 curr_color, float tdelta,
                     float t, vec3 dir)
 {
