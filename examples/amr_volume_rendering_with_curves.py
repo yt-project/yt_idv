@@ -2,11 +2,11 @@ import numpy as np
 import yt
 
 import yt_idv
-from yt_idv.scene_components.curves import (
-    CurveRendering,
+from yt_idv.scene_components.curves import (  # NOQA
     CurveCollectionRendering,
-)  # NOQA
-from yt_idv.scene_data.curve import CurveData, CurveCollection  # NOQA
+    CurveRendering,
+)
+from yt_idv.scene_data.curve import CurveCollection, CurveData  # NOQA
 
 ds = yt.load_sample("IsolatedGalaxy")
 
