@@ -3,7 +3,7 @@ import traitlets
 from OpenGL import GL
 
 from yt_idv.scene_components.base_component import SceneComponent
-from yt_idv.scene_data.curve import CurveData
+from yt_idv.scene_data.curve import CurveData, CurveCollection
 
 
 class CurveRendering(SceneComponent):
@@ -36,8 +36,24 @@ class CurveRendering(SceneComponent):
         GL.glEnable(GL.GL_CULL_FACE)
         GL.glCullFace(GL.GL_BACK)
         GL.glLineWidth(self.line_width)
-        GL.glDrawArrays(GL.GL_LINE_LOOP, 0, self.data.n_vertices)
+        GL.glDrawArrays(GL.GL_LINE_STRIP, 0, self.data.n_vertices)
 
     def _set_uniforms(self, scene, shader_program):
         clr = np.array(self.curve_rgba).astype("f4")
         shader_program._set_uniform("curve_rgba", clr)
+
+
+class CurveCollectionRendering(CurveRendering):
+    """
+    rendering a collection of curves
+    """
+
+    name = "multi_curve_rendering"
+    curve_collection = traitlets.List()
+    data = traitlets.Instance(CurveCollection)
+
+    def draw(self, scene, program):
+        GL.glEnable(GL.GL_CULL_FACE)
+        GL.glCullFace(GL.GL_BACK)
+        GL.glLineWidth(self.line_width)
+        GL.glDrawArrays(GL.GL_LINES, 0, self.data.n_vertices)
