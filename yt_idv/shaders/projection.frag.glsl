@@ -1,8 +1,10 @@
 bool sample_texture(vec3 tex_curr_pos, inout vec4 curr_color, float tdelta,
                     float t, vec3 dir) {
 
-    vec3 tex_sample = textureOffset(ds_tex, tex_curr_pos, texture_offset).rgb;
-    float map_sample = textureOffset(bitmap_tex, tex_curr_pos, texture_offset).r;
+    vec3 offset_pos = get_offset_texture_position(ds_tex, tex_curr_pos);
+    vec3 tex_sample = texture(ds_tex, offset_pos).rgb;
+    vec3 offset_bmap_pos = get_offset_texture_position(bitmap_tex, tex_curr_pos);
+    float map_sample = texture(bitmap_tex, offset_bmap_pos).r;
     if (map_sample > 0.0) {
         float val = length(tdelta * dir) * tex_sample.r + curr_color.r;
         curr_color = vec4(val, val, val, 1.0);
@@ -10,7 +12,7 @@ bool sample_texture(vec3 tex_curr_pos, inout vec4 curr_color, float tdelta,
     return bool(map_sample > 0.0);
 }
 
-vec4 cleanup_phase(in vec4 curr_color, in vec3 dir, in float t0, in float t1) 
+vec4 cleanup_phase(in vec4 curr_color, in vec3 dir, in float t0, in float t1)
 {
   return vec4(curr_color);
 }
