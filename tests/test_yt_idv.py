@@ -3,7 +3,6 @@
 """Tests for `yt_idv` package."""
 
 import base64
-import os
 
 import pytest
 import yt
@@ -60,6 +59,7 @@ def test_snapshots(osmesa_fake_amr, image_store):
     image_store(osmesa_fake_amr)
     osmesa_fake_amr.scene.components[0].render_method = "transfer_function"
     image_store(osmesa_fake_amr)
+    osmesa_fake_amr.osmesa.OSMesaDestroyContext(osmesa_fake_amr.context)
 
 
 def test_annotate_boxes(osmesa_empty, image_store):
@@ -71,6 +71,7 @@ def test_annotate_boxes(osmesa_empty, image_store):
     osmesa_empty.scene.annotations[-1].box_width /= 2
     osmesa_empty.scene.annotations[-1].box_color = (1.0, 0.0, 0.0)
     image_store(osmesa_empty)
+    osmesa_empty.osmesa.OSMesaDestroyContext(osmesa_empty.context)
 
 
 def test_annotate_grids(osmesa_empty, image_store):
@@ -87,6 +88,7 @@ def test_annotate_grids(osmesa_empty, image_store):
     image_store(osmesa_empty)
     osmesa_empty.scene.camera.offset_position(0.5)
     image_store(osmesa_empty)
+    osmesa_empty.osmesa.OSMesaDestroyContext(osmesa_empty.context)
 
 
 def test_annotate_text(osmesa_empty, image_store):
@@ -104,3 +106,4 @@ def test_annotate_text(osmesa_empty, image_store):
     text.text = "S 2.0"
     text.scale = 2.0
     image_store(osmesa_empty)
+    osmesa_empty.osmesa.OSMesaDestroyContext(osmesa_empty.context)
