@@ -46,3 +46,29 @@ uniform sampler3D ds_tex;
 
 // ray tracing control
 uniform float sample_factor;
+
+// disk slice renderer
+// in our convention, theta runs from 0 .. 2pi and phi from 0 .. pi
+uniform vec3 disk_center;
+uniform vec3 disk_normal;
+uniform vec2 theta_bounds; 
+uniform vec2 phi_bounds;
+uniform vec2 r_bounds;
+
+const float PI = 3.1415926535897932384626433832795;
+const float PI_2 = 1.57079632679489661923;
+const float PI_4 = 0.785398163397448309616;
+
+void ortho_find(inout vec3 v1, out vec3 v2, out vec3 v3) {
+    // Normalize
+    v1 = normalize(v1);
+    if (v1.z != 0) {
+        v2.xyz = vec3(1.0, 0.0, -(v1.x / v1.z));
+    } else if (v1.y != 0) {
+        v2.xyz = vec3(0.0, -(v1.z / v1.y), 1.0);
+    } else {
+        v2.xyz = vec3((-v1.y/v1.x), 1.0, 0.0);
+    }
+    v2 = normalize(v2);
+    v3.xyz = cross(v1, v2);
+}
