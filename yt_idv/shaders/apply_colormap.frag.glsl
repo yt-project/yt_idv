@@ -3,7 +3,12 @@ in vec2 UV;
 out vec4 color;
 
 void main(){
-   float scaled = texture(fb_tex, UV).x;
+   float scaled = 0;
+   if (use_db) {
+      scaled = texture(db_tex, UV).x;
+   } else {
+      scaled = texture(fb_tex, UV).x;
+   }
    float alpha = texture(fb_tex, UV).a;
    if (alpha == 0.0) discard;
    float cm = cmap_min;

@@ -46,3 +46,6 @@ uniform sampler3D ds_tex;
 
 // ray tracing control
 uniform float sample_factor;
+
+// depth buffer control
+uniform bool use_db;

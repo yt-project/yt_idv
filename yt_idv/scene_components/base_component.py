@@ -17,7 +17,7 @@ from yt_idv.shader_objects import (
 )
 
 _cmaps = ["arbre", "viridis", "magma", "doom"]
-
+_buffers = ["frame", "depth"]
 
 class SceneComponent(traitlets.HasTraits):
     data = traitlets.Instance(SceneData)
@@ -25,6 +25,8 @@ class SceneComponent(traitlets.HasTraits):
     name = "undefined"
     priority = traitlets.CInt(0)
     visible = traitlets.Bool(True)
+    use_db = traitlets.Bool(False)
+    last_use_db = traitlets.Bool(False)
     display_bounds = traitlets.Tuple(
         traitlets.CFloat(),
         traitlets.CFloat(),
@@ -69,6 +71,7 @@ class SceneComponent(traitlets.HasTraits):
 
     def render_gui(self, imgui, renderer, scene):
         changed, self.visible = imgui.checkbox("Visible", self.visible)
+        changed, self.use_db = imgui.checkbox("Depth Buffer", self.use_db)
         if imgui.button("Recompile Shader"):
             shaders = (
                 "vertex_shader",
@@ -94,6 +97,7 @@ class SceneComponent(traitlets.HasTraits):
         if imgui.button("Reset Colorbounds"):
             self.cmap_min = self.cmap_max = None
             changed = True
+        
         return changed
 
     @traitlets.default("render_method")
@@ -213,12 +217,14 @@ class SceneComponent(traitlets.HasTraits):
                 self._set_uniforms(scene, p)
                 with self.data.vertex_array.bind(p):
                     self.draw(scene, p)
-        if self.cmap_min is None or self.cmap_max is None:
+        if self.cmap_min is None or self.cmap_max is None or self.last_use_db != self.use_db:
+            self.last_use_db = self.use_db
             data = self.fb.data
+            if self.use_db:
+                data[:, :, :3] = self.fb.depth_data[:, :, None]
             data = data[data[:, :, 3] > 0][:, 0]
-            if self.cmap_min is None and data.size > 0:
+            if data.size > 0:
                 self.cmap_min = cmap_min = data.min()
-            if self.cmap_max is None and data.size > 0:
                 self.cmap_max = cmap_max = data.max()
             if data.size == 0:
                 cmap_min = 0.0
@@ -235,6 +241,8 @@ class SceneComponent(traitlets.HasTraits):
                         p2._set_uniform("cmap", 0)
                         p2._set_uniform("fb_tex", 1)
                         p2._set_uniform("db_tex", 2)
+                        p2._set_uniform("use_db", self.use_db)
+                        # p2._set_uniform("use_db", False)
                         # Note that we use cmap_min/cmap_max, not
                         # self.cmap_min/self.cmap_max.
                         p2._set_uniform("cmap_min", cmap_min)
