@@ -25,7 +25,7 @@ class SceneComponent(traitlets.HasTraits):
     name = "undefined"
     priority = traitlets.CInt(0)
     visible = traitlets.Bool(True)
-    use_db = traitlets.Bool(False)
+    use_db = traitlets.Bool(False)  # use depth buffer
     last_use_db = traitlets.Bool(False)
     display_bounds = traitlets.Tuple(
         traitlets.CFloat(),
