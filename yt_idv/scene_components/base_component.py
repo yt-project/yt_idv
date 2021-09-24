@@ -19,6 +19,7 @@ from yt_idv.shader_objects import (
 _cmaps = ["arbre", "viridis", "magma", "doom"]
 _buffers = ["frame", "depth"]
 
+
 class SceneComponent(traitlets.HasTraits):
     data = traitlets.Instance(SceneData)
     base_quad = traitlets.Instance(SceneData)
@@ -97,7 +98,7 @@ class SceneComponent(traitlets.HasTraits):
         if imgui.button("Reset Colorbounds"):
             self.cmap_min = self.cmap_max = None
             changed = True
-        
+
         return changed
 
     @traitlets.default("render_method")
@@ -172,7 +173,8 @@ class SceneComponent(traitlets.HasTraits):
     @traitlets.default("base_quad")
     def _default_base_quad(self):
         bq = SceneData(
-            name="fullscreen_quad", vertex_array=VertexArray(name="tri", each=6),
+            name="fullscreen_quad",
+            vertex_array=VertexArray(name="tri", each=6),
         )
         fq = FULLSCREEN_QUAD.reshape((6, 3), order="C")
         bq.vertex_array.attributes.append(
@@ -217,7 +219,11 @@ class SceneComponent(traitlets.HasTraits):
                 self._set_uniforms(scene, p)
                 with self.data.vertex_array.bind(p):
                     self.draw(scene, p)
-        if self.cmap_min is None or self.cmap_max is None or self.last_use_db != self.use_db:
+        if (
+            self.cmap_min is None
+            or self.cmap_max is None
+            or self.last_use_db != self.use_db
+        ):
             self.last_use_db = self.use_db
             data = self.fb.data
             if self.use_db:
