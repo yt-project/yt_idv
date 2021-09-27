@@ -25,7 +25,8 @@ def osmesa_fake_amr():
     dd = ds.all_data()
     rc = yt_idv.render_context("osmesa", width=1024, height=1024)
     rc.add_scene(dd, "radius", no_ghost=True)
-    return rc
+    yield rc
+    rc.osmesa.OSMesaDestroyContext(rc.context)
 
 
 @pytest.fixture()
@@ -36,7 +37,8 @@ def osmesa_empty():
     ds = yt.testing.fake_amr_ds()
     rc.add_scene(ds, None)
     rc.ds = ds
-    return rc
+    yield rc
+    rc.osmesa.OSMesaDestroyContext(rc.context)
 
 
 @pytest.fixture()
@@ -59,7 +61,6 @@ def test_snapshots(osmesa_fake_amr, image_store):
     image_store(osmesa_fake_amr)
     osmesa_fake_amr.scene.components[0].render_method = "transfer_function"
     image_store(osmesa_fake_amr)
-    osmesa_fake_amr.osmesa.OSMesaDestroyContext(osmesa_fake_amr.context)
 
 
 def test_annotate_boxes(osmesa_empty, image_store):
@@ -71,7 +72,6 @@ def test_annotate_boxes(osmesa_empty, image_store):
     osmesa_empty.scene.annotations[-1].box_width /= 2
     osmesa_empty.scene.annotations[-1].box_color = (1.0, 0.0, 0.0)
     image_store(osmesa_empty)
-    osmesa_empty.osmesa.OSMesaDestroyContext(osmesa_empty.context)
 
 
 def test_annotate_grids(osmesa_empty, image_store):
@@ -88,7 +88,6 @@ def test_annotate_grids(osmesa_empty, image_store):
     image_store(osmesa_empty)
     osmesa_empty.scene.camera.offset_position(0.5)
     image_store(osmesa_empty)
-    osmesa_empty.osmesa.OSMesaDestroyContext(osmesa_empty.context)
 
 
 def test_annotate_text(osmesa_empty, image_store):
@@ -106,4 +105,3 @@ def test_annotate_text(osmesa_empty, image_store):
     text.text = "S 2.0"
     text.scale = 2.0
     image_store(osmesa_empty)
-    osmesa_empty.osmesa.OSMesaDestroyContext(osmesa_empty.context)
