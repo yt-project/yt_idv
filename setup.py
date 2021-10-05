@@ -1,6 +1,6 @@
 import numpy
-from Cython.Build import cythonize
 from setuptools import Extension, find_packages, setup
+from Cython.Build import cythonize
 
 setup(
     ext_modules=cythonize("yt_idv/*.pyx"),

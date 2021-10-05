@@ -11,4 +11,16 @@ recursive-exclude * *.py[co]
 global-include *.pyx
 global-include *.pxd
 
+include *.md
+include *.yaml
+include *.yml
+include .bumpversion.cfg
+include Makefile
+include tox.ini
+recursive-include docs *.txt
+recursive-include examples *.ipynb
+recursive-include examples *.py
+recursive-include yt_idv *.glsl
+recursive-include yt_idv *.yaml
+
 recursive-include docs *.rst conf.py Makefile make.bat *.jpg *.png *.gif
