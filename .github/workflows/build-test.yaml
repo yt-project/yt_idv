@@ -18,7 +18,7 @@ jobs:
         python-version: ${{ matrix.python-version }}
     - name: Install dependencies
       run: |
-        sudo apt-get update
+        sudo apt-get update && sudo apt-get upgrade
         sudo apt install libgl1-mesa-dri libegl1-mesa libgbm1 libosmesa6 libosmesa6-dev
         python -m pip install --upgrade pip
         python -m pip install flake8 pytest
