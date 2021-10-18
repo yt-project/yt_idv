@@ -172,9 +172,12 @@ class ShaderProgram:
         if value.ndim == 0:
             return {"f": GL.glUniform1f, "i": GL.glUniform1i}[kind]
         elif value.ndim == 1:
+            # This is not precisely the breakdown, but it lets us
+            # pass in arrays that are greater than 4 long as arrays
             if value.size > 4:
-                raise YTUnknownUniformSize(value.size)
-            func = self._set_scalar_uniform(kind, value.size)
+                func = self._set_array_uniform(kind, value.size)
+            else:
+                func = self._set_scalar_uniform(kind, value.size)
         elif value.ndim == 2:
             if value.shape[0] != value.shape[1]:
                 raise YTUnknownUniformSize(value.shape)
@@ -182,6 +185,14 @@ class ShaderProgram:
         else:
             raise YTUnknownUniformSize(value.shape)
         return func
+
+    def _set_array_uniform(self, kind, size_spec):
+        gl_func = getattr(GL, f"glUniform1{kind}v")
+
+        def _func(location, value):
+            return gl_func(location, size_spec, value)
+
+        return _func
 
     def _set_scalar_uniform(self, kind, size_spec):
         gl_func = getattr(GL, f"glUniform{size_spec}{kind}v")
