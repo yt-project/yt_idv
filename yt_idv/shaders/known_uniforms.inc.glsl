@@ -49,3 +49,8 @@ uniform float sample_factor;
 
 // depth buffer control
 uniform bool use_db;
+
+// isocontour control
+uniform float iso_tolerance;
+uniform int iso_num_layers;
+uniform float iso_layers[32];
