@@ -83,17 +83,23 @@ class SceneComponent(traitlets.HasTraits):
             if len(self.iso_layers) < 32:
                 changed = True
                 self.iso_layers.append(0.0)
-        if imgui.button("Remove Layer"):
-            if len(self.iso_layers) > 0:
-                changed = True
-                self.iso_layers.pop()
-        for i in range(len(self.iso_layers)):
-            changed, self.iso_layers[i] = imgui.input_float(
+        imgui.columns(2, "iso_layers_cols", False)
+        i = 0
+        while i < len(self.iso_layers):
+            _, self.iso_layers[i] = imgui.input_float(
                 "Layer " + str(i + 1),
                 self.iso_layers[i],
                 flags=imgui.INPUT_TEXT_ENTER_RETURNS_TRUE,
             )
-
+            imgui.next_column()
+            if imgui.button("Remove##rl" + str(i + 1)):
+                self.iso_layers.pop(i)
+                i -= 1
+                _ = True
+            changed = changed or _
+            imgui.next_column()
+            i += 1
+        imgui.columns(1)
         if imgui.button("Recompile Shader"):
             shaders = (
                 "vertex_shader",
@@ -239,10 +245,12 @@ class SceneComponent(traitlets.HasTraits):
                 self._set_uniforms(scene, p)
                 p._set_uniform("iso_tolerance", float(self.iso_tolerance))
                 p._set_uniform("iso_num_layers", int(len(self.iso_layers)))
-                p._set_uniform(
-                    "iso_layers",
-                    np.asarray(self.iso_layers + [0.0] * (32 - len(self.iso_layers))),
-                )
+                v = np.zeros(32, dtype="float32")
+                v[: len(self.iso_layers)] = self._get_sanitized_iso_layers()
+                p._set_uniform("iso_layers", v)
+                p._set_uniform("iso_log", bool(self.cmap_log))
+                p._set_uniform("iso_min", float(self.data.min_val))
+                p._set_uniform("iso_max", float(self.data.max_val))
                 with self.data.vertex_array.bind(p):
                     self.draw(scene, p)
         if (
@@ -287,3 +295,6 @@ class SceneComponent(traitlets.HasTraits):
 
     def draw(self, scene, program):
         raise NotImplementedError
+
+    def _get_sanitized_iso_layers(self):
+        return self.iso_layers

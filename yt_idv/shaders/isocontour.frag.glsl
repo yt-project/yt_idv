@@ -24,7 +24,6 @@ vec3 get_offset_texture_position(sampler3D tex, vec3 tex_curr_pos)
 bool sample_texture(vec3 tex_curr_pos, inout vec4 curr_color, float tdelta,
                     float t, vec3 dir)
 {
-
     vec3 offset_pos = get_offset_texture_position(ds_tex, tex_curr_pos);
     vec3 tex_sample = texture(ds_tex, offset_pos).rgb;
     vec3 offset_bmap_pos = get_offset_texture_position(bitmap_tex, tex_curr_pos);
@@ -106,7 +105,11 @@ void main()
 
     ray_position = p0;
 
+    // precomputed so we don't need to call log 4 times per sample.
+    float log_iso_min = log(iso_min);
+    float log_iso_range = log(iso_max)-log(iso_min);
     bool is_layer = false;
+
     while(t <= t1) {
         tex_curr_pos = (ray_position - left_edge) / range;  // Scale from 0 .. 1
         // But, we actually need it to be 0 + normalized dx/2 to 1 - normalized dx/2
@@ -119,8 +122,12 @@ void main()
             v_clip_coord = projection * modelview * vec4(ray_position, 1.0);
             f_ndc_depth = v_clip_coord.z / v_clip_coord.w;
             depth = min(depth, (1.0 - 0.0) * 0.5 * f_ndc_depth + (1.0 + 0.0) * 0.5);
+            float color_len = length(curr_color.rgb);
+            if (iso_log) {
+                color_len = (log((iso_max - iso_min) * color_len + iso_min) - log_iso_min) / log_iso_range;
+            }
             for (int i = 0; i < iso_num_layers; i++) {
-                if (abs(length(curr_color.rgb) - iso_layers[i]) <= iso_tolerance) {
+                if (abs(color_len - iso_layers[i]) <= iso_tolerance) {
                     is_layer = true;
                     break;
                 }
@@ -132,7 +139,6 @@ void main()
 
         t += tdelta;
         ray_position += tdelta * dir;
-
     }
 
     output_color = cleanup_phase(curr_color, dir, t0, t1);

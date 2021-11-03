@@ -54,3 +54,6 @@ uniform bool use_db;
 uniform float iso_tolerance;
 uniform int iso_num_layers;
 uniform float iso_layers[32];
+uniform bool iso_log;
+uniform float iso_min;
+uniform float iso_max;
