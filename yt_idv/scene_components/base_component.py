@@ -28,7 +28,6 @@ class SceneComponent(traitlets.HasTraits):
     priority = traitlets.CInt(0)
     visible = traitlets.Bool(True)
     use_db = traitlets.Bool(False)  # use depth buffer
-    last_use_db = traitlets.Bool(False)
     iso_tolerance = traitlets.CFloat(0.025)
     iso_layers = traitlets.List()
     display_bounds = traitlets.Tuple(
@@ -52,6 +51,7 @@ class SceneComponent(traitlets.HasTraits):
     _program2 = traitlets.Instance(ShaderProgram, allow_none=True)
     _program1_invalid = True
     _program2_invalid = True
+    _cmap_bounds_invalid = True
 
     # These attributes are
     cmap_min = traitlets.CFloat(None, allow_none=True)
@@ -100,7 +100,7 @@ class SceneComponent(traitlets.HasTraits):
         _, self.cmap_log = imgui.checkbox("Take log", self.cmap_log)
         changed = changed or _
         if imgui.button("Reset Colorbounds"):
-            self.cmap_min = self.cmap_max = None
+            self._cmap_bounds_invalid = True
             changed = True
 
         return changed
@@ -153,6 +153,11 @@ class SceneComponent(traitlets.HasTraits):
     def _change_colormap_fragment(self, change):
         # Even if old/new are the same
         self._program2_invalid = True
+
+    @traitlets.observe("use_db")
+    def _initialize_db(self, changed):
+        # invaldiate the colormap when the depth buffer selection changes
+        self._cmap_bounds_invalid = True
 
     @traitlets.default("colormap")
     def _default_colormap(self):
@@ -237,27 +242,10 @@ class SceneComponent(traitlets.HasTraits):
                 p._set_uniform("iso_max", float(self.data.max_val))
                 with self.data.vertex_array.bind(p):
                     self.draw(scene, p)
-        if (
-            self.cmap_min is None
-            or self.cmap_max is None
-            or self.last_use_db != self.use_db
-        ):
-            self.last_use_db = self.use_db
-            data = self.fb.data
-            if self.use_db:
-                data[:, :, :3] = self.fb.depth_data[:, :, None]
-            data = data[data[:, :, 3] > 0][:, 0]
-            if data.size > 0:
-                self.cmap_min = cmap_min = data.min()
-                self.cmap_max = cmap_max = data.max()
-            if data.size == 0:
-                cmap_min = 0.0
-                cmap_max = 1.0
-            else:
-                print(f"Computed new cmap values {cmap_min} - {cmap_max}")
-        else:
-            cmap_min = float(self.cmap_min)
-            cmap_max = float(self.cmap_max)
+
+        if self._cmap_bounds_invalid:
+            self._reset_cmap_bounds()
+
         with self.colormap.bind(0):
             with self.fb.input_bind(1, 2):
                 with self.program2.enable() as p2:
@@ -268,8 +256,8 @@ class SceneComponent(traitlets.HasTraits):
                         p2._set_uniform("use_db", self.use_db)
                         # Note that we use cmap_min/cmap_max, not
                         # self.cmap_min/self.cmap_max.
-                        p2._set_uniform("cmap_min", cmap_min)
-                        p2._set_uniform("cmap_max", cmap_max)
+                        p2._set_uniform("cmap_min", self.cmap_min)
+                        p2._set_uniform("cmap_max", self.cmap_max)
                         p2._set_uniform("cmap_log", float(self.cmap_log))
                         with self.base_quad.vertex_array.bind(p2):
                             # Now we do our viewport globally, not just within
@@ -321,3 +309,18 @@ class SceneComponent(traitlets.HasTraits):
         imgui.columns(1)
 
         return changed
+
+    def _reset_cmap_bounds(self):
+        data = self.fb.data
+        if self.use_db:
+            data[:, :, :3] = self.fb.depth_data[:, :, None]
+        data = data[data[:, :, 3] > 0][:, 0]
+        if data.size > 0:
+            self.cmap_min = data.min()
+            self.cmap_max = data.max()
+        if data.size == 0:
+            self.cmap_min = 0.0
+            self.cmap_max = 1.0
+        else:
+            print(f"Computed new cmap values {self.cmap_min} - {self.cmap_max}")
+        self._cmap_bounds_invalid = False
