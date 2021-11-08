@@ -81,27 +81,14 @@ class SceneComponent(traitlets.HasTraits):
             "Isocontour Tolerance", self.iso_tolerance, 0.0, 0.1
         )
         changed = changed or _
-        if imgui.button("Add Layer"):
-            if len(self.iso_layers) < 32:
-                changed = True
-                self.iso_layers.append(0.0)
-        imgui.columns(2, "iso_layers_cols", False)
-        i = 0
-        while i < len(self.iso_layers):
-            _, self.iso_layers[i] = imgui.input_float(
-                "Layer " + str(i + 1),
-                self.iso_layers[i],
-                flags=imgui.INPUT_TEXT_ENTER_RETURNS_TRUE,
-            )
-            imgui.next_column()
-            if imgui.button("Remove##rl" + str(i + 1)):
-                self.iso_layers.pop(i)
-                i -= 1
-                _ = True
-            changed = changed or _
-            imgui.next_column()
-            i += 1
-        imgui.columns(1)
+
+        if self.render_method == "isocontours":
+            if imgui.button("Add Layer"):
+                if len(self.iso_layers) < 32:
+                    changed = True
+                    self.iso_layers.append(0.0)
+            _ = self._construct_isolayer_table(imgui)
+
         if imgui.button("Recompile Shader"):
             changed = self._recompile_shader()
         _, cmap_index = imgui.listbox(
@@ -131,6 +118,13 @@ class SceneComponent(traitlets.HasTraits):
             self.geometry_shader = new_combo.get("first_geometry", None)
             self.colormap_vertex = new_combo["second_vertex"]
             self.colormap_fragment = new_combo["second_fragment"]
+
+    @traitlets.observe("render_method")
+    def _add_initial_isolayer(self, change):
+        # this adds an initial isocontour entry when the render method
+        # switches to isocontours and if there are no layers yet.
+        if change["new"] == "isocontours" and len(self.iso_layers) == 0:
+            self.iso_layers.append(0.0)
 
     @traitlets.default("fb")
     def _fb_default(self):
@@ -305,3 +299,25 @@ class SceneComponent(traitlets.HasTraits):
         self._program1_invalid = self._program2_invalid = True
         return True
 
+    def _construct_isolayer_table(self, imgui) -> bool:
+
+        imgui.columns(2, "iso_layers_cols", False)
+        i = 0
+        changed = False
+        while i < len(self.iso_layers):
+            _, self.iso_layers[i] = imgui.input_float(
+                "Layer " + str(i + 1),
+                self.iso_layers[i],
+                flags=imgui.INPUT_TEXT_ENTER_RETURNS_TRUE,
+            )
+            imgui.next_column()
+            if imgui.button("Remove##rl" + str(i + 1)):
+                self.iso_layers.pop(i)
+                i -= 1
+                _ = True
+            changed = changed or _
+            imgui.next_column()
+            i += 1
+        imgui.columns(1)
+
+        return changed
