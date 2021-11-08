@@ -75,10 +75,12 @@ class SceneComponent(traitlets.HasTraits):
 
     def render_gui(self, imgui, renderer, scene):
         changed, self.visible = imgui.checkbox("Visible", self.visible)
-        changed, self.use_db = imgui.checkbox("Depth Buffer", self.use_db)
-        changed, self.iso_tolerance = imgui.slider_float(
+        _, self.use_db = imgui.checkbox("Depth Buffer", self.use_db)
+        changed = changed or _
+        _, self.iso_tolerance = imgui.slider_float(
             "Isocontour Tolerance", self.iso_tolerance, 0.0, 0.1
         )
+        changed = changed or _
         if imgui.button("Add Layer"):
             if len(self.iso_layers) < 32:
                 changed = True
