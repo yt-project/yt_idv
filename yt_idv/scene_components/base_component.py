@@ -103,19 +103,7 @@ class SceneComponent(traitlets.HasTraits):
             i += 1
         imgui.columns(1)
         if imgui.button("Recompile Shader"):
-            shaders = (
-                "vertex_shader",
-                "geometry_shader",
-                "fragment_shader",
-                "colormap_vertex",
-                "colormap_fragment",
-            )
-            for shader_name in shaders:
-                s = getattr(self, shader_name, None)
-                if s:
-                    s.delete_shader()
-            self._program1_invalid = self._program2_invalid = True
-            changed = True
+            changed = self._recompile_shader()
         _, cmap_index = imgui.listbox(
             "Colormap", _cmaps.index(self.colormap.colormap_name), _cmaps
         )
@@ -300,3 +288,20 @@ class SceneComponent(traitlets.HasTraits):
 
     def _get_sanitized_iso_layers(self):
         return self.iso_layers
+
+    def _recompile_shader(self) -> bool:
+        # retains the active shader, invalidates shader programs
+        shaders = (
+            "vertex_shader",
+            "geometry_shader",
+            "fragment_shader",
+            "colormap_vertex",
+            "colormap_fragment",
+        )
+        for shader_name in shaders:
+            s = getattr(self, shader_name, None)
+            if s:
+                s.delete_shader()
+        self._program1_invalid = self._program2_invalid = True
+        return True
+
