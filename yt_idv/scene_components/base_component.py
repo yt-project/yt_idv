@@ -1,3 +1,4 @@
+import numpy as np
 import traitlets
 from OpenGL import GL
 
@@ -28,6 +29,8 @@ class SceneComponent(traitlets.HasTraits):
     visible = traitlets.Bool(True)
     use_db = traitlets.Bool(False)  # use depth buffer
     last_use_db = traitlets.Bool(False)
+    iso_tolerance = traitlets.CFloat(0.025)
+    iso_layers = traitlets.List()
     display_bounds = traitlets.Tuple(
         traitlets.CFloat(),
         traitlets.CFloat(),
@@ -73,6 +76,30 @@ class SceneComponent(traitlets.HasTraits):
     def render_gui(self, imgui, renderer, scene):
         changed, self.visible = imgui.checkbox("Visible", self.visible)
         changed, self.use_db = imgui.checkbox("Depth Buffer", self.use_db)
+        changed, self.iso_tolerance = imgui.slider_float(
+            "Isocontour Tolerance", self.iso_tolerance, 0.0, 0.1
+        )
+        if imgui.button("Add Layer"):
+            if len(self.iso_layers) < 32:
+                changed = True
+                self.iso_layers.append(0.0)
+        imgui.columns(2, "iso_layers_cols", False)
+        i = 0
+        while i < len(self.iso_layers):
+            _, self.iso_layers[i] = imgui.input_float(
+                "Layer " + str(i + 1),
+                self.iso_layers[i],
+                flags=imgui.INPUT_TEXT_ENTER_RETURNS_TRUE,
+            )
+            imgui.next_column()
+            if imgui.button("Remove##rl" + str(i + 1)):
+                self.iso_layers.pop(i)
+                i -= 1
+                _ = True
+            changed = changed or _
+            imgui.next_column()
+            i += 1
+        imgui.columns(1)
         if imgui.button("Recompile Shader"):
             shaders = (
                 "vertex_shader",
@@ -216,6 +243,14 @@ class SceneComponent(traitlets.HasTraits):
             with self.program1.enable() as p:
                 scene.camera._set_uniforms(scene, p)
                 self._set_uniforms(scene, p)
+                p._set_uniform("iso_tolerance", float(self.iso_tolerance))
+                p._set_uniform("iso_num_layers", int(len(self.iso_layers)))
+                v = np.zeros(32, dtype="float32")
+                v[: len(self.iso_layers)] = self._get_sanitized_iso_layers()
+                p._set_uniform("iso_layers", v)
+                p._set_uniform("iso_log", bool(self.cmap_log))
+                p._set_uniform("iso_min", float(self.data.min_val))
+                p._set_uniform("iso_max", float(self.data.max_val))
                 with self.data.vertex_array.bind(p):
                     self.draw(scene, p)
         if (
@@ -260,3 +295,6 @@ class SceneComponent(traitlets.HasTraits):
 
     def draw(self, scene, program):
         raise NotImplementedError
+
+    def _get_sanitized_iso_layers(self):
+        return self.iso_layers
