@@ -88,6 +88,7 @@ class SceneComponent(traitlets.HasTraits):
                     changed = True
                     self.iso_layers.append(0.0)
             _ = self._construct_isolayer_table(imgui)
+            changed = changed or _
 
         if imgui.button("Recompile Shader"):
             changed = self._recompile_shader()
