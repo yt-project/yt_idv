@@ -273,7 +273,7 @@ class SceneComponent(traitlets.HasTraits):
         return self.iso_layers
 
     def _recompile_shader(self) -> bool:
-        # retains the active shader, invalidates shader programs
+        # removes existing shaders, invalidates shader programs
         shaders = (
             "vertex_shader",
             "geometry_shader",
