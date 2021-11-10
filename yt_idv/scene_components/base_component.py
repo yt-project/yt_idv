@@ -28,7 +28,6 @@ class SceneComponent(traitlets.HasTraits):
     priority = traitlets.CInt(0)
     visible = traitlets.Bool(True)
     use_db = traitlets.Bool(False)  # use depth buffer
-    last_use_db = traitlets.Bool(False)
     iso_tolerance = traitlets.CFloat(0.025)
     iso_layers = traitlets.List()
     display_bounds = traitlets.Tuple(
@@ -52,6 +51,7 @@ class SceneComponent(traitlets.HasTraits):
     _program2 = traitlets.Instance(ShaderProgram, allow_none=True)
     _program1_invalid = True
     _program2_invalid = True
+    _cmap_bounds_invalid = True
 
     # These attributes are
     cmap_min = traitlets.CFloat(None, allow_none=True)
@@ -75,45 +75,23 @@ class SceneComponent(traitlets.HasTraits):
 
     def render_gui(self, imgui, renderer, scene):
         changed, self.visible = imgui.checkbox("Visible", self.visible)
-        changed, self.use_db = imgui.checkbox("Depth Buffer", self.use_db)
-        changed, self.iso_tolerance = imgui.slider_float(
+        _, self.use_db = imgui.checkbox("Depth Buffer", self.use_db)
+        changed = changed or _
+        _, self.iso_tolerance = imgui.slider_float(
             "Isocontour Tolerance", self.iso_tolerance, 0.0, 0.1
         )
-        if imgui.button("Add Layer"):
-            if len(self.iso_layers) < 32:
-                changed = True
-                self.iso_layers.append(0.0)
-        imgui.columns(2, "iso_layers_cols", False)
-        i = 0
-        while i < len(self.iso_layers):
-            _, self.iso_layers[i] = imgui.input_float(
-                "Layer " + str(i + 1),
-                self.iso_layers[i],
-                flags=imgui.INPUT_TEXT_ENTER_RETURNS_TRUE,
-            )
-            imgui.next_column()
-            if imgui.button("Remove##rl" + str(i + 1)):
-                self.iso_layers.pop(i)
-                i -= 1
-                _ = True
+        changed = changed or _
+
+        if self.render_method == "isocontours":
+            if imgui.button("Add Layer"):
+                if len(self.iso_layers) < 32:
+                    changed = True
+                    self.iso_layers.append(0.0)
+            _ = self._construct_isolayer_table(imgui)
             changed = changed or _
-            imgui.next_column()
-            i += 1
-        imgui.columns(1)
+
         if imgui.button("Recompile Shader"):
-            shaders = (
-                "vertex_shader",
-                "geometry_shader",
-                "fragment_shader",
-                "colormap_vertex",
-                "colormap_fragment",
-            )
-            for shader_name in shaders:
-                s = getattr(self, shader_name, None)
-                if s:
-                    s.delete_shader()
-            self._program1_invalid = self._program2_invalid = True
-            changed = True
+            changed = self._recompile_shader()
         _, cmap_index = imgui.listbox(
             "Colormap", _cmaps.index(self.colormap.colormap_name), _cmaps
         )
@@ -123,7 +101,7 @@ class SceneComponent(traitlets.HasTraits):
         _, self.cmap_log = imgui.checkbox("Take log", self.cmap_log)
         changed = changed or _
         if imgui.button("Reset Colorbounds"):
-            self.cmap_min = self.cmap_max = None
+            self._cmap_bounds_invalid = True
             changed = True
 
         return changed
@@ -141,6 +119,13 @@ class SceneComponent(traitlets.HasTraits):
             self.geometry_shader = new_combo.get("first_geometry", None)
             self.colormap_vertex = new_combo["second_vertex"]
             self.colormap_fragment = new_combo["second_fragment"]
+
+    @traitlets.observe("render_method")
+    def _add_initial_isolayer(self, change):
+        # this adds an initial isocontour entry when the render method
+        # switches to isocontours and if there are no layers yet.
+        if change["new"] == "isocontours" and len(self.iso_layers) == 0:
+            self.iso_layers.append(0.0)
 
     @traitlets.default("fb")
     def _fb_default(self):
@@ -169,6 +154,11 @@ class SceneComponent(traitlets.HasTraits):
     def _change_colormap_fragment(self, change):
         # Even if old/new are the same
         self._program2_invalid = True
+
+    @traitlets.observe("use_db")
+    def _initialize_db(self, changed):
+        # invaldiate the colormap when the depth buffer selection changes
+        self._cmap_bounds_invalid = True
 
     @traitlets.default("colormap")
     def _default_colormap(self):
@@ -253,27 +243,10 @@ class SceneComponent(traitlets.HasTraits):
                 p._set_uniform("iso_max", float(self.data.max_val))
                 with self.data.vertex_array.bind(p):
                     self.draw(scene, p)
-        if (
-            self.cmap_min is None
-            or self.cmap_max is None
-            or self.last_use_db != self.use_db
-        ):
-            self.last_use_db = self.use_db
-            data = self.fb.data
-            if self.use_db:
-                data[:, :, :3] = self.fb.depth_data[:, :, None]
-            data = data[data[:, :, 3] > 0][:, 0]
-            if data.size > 0:
-                self.cmap_min = cmap_min = data.min()
-                self.cmap_max = cmap_max = data.max()
-            if data.size == 0:
-                cmap_min = 0.0
-                cmap_max = 1.0
-            else:
-                print(f"Computed new cmap values {cmap_min} - {cmap_max}")
-        else:
-            cmap_min = float(self.cmap_min)
-            cmap_max = float(self.cmap_max)
+
+        if self._cmap_bounds_invalid:
+            self._reset_cmap_bounds()
+
         with self.colormap.bind(0):
             with self.fb.input_bind(1, 2):
                 with self.program2.enable() as p2:
@@ -284,8 +257,8 @@ class SceneComponent(traitlets.HasTraits):
                         p2._set_uniform("use_db", self.use_db)
                         # Note that we use cmap_min/cmap_max, not
                         # self.cmap_min/self.cmap_max.
-                        p2._set_uniform("cmap_min", cmap_min)
-                        p2._set_uniform("cmap_max", cmap_max)
+                        p2._set_uniform("cmap_min", self.cmap_min)
+                        p2._set_uniform("cmap_max", self.cmap_max)
                         p2._set_uniform("cmap_log", float(self.cmap_log))
                         with self.base_quad.vertex_array.bind(p2):
                             # Now we do our viewport globally, not just within
@@ -298,3 +271,57 @@ class SceneComponent(traitlets.HasTraits):
 
     def _get_sanitized_iso_layers(self):
         return self.iso_layers
+
+    def _recompile_shader(self) -> bool:
+        # removes existing shaders, invalidates shader programs
+        shaders = (
+            "vertex_shader",
+            "geometry_shader",
+            "fragment_shader",
+            "colormap_vertex",
+            "colormap_fragment",
+        )
+        for shader_name in shaders:
+            s = getattr(self, shader_name, None)
+            if s:
+                s.delete_shader()
+        self._program1_invalid = self._program2_invalid = True
+        return True
+
+    def _construct_isolayer_table(self, imgui) -> bool:
+
+        imgui.columns(2, "iso_layers_cols", False)
+        i = 0
+        changed = False
+        while i < len(self.iso_layers):
+            _, self.iso_layers[i] = imgui.input_float(
+                "Layer " + str(i + 1),
+                self.iso_layers[i],
+                flags=imgui.INPUT_TEXT_ENTER_RETURNS_TRUE,
+            )
+            imgui.next_column()
+            if imgui.button("Remove##rl" + str(i + 1)):
+                self.iso_layers.pop(i)
+                i -= 1
+                _ = True
+            changed = changed or _
+            imgui.next_column()
+            i += 1
+        imgui.columns(1)
+
+        return changed
+
+    def _reset_cmap_bounds(self):
+        data = self.fb.data
+        if self.use_db:
+            data[:, :, :3] = self.fb.depth_data[:, :, None]
+        data = data[data[:, :, 3] > 0][:, 0]
+        if data.size > 0:
+            self.cmap_min = data.min()
+            self.cmap_max = data.max()
+        if data.size == 0:
+            self.cmap_min = 0.0
+            self.cmap_max = 1.0
+        else:
+            print(f"Computed new cmap values {self.cmap_min} - {self.cmap_max}")
+        self._cmap_bounds_invalid = False
