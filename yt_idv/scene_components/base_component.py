@@ -56,7 +56,7 @@ class SceneComponent(traitlets.HasTraits):
     # These attributes are
     cmap_min = traitlets.CFloat(None, allow_none=True)
     cmap_max = traitlets.CFloat(None, allow_none=True)
-    cmap_log = traitlets.Bool(True)
+    cmap_log = traitlets.Bool(False)
     scale = traitlets.CFloat(1.0)
 
     @traitlets.observe("display_bounds")

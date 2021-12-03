@@ -134,6 +134,9 @@ shader_definitions:
     grid_position:
       info: Pass some grid positions on through
       source: grid_position.vert.glsl
+    spherical_grid_position:
+      info: Pass some spherical grid positions on through and translate them to cartesian 
+      source: spherical_grid_position.vert.glsl
     draw_lines:
       info: A line drawing vertex shader
       source: draw_lines.vert.glsl
@@ -158,7 +161,8 @@ component_shaders:
     default_value: max_intensity
     max_intensity:
       description: Maximum Intensity
-      first_vertex: grid_position
+      first_vertex: spherical_grid_position
+      # first_vertex: grid_position
       first_geometry: grid_expand
       first_fragment: max_intensity
       second_vertex: passthrough

@@ -32,6 +32,10 @@ vec4 cleanup_phase(in vec4 curr_color, in vec3 dir, in float t0, in float t1);
 
 void main()
 {
+    // Draws the block outline
+    // output_color = vec4(1.0);
+    // return;
+
     // Obtain screen coordinates
     // https://www.opengl.org/wiki/Compute_eye_space_from_window_space#From_gl_FragCoord
     vec3 ray_position = v_model.xyz;
