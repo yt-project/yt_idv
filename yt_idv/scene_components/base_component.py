@@ -231,6 +231,9 @@ class SceneComponent(traitlets.HasTraits):
             return
         with self.fb.bind(True):
             with self.program1.enable() as p:
+                p._set_uniform(
+                    "is_spherical", self.data.data_source.ds.geometry == "spherical"
+                )
                 scene.camera._set_uniforms(scene, p)
                 self._set_uniforms(scene, p)
                 p._set_uniform("iso_tolerance", float(self.iso_tolerance))

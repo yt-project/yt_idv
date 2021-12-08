@@ -10,16 +10,34 @@ flat out vec3 vdx;
 flat out vec3 vleft_edge;
 flat out vec3 vright_edge;
 
+vec3 transform_vec3(vec3 v) {
+    if (is_spherical) {
+        int theta = 2;
+        int phi = 1;
+        return vec3(
+            v[0] * sin(v[phi]) * cos(v[theta]),
+            v[0] * sin(v[phi]) * sin(v[theta]),
+            v[0] * cos(v[phi])
+        );
+    } else {
+        return v;
+    }
+}
+
+vec4 transform_vec4(vec4 v) {
+    vec3 v3 = transform_vec3(vec3(v));
+    return vec4(v3[0], v3[1], v3[2], v[3]);
+}
+
 void main()
 {
-    vv_model = model_vertex;
+    vv_model = transform_vec4(model_vertex);
     vinverse_proj = inverse(projection);
     // inverse model-view-matrix
     vinverse_mvm = inverse(modelview);
     vinverse_pmvm = inverse(projection * modelview);
     gl_Position = projection * modelview * model_vertex;
     vdx = vec3(in_dx);
-    vleft_edge = vec3(in_left_edge);
-    vright_edge = vec3(in_right_edge);
-
+    vleft_edge = transform_vec3(in_left_edge);
+    vright_edge = transform_vec3(in_right_edge);
 }

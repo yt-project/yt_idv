@@ -57,3 +57,6 @@ uniform float iso_layers[32];
 uniform bool iso_log;
 uniform float iso_min;
 uniform float iso_max;
+
+// spherical coordinates
+uniform bool is_spherical;
