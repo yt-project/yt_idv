@@ -106,8 +106,9 @@ void main()
     ray_position = p0;
 
     // precomputed so we don't need to call log 4 times per sample.
-    float log_iso_min = log(iso_min);
-    float log_iso_range = log(iso_max)-log(iso_min);
+    float inv_log10 = 1 / log(10);  // log is natural log, need to convert to base10
+    float log_iso_min = log(iso_min) * inv_log10;
+    float log_iso_range = log(iso_max)  * inv_log10 - log(iso_min) * inv_log10;
     bool is_layer = false;
 
     while(t <= t1) {
@@ -124,11 +125,13 @@ void main()
             depth = min(depth, (1.0 - 0.0) * 0.5 * f_ndc_depth + (1.0 + 0.0) * 0.5);
             float color_len = length(curr_color.rgb);
             if (iso_log) {
-                color_len = (log((iso_max - iso_min) * color_len + iso_min) - log_iso_min) / log_iso_range;
+                color_len = log(color_len) * inv_log10; // now scale it
+                color_len = (color_len - log_iso_min) / log_iso_range;
             }
             for (int i = 0; i < iso_num_layers; i++) {
                 if (abs(color_len - iso_layers[i]) <= iso_tolerance) {
                     is_layer = true;
+                    curr_color.a = iso_alphas[i];
                     break;
                 }
             }
@@ -145,7 +148,7 @@ void main()
 
     if (ever_sampled) {
         gl_FragDepth = depth;
-    } 
+    }
     if (!is_layer) {
         output_color = vec4(0.0, 0.0, 0.0, 0.0);
     }

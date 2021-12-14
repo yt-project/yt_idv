@@ -30,6 +30,7 @@ class SceneComponent(traitlets.HasTraits):
     use_db = traitlets.Bool(False)  # use depth buffer
     iso_tolerance = traitlets.CFloat(0.025)
     iso_layers = traitlets.List()
+    iso_layers_alpha = traitlets.List()
     display_bounds = traitlets.Tuple(
         traitlets.CFloat(),
         traitlets.CFloat(),
@@ -87,6 +88,7 @@ class SceneComponent(traitlets.HasTraits):
                 if len(self.iso_layers) < 32:
                     changed = True
                     self.iso_layers.append(0.0)
+                    self.iso_layers_alpha.append(1.0)
             _ = self._construct_isolayer_table(imgui)
             changed = changed or _
 
@@ -126,6 +128,7 @@ class SceneComponent(traitlets.HasTraits):
         # switches to isocontours and if there are no layers yet.
         if change["new"] == "isocontours" and len(self.iso_layers) == 0:
             self.iso_layers.append(0.0)
+            self.iso_layers_alpha.append(1.0)
 
     @traitlets.default("fb")
     def _fb_default(self):
@@ -222,6 +225,20 @@ class SceneComponent(traitlets.HasTraits):
             self._program2_invalid = False
         return self._program2
 
+    def _set_iso_uniforms(self, p):
+        p._set_uniform("iso_tolerance", float(self.iso_tolerance))
+        p._set_uniform("iso_num_layers", int(len(self.iso_layers)))
+        v = np.zeros(32, dtype="float32")
+        v[: len(self.iso_layers)] = self._get_sanitized_iso_layers()
+        avals = np.zeros(v.shape, dtype="float32")
+        avals[: len(self.iso_layers)] = np.array(self.iso_layers_alpha)
+        p._set_uniform("iso_alphas", avals)
+        p._set_uniform("iso_layers", v)
+        p._set_uniform("iso_log", bool(self.cmap_log))
+        p._set_uniform("iso_min", float(self.data.min_val))
+        p._set_uniform("iso_max", float(self.data.max_val))
+
+
     def run_program(self, scene):
         # Store this info, because we need to render into a framebuffer that is the
         # right size.
@@ -233,14 +250,7 @@ class SceneComponent(traitlets.HasTraits):
             with self.program1.enable() as p:
                 scene.camera._set_uniforms(scene, p)
                 self._set_uniforms(scene, p)
-                p._set_uniform("iso_tolerance", float(self.iso_tolerance))
-                p._set_uniform("iso_num_layers", int(len(self.iso_layers)))
-                v = np.zeros(32, dtype="float32")
-                v[: len(self.iso_layers)] = self._get_sanitized_iso_layers()
-                p._set_uniform("iso_layers", v)
-                p._set_uniform("iso_log", bool(self.cmap_log))
-                p._set_uniform("iso_min", float(self.data.min_val))
-                p._set_uniform("iso_max", float(self.data.max_val))
+                self._set_iso_uniforms(p)
                 with self.data.vertex_array.bind(p):
                     self.draw(scene, p)
 
@@ -290,18 +300,29 @@ class SceneComponent(traitlets.HasTraits):
 
     def _construct_isolayer_table(self, imgui) -> bool:
 
-        imgui.columns(2, "iso_layers_cols", False)
+        imgui.columns(3, "iso_layers_cols", False)
         i = 0
         changed = False
         while i < len(self.iso_layers):
             _, self.iso_layers[i] = imgui.input_float(
-                "Layer " + str(i + 1),
+                f"Layer {i + 1}",
                 self.iso_layers[i],
                 flags=imgui.INPUT_TEXT_ENTER_RETURNS_TRUE,
             )
+            changed = changed or _
+
+            imgui.next_column()
+            _, self.iso_layers_alpha[i] = imgui.input_float(
+                f"alpha {i}",
+                self.iso_layers_alpha[i],
+                flags=imgui.INPUT_TEXT_ENTER_RETURNS_TRUE,
+            )
+            changed = changed or _
+
             imgui.next_column()
             if imgui.button("Remove##rl" + str(i + 1)):
                 self.iso_layers.pop(i)
+                self.iso_layers_alpha.pop(i)
                 i -= 1
                 _ = True
             changed = changed or _

@@ -440,7 +440,7 @@ class Framebuffer(traitlets.HasTraits):
     @traitlets.observe("viewport")
     def _viewport_changed(self, change):
         # we just need to disable the initialized value here
-        self.initalized = False
+        self.initialized = False
 
     @traitlets.default("fb_id")
     def _fb_id_default(self):
