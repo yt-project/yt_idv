@@ -16,6 +16,7 @@ from yt_idv.shader_objects import (
     component_shaders,
     default_shader_combos,
 )
+from yt_idv.simple_gui import add_popup_help
 
 _cmaps = ["arbre", "viridis", "magma", "doom"]
 _buffers = ["frame", "depth"]
@@ -76,6 +77,7 @@ class SceneComponent(traitlets.HasTraits):
     def render_gui(self, imgui, renderer, scene):
         changed, self.visible = imgui.checkbox("Visible", self.visible)
         _, self.use_db = imgui.checkbox("Depth Buffer", self.use_db)
+        add_popup_help("If checked, will render the depth buffer of the current view.")
         changed = changed or _
         _, self.iso_tolerance = imgui.slider_float(
             "Isocontour Tolerance", self.iso_tolerance, 0.0, 0.1
@@ -95,14 +97,17 @@ class SceneComponent(traitlets.HasTraits):
         _, cmap_index = imgui.listbox(
             "Colormap", _cmaps.index(self.colormap.colormap_name), _cmaps
         )
+        add_popup_help("Select the colormap to use for the rendering.")
         if _:
             self.colormap.colormap_name = _cmaps[cmap_index]
         changed = changed or _
         _, self.cmap_log = imgui.checkbox("Take log", self.cmap_log)
+        add_popup_help("If checked, the rendering will use log-normalized values.")
         changed = changed or _
         if imgui.button("Reset Colorbounds"):
             self._cmap_bounds_invalid = True
             changed = True
+        add_popup_help("Click to reset the colorbounds of the current view.")
 
         return changed
 
