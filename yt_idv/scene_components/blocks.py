@@ -1,4 +1,4 @@
-from math import ceil, floor, log10
+from math import ceil, floor
 
 import numpy as np
 import traitlets
@@ -129,19 +129,3 @@ class BlockRendering(SceneComponent):
         shader_program._set_uniform("tf_min", self.tf_min)
         shader_program._set_uniform("tf_max", self.tf_max)
         shader_program._set_uniform("tf_log", float(self.tf_log))
-
-    def _get_sanitized_iso_layers(self):
-        # return the sanitized layers
-
-        # pull extrema from `BlockCollection`, these are extrema across all blocks
-        data_min = self.data.min_val
-        data_max = self.data.max_val
-        if self.cmap_log:
-            data_min = log10(data_min)
-            data_max = log10(data_max)
-
-        # apply the same scaling as in `self.data._load_textures()`
-        normalized_isovals = [
-            (iso_val - data_min) / (data_max - data_min) for iso_val in self.iso_layers
-        ]
-        return normalized_isovals

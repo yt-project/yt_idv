@@ -19,3 +19,15 @@ class SceneData(traitlets.HasTraits):
 
     min_val = traitlets.CFloat(0.0)
     max_val = traitlets.CFloat(1.0)
+
+    def _normalize_by_min_max(self, data):
+        # linear normalization of data across full data range
+        return (data - self.min_val) / self.val_range
+
+    @property
+    def val_range(self):
+        # the data range (max - min) across all data.
+
+        # note: not using traitlets here because it seemed overkill to
+        # observe min_val and max_val
+        return self.max_val - self.min_val

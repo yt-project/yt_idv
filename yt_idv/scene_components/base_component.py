@@ -28,9 +28,11 @@ class SceneComponent(traitlets.HasTraits):
     priority = traitlets.CInt(0)
     visible = traitlets.Bool(True)
     use_db = traitlets.Bool(False)  # use depth buffer
-    iso_tolerance = traitlets.CFloat(0.025)
-    iso_layers = traitlets.List()
-    iso_layers_alpha = traitlets.List()
+    iso_tolerance = traitlets.CFloat(-1)  # the tolerance for finding isocontours
+    iso_tol_is_pct = traitlets.Bool(False)  # if True, the tolerance is a fraction
+    iso_log = traitlets.Bool(True)  # if True, iso values are base 10 exponents
+    iso_layers = traitlets.List()  # the target values for isocontours
+    iso_layers_alpha = traitlets.List()  # the transparency of isocontours
     display_bounds = traitlets.Tuple(
         traitlets.CFloat(),
         traitlets.CFloat(),
@@ -78,18 +80,9 @@ class SceneComponent(traitlets.HasTraits):
         changed, self.visible = imgui.checkbox("Visible", self.visible)
         _, self.use_db = imgui.checkbox("Depth Buffer", self.use_db)
         changed = changed or _
-        _, self.iso_tolerance = imgui.slider_float(
-            "Isocontour Tolerance", self.iso_tolerance, 0.0, 0.1
-        )
-        changed = changed or _
 
         if self.render_method == "isocontours":
-            if imgui.button("Add Layer"):
-                if len(self.iso_layers) < 32:
-                    changed = True
-                    self.iso_layers.append(0.0)
-                    self.iso_layers_alpha.append(1.0)
-            _ = self._construct_isolayer_table(imgui)
+            _ = self._render_isolayer_inputs(imgui)
             changed = changed or _
 
         if imgui.button("Recompile Shader"):
@@ -107,6 +100,22 @@ class SceneComponent(traitlets.HasTraits):
             changed = True
 
         return changed
+
+    @traitlets.observe("iso_log")
+    def _switch_iso_log(self, change):
+        # if iso_log, the the user is setting 10**x, otherwise they are setting
+        # x directly. So when toggling this checkbox we convert the existing
+        # values between the two forms.
+        if change["old"]:
+            # if True, we were taking the log, but now are not:
+            self.iso_tolerance = 10 ** self.iso_tolerance
+            new_iso_layers = [10 ** iso_val for iso_val in self.iso_layers]
+            self.iso_layers = new_iso_layers
+        else:
+            # we were not taking the log but now we are, so convert to the exponent
+            self.iso_tolerance = np.log10(self.iso_tolerance)
+            new_iso_layers = [np.log10(iso_val) for iso_val in self.iso_layers]
+            self.iso_layers = new_iso_layers
 
     @traitlets.default("render_method")
     def _default_render_method(self):
@@ -226,15 +235,13 @@ class SceneComponent(traitlets.HasTraits):
         return self._program2
 
     def _set_iso_uniforms(self, p):
-        p._set_uniform("iso_tolerance", float(self.iso_tolerance))
+        # these could be handled better by watching traits.
         p._set_uniform("iso_num_layers", int(len(self.iso_layers)))
-        v = np.zeros(32, dtype="float32")
-        v[: len(self.iso_layers)] = self._get_sanitized_iso_layers()
-        avals = np.zeros(v.shape, dtype="float32")
+        p._set_uniform("iso_layers", self._get_sanitized_iso_layers())
+        p._set_uniform("iso_layer_tol", self._get_sanitized_iso_tol())
+        avals = np.zeros((32,), dtype="float32")
         avals[: len(self.iso_layers)] = np.array(self.iso_layers_alpha)
         p._set_uniform("iso_alphas", avals)
-        p._set_uniform("iso_layers", v)
-        p._set_uniform("iso_log", bool(self.cmap_log))
         p._set_uniform("iso_min", float(self.data.min_val))
         p._set_uniform("iso_max", float(self.data.max_val))
 
@@ -249,7 +256,8 @@ class SceneComponent(traitlets.HasTraits):
             with self.program1.enable() as p:
                 scene.camera._set_uniforms(scene, p)
                 self._set_uniforms(scene, p)
-                self._set_iso_uniforms(p)
+                if self.render_method == "isocontours":
+                    self._set_iso_uniforms(p)
                 with self.data.vertex_array.bind(p):
                     self.draw(scene, p)
 
@@ -278,8 +286,64 @@ class SceneComponent(traitlets.HasTraits):
     def draw(self, scene, program):
         raise NotImplementedError
 
-    def _get_sanitized_iso_layers(self):
-        return self.iso_layers
+    def _get_sanitized_iso_layers(self, normalize=True):
+        # returns an array of the isocontour layer values, padded with 0s out
+        # to max number of contours (32).
+        iso_vals = np.asarray(self.iso_layers)
+        if self.iso_log:
+            iso_vals = 10 ** iso_vals
+
+        if normalize:
+            iso_vals = self.data._normalize_by_min_max(iso_vals)
+
+        full_array = np.zeros(32, dtype="float32")
+        full_array[: len(self.iso_layers)] = iso_vals
+        return full_array
+
+    def _get_sanitized_iso_tol(self):
+        # isocontour selection conditions:
+        #
+        # absolute difference
+        #   d - c <= eps
+        # or percent difference
+        #   (d - c) / c * 100 <= eps_pct
+        #
+        # where d is a raw data value, c is the target isocontour, eps
+        # is an absolute difference, eps_f is a percent difference
+        #
+        # The data textures available on the shaders are normalized values:
+        #   d_ = (d - min) / (max - min)
+        # where max and min are the global min and max values across the entire
+        # volume (e.g., over all blocks, not within a block)
+        #
+        # So in terms of normalized values, the absoulte difference condition
+        # becomes
+        #   d_ - c_ <= eps / (max - min)
+        # where c_ is the target value normalized in the same way as d_.
+        #
+        # And the percent difference becomes
+        #   (d_ - c_) * (max - min) / c * 100 <= eps_pct
+        #       or
+        #   d_ - c_ <= eps_pct / 100 * c / (max - min)
+        # so that the allowed tolerance is a function of the raw target value
+        # and so will vary with each layer.
+
+        if self.iso_log:
+            # the tol value is an exponent, convert
+            tol = 10 ** float(self.iso_tolerance)
+        else:
+            tol = float(self.iso_tolerance)
+        # always normalize tolerance
+        tol = tol / self.data.val_range
+
+        if self.iso_tol_is_pct:
+            # tolerance depends on the layer value
+            tol = tol * 0.01
+            raw_layers = self._get_sanitized_iso_layers(normalize=False)
+            final_tol = raw_layers * tol
+        else:
+            final_tol = np.full((32,), tol, dtype="float32")
+        return final_tol
 
     def _recompile_shader(self) -> bool:
         # removes existing shaders, invalidates shader programs
@@ -296,6 +360,34 @@ class SceneComponent(traitlets.HasTraits):
                 s.delete_shader()
         self._program1_invalid = self._program2_invalid = True
         return True
+
+    def _render_isolayer_inputs(self, imgui) -> bool:
+        changed = False
+        if imgui.tree_node("Isocontours"):
+            _, self.iso_log = imgui.checkbox("set exponent", self.iso_log)
+            changed = changed or _
+
+            imgui.columns(2, "iso_tol_cols", False)
+
+            _, self.iso_tolerance = imgui.input_float(
+                "tol", self.iso_tolerance, flags=imgui.INPUT_TEXT_ENTER_RETURNS_TRUE,
+            )
+            changed = changed or _
+
+            imgui.next_column()
+            _, self.iso_tol_is_pct = imgui.checkbox("%", self.iso_tol_is_pct)
+            changed = changed or _
+            imgui.columns(1)
+
+            if imgui.button("Add Layer"):
+                if len(self.iso_layers) < 32:
+                    changed = True
+                    self.iso_layers.append(0.0)
+                    self.iso_layers_alpha.append(1.0)
+            _ = self._construct_isolayer_table(imgui)
+            changed = changed or _
+            imgui.tree_pop()
+        return changed
 
     def _construct_isolayer_table(self, imgui) -> bool:
 
