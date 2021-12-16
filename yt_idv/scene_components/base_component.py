@@ -238,7 +238,6 @@ class SceneComponent(traitlets.HasTraits):
         p._set_uniform("iso_min", float(self.data.min_val))
         p._set_uniform("iso_max", float(self.data.max_val))
 
-
     def run_program(self, scene):
         # Store this info, because we need to render into a framebuffer that is the
         # right size.
