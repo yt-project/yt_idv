@@ -118,12 +118,3 @@ class SimpleGUI:
     @property
     def keyboard_event_handled(self):
         return self.renderer.io.want_capture_keyboard
-
-
-def add_popup_help(message: str):
-    # adds a hover-triggered popup message to the last-defined imgui item
-    # seems to work without passing in the imgui context
-    if imgui.is_item_hovered():
-        imgui.begin_tooltip()
-        imgui.text(message)
-        imgui.end_tooltip()
