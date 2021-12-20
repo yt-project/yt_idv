@@ -36,6 +36,20 @@ uniform vec3 arrangement[8] = vec3[](
 
 uniform int aindex[14] = int[](6, 7, 4, 5, 1, 7, 3, 6, 2, 4, 0, 1, 2, 3);
 
+vec3 transform_vec3(vec3 v) {
+    if (is_spherical) {
+        int theta = 2;
+        int phi = 1;
+        return vec3(
+            v[0] * sin(v[phi]) * cos(v[theta]),
+            v[0] * sin(v[phi]) * sin(v[theta]),
+            v[0] * cos(v[phi])
+        );
+    } else {
+        return v;
+    }
+}
+
 void main() {
 
     vec4 center = gl_in[0].gl_Position;
@@ -45,7 +59,7 @@ void main() {
     vec4 newPos;
 
     for (int i = 0; i < 14; i++) {
-        newPos = vec4(vleft_edge[0] + width * arrangement[aindex[i]], 1.0);
+        newPos = vec4(transform_vec3(vleft_edge[0] + width * arrangement[aindex[i]]), 1.0);
         gl_Position = projection * modelview * newPos;
         left_edge = vleft_edge[0];
         right_edge = vright_edge[0];

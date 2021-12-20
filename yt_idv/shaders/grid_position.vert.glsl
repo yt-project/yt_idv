@@ -31,15 +31,13 @@ vec4 transform_vec4(vec4 v) {
 
 void main()
 {
-    vv_model = transform_vec4(model_vertex);
+    vv_model = model_vertex;
     vinverse_proj = inverse(projection);
     // inverse model-view-matrix
     vinverse_mvm = inverse(modelview);
     vinverse_pmvm = inverse(projection * modelview);
-    gl_Position = projection * modelview * transform_vec4(model_vertex);
+    gl_Position = projection * modelview * model_vertex;
     vdx = vec3(in_dx);
-    vec3 temp_left_edge = transform_vec3(in_left_edge);
-    vec3 temp_right_edge = transform_vec3(in_right_edge);
-    vleft_edge = min(temp_left_edge, temp_right_edge);
-    vright_edge = max(temp_left_edge, temp_right_edge);
+    vleft_edge = vec3(in_left_edge);
+    vright_edge = vec3(in_right_edge);
 }
