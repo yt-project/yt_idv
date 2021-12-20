@@ -7,8 +7,9 @@ import yt_idv
 
 NDIM = 32
 
-
-bbox = np.array([[0.0, 0.5], [0.0, np.pi / 8], [0.0, 2 * np.pi / 8]])
+bbox = np.array(
+    [[0.0, 0.5], [np.pi / 8, 2 * np.pi / 8], [2 * np.pi / 8, 3 * np.pi / 8]]
+)
 
 fake_data = {"density": np.random.random((NDIM, NDIM, NDIM))}
 ds = yt.load_uniform_grid(
