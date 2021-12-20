@@ -65,7 +65,7 @@ void main()
     temp_t = min(tmax.xx, tmax.yz);
     float t1 = min(temp_t.x, temp_t.y);
     t0 = max(t0, 0.0);
-    if (t1 <= t0) discard;
+    // if (t1 <= t0) discard;
 
     // Some more discussion of this here:
     //  http://prideout.net/blog/?p=64
