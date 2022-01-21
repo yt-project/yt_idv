@@ -15,6 +15,20 @@ bool within_bb(vec3 pos)
     return all(left) && all(right);
 }
 
+vec3 transform_vec3(vec3 v) {
+    if (is_spherical) {
+        int theta = 2;
+        int phi = 1;
+        return vec3(
+            v[0] * sin(v[phi]) * cos(v[theta]),
+            v[0] * sin(v[phi]) * sin(v[theta]),
+            v[0] * cos(v[phi])
+        );
+    } else {
+        return v;
+    }
+}
+
 vec3 get_offset_texture_position(sampler3D tex, vec3 tex_curr_pos)
 {
     ivec3 texsize = textureSize(tex, 0); // lod (mipmap level) always 0?
@@ -30,6 +44,31 @@ vec4 cleanup_phase(in vec4 curr_color, in vec3 dir, in float t0, in float t1);
 //   void (vec3 tex_curr_pos, inout vec4 curr_color, float tdelta, float t,
 //         vec3 direction);
 
+void sph_main()
+{
+    vec3 ray_position = v_model.xyz;
+    vec3 p0 = camera_pos.xyz;
+    vec4 curr_color = vec4(0.0);
+
+    vec3 temp_left_edge = transform_vec3(left_edge);
+    vec3 temp_right_edge = transform_vec3(right_edge);
+    vec3 c_left_edge = min(temp_left_edge, temp_right_edge);
+    vec3 c_right_edge = max(temp_left_edge, temp_right_edge);
+
+    vec3 range = (c_right_edge + dx/2.0) - (c_left_edge - dx/2.0);
+    vec3 nzones = range / dx;
+    vec3 ndx = 1.0/nzones;
+
+    vec3 tex_curr_pos = (ray_position - c_left_edge) / range;
+    tex_curr_pos = (tex_curr_pos * (1.0 - ndx)) + ndx/2.0;
+    bool sampled = sample_texture(tex_curr_pos, curr_color, 0.0, 0.0, vec3(0.0));
+    if (sampled) {
+        output_color = curr_color;
+    } else {
+        output_color = vec4(0.0);
+    }
+}
+
 void main()
 {
     // Draws the block outline
@@ -38,6 +77,11 @@ void main()
 
     // Obtain screen coordinates
     // https://www.opengl.org/wiki/Compute_eye_space_from_window_space#From_gl_FragCoord
+    if (is_spherical) {
+        sph_main();
+        return;
+    }
+
     vec3 ray_position = v_model.xyz;
 
     // Five samples
