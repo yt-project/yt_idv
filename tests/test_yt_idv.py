@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 """Tests for `yt_idv` package."""
 
 import base64
