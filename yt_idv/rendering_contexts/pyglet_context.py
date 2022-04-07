@@ -47,9 +47,7 @@ class PygletRenderingContext(pyglet.window.Window, BaseContext):
             double_buffer=True,
             depth_size=24,
         )
-        super(PygletRenderingContext, self).__init__(
-            width, height, config=config, visible=visible, caption=title
-        )
+        super().__init__(width, height, config=config, visible=visible, caption=title)
         if position is None:
             self.center_window()
         else:

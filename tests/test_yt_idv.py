@@ -31,8 +31,7 @@ def osmesa_fake_amr():
 
 @pytest.fixture()
 def osmesa_empty():
-    """Return an OSMesa context that has no dataset.
-    """
+    """Return an OSMesa context that has no dataset."""
     rc = yt_idv.render_context("osmesa", width=1024, height=1024)
     ds = yt.testing.fake_amr_ds()
     rc.add_scene(ds, None)

@@ -123,7 +123,7 @@ class BlockCollection(SceneData):
             # Avoid setting to NaNs
             if self.max_val != self.min_val:
                 n_data = (n_data - self.min_val) / (
-                    (self.max_val - self.min_val)
+                    self.max_val - self.min_val
                 )  # * self.diagonal)
             data_tex = Texture3D(data=n_data)
             bitmap_tex = Texture3D(

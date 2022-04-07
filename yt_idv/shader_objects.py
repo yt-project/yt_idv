@@ -1,4 +1,3 @@
-# encoding: utf-8
 """
 Shader and ShaderProgram wrapper classes for vertex and fragment shaders used
 in Interactive Data Visualization
@@ -277,7 +276,10 @@ class Shader(traitlets.HasTraits):
         # files.
         if not isinstance(source, (tuple, list)):
             source = (source,)
-        source = ("header.inc.glsl", "known_uniforms.inc.glsl",) + tuple(source)
+        source = (
+            "header.inc.glsl",
+            "known_uniforms.inc.glsl",
+        ) + tuple(source)
         full_source = []
         for fn in source:
             if os.path.isfile(fn):
@@ -287,7 +289,7 @@ class Shader(traitlets.HasTraits):
             fn = os.path.join(sh_directory, fn)
             if not os.path.isfile(fn):
                 raise YTInvalidShaderType(fn)
-            full_source.append(open(fn, "r").read())
+            full_source.append(open(fn).read())
         return "\n\n".join(full_source)
 
     def _enable_null_shader(self):
@@ -376,7 +378,7 @@ default_shader_combos = {}
 # We'll load our shaders here from shaderlist.yaml
 _shlist_fn = os.path.join(os.path.dirname(__file__), "shaders", "shaderlist.yaml")
 if os.path.exists(_shlist_fn):
-    with open(_shlist_fn, "r") as f:
+    with open(_shlist_fn) as f:
         shader_info = yaml.load(f, yaml.SafeLoader)
     known_shaders.update(shader_info["shader_definitions"])
     component_shaders.update(shader_info["component_shaders"])

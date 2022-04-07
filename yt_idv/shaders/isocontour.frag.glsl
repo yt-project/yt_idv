@@ -145,7 +145,7 @@ void main()
 
     if (ever_sampled) {
         gl_FragDepth = depth;
-    } 
+    }
     if (!is_layer) {
         output_color = vec4(0.0, 0.0, 0.0, 0.0);
     }
