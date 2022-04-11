@@ -20,7 +20,7 @@ class ParticleRendering(SceneComponent):
             "Log Scale", math.log10(self.scale), -8.0, 2.0
         )
         if _:
-            self.scale = 10 ** new_value
+            self.scale = 10**new_value
             changed = True
         imgui.text("Filter Particle Max Size")
         _, new_value = imgui.slider_float("", 1.0 / self.max_particle_size, 1.0, 100.0)
