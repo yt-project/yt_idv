@@ -1,6 +1,6 @@
 pytest==6.1.2
 pytest-html==3.1.0
-git+git://github.com/yt-project/yt.git#egg=yt
+yt==4.0.3
 pyOpenGL==3.1.5
 Click==7.0
 traitlets>=5.0.5
@@ -8,7 +8,7 @@ pyOpenGL==3.1.5
 traittypes>=0.2.1
 matplotlib>=3.0
 numpy>=1.18.0
-git+git://github.com/pyglet/pyglet#egg=pyglet
+git+https://github.com/pyglet/pyglet.git#egg=pyglet
 pyyaml>=5.3.1
 imgui>=1.2.0
 more_itertools>=8.6.0
