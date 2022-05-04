@@ -39,4 +39,3 @@ vec4 cleanup_phase(in vec4 curr_color, in vec3 dir, in float t0, in float t1)
   //            curr_color.a * length(p1-p0));
   return curr_color;
 }
-

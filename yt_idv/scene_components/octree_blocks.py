@@ -30,7 +30,7 @@ class OctreeBlockRendering(SceneComponent):
     priority = 10
 
     def render_gui(self, imgui, renderer, scene):
-        changed = super(OctreeBlockRendering, self).render_gui(imgui, renderer, scene)
+        changed = super().render_gui(imgui, renderer, scene)
         _, sample_factor = imgui.slider_float(
             "Sample Factor", self.sample_factor, 1.0, 20.0
         )

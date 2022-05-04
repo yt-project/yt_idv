@@ -11,17 +11,17 @@ jobs:
         python-version: [3.7, 3.8]
 
     steps:
-    - uses: actions/checkout@v2
     - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@v2
       with:
         python-version: ${{ matrix.python-version }}
+    - uses: actions/checkout@v2
     - name: Install dependencies
       run: |
         sudo apt-get update && sudo apt-get upgrade
         sudo apt install libgl1-mesa-dri libegl1-mesa libgbm1 libosmesa6 libosmesa6-dev
         python -m pip install --upgrade pip
-        python -m pip install flake8 pytest
+        python -m pip install pytest
         if [ -f tests/test_requirements.txt ]; then python -m pip install -r tests/test_requirements.txt; fi
         python -m pip install --upgrade numpy PyOpenGL_accelerate
     - name: Setup yt_idv

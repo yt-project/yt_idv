@@ -58,7 +58,7 @@ class SPHRendering(SceneComponent):
         return Texture1D(data=values.astype("f4"))
 
     def render_gui(self, imgui, renderer, scene):
-        changed = super(SPHRendering, self).render_gui(imgui, renderer, scene)
+        changed = super().render_gui(imgui, renderer, scene)
         _, kernel_index = imgui.listbox(
             "Kernel", KERNEL_TYPES.index(self.kernel_name), KERNEL_TYPES
         )
@@ -69,7 +69,7 @@ class SPHRendering(SceneComponent):
             "Log Scale", math.log10(self.scale), -8.0, 2.0
         )
         if _:
-            self.scale = 10 ** new_value
+            self.scale = 10**new_value
             changed = True
         imgui.text("Filter Particle Max Size")
         _, new_value = imgui.slider_float("", 1.0 / self.max_particle_size, 1.0, 100.0)

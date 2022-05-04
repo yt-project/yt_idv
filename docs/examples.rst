@@ -55,7 +55,7 @@ widget that is auto-updated when the scene runs.
    ds = yt.load_sample("IsolatedGalaxy")
    dd = ds.all_data()
 
-   rc = yt_idv.render_context("egl", width = 400, height = 400)
+   rc = yt_idv.render_context("egl", width=400, height=400)
    rc.add_scene(dd, "density", no_ghost=True)
    rc.run()
    rc.add_image()

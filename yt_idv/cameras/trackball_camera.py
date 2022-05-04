@@ -47,7 +47,7 @@ class TrackballCamera(BaseCamera):
             y /= mag
             z = 0.0
         else:
-            z = np.sqrt(1.0 - mag ** 2)
+            z = np.sqrt(1.0 - mag**2)
         return np.array([x, -y, z])
 
     def update_orientation(self, start_x, start_y, end_x, end_y):

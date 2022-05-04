@@ -8,4 +8,3 @@ void main(){
    if(val == 0) discard;
    color = vec4(val);
 }
-

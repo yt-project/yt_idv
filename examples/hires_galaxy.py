@@ -15,7 +15,7 @@ sc.camera.position = [0.45, 0.44, 0.43]
 
 ds = (sc.camera.focus - sc.camera.position) / N
 
-for i in range(N):
+for _ in range(N):
     sc.components[0].cmap_min = sc.components[0].cmap_max = None
     sc.camera.position = sc.camera.position + ds
     sc.camera._update_matrices()
