@@ -13,7 +13,10 @@ bbox = np.array(
 
 fake_data = {"density": np.random.random((NDIM, NDIM, NDIM))}
 ds = yt.load_uniform_grid(
-    fake_data, [NDIM, NDIM, NDIM], bbox=bbox, geometry="spherical",
+    fake_data,
+    [NDIM, NDIM, NDIM],
+    bbox=bbox,
+    geometry="spherical",
 )
 
 rc = yt_idv.render_context(height=800, width=800, gui=True)
