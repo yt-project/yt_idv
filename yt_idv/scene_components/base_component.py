@@ -77,7 +77,8 @@ class SceneComponent(traitlets.HasTraits):
     def render_gui(self, imgui, renderer, scene):
         changed, self.visible = imgui.checkbox("Visible", self.visible)
         _, self.use_db = imgui.checkbox("Depth Buffer", self.use_db)
-        add_popup_help(
+        changed = changed or _
+        _ = add_popup_help(
             imgui, "If checked, will render the depth buffer of the current view."
         )
         changed = changed or _
@@ -99,19 +100,22 @@ class SceneComponent(traitlets.HasTraits):
         _, cmap_index = imgui.listbox(
             "Colormap", _cmaps.index(self.colormap.colormap_name), _cmaps
         )
-        add_popup_help(imgui, "Select the colormap to use for the rendering.")
         if _:
             self.colormap.colormap_name = _cmaps[cmap_index]
         changed = changed or _
+        _ = add_popup_help(imgui, "Select the colormap to use for the rendering.")
+        changed = changed or _
         _, self.cmap_log = imgui.checkbox("Take log", self.cmap_log)
-        add_popup_help(
+        changed = changed or _
+        _ = add_popup_help(
             imgui, "If checked, the rendering will use log-normalized values."
         )
         changed = changed or _
         if imgui.button("Reset Colorbounds"):
             self._cmap_bounds_invalid = True
             changed = True
-        add_popup_help(imgui, "Click to reset the colorbounds of the current view.")
+        _ = add_popup_help(imgui, "Click to reset the colorbounds of the current view.")
+        changed = changed or _
 
         return changed
 
