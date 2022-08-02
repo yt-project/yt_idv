@@ -117,6 +117,10 @@ class SceneGraph(traitlets.HasTraits):
         elements = self.components + self.annotations
         yield from sorted(elements, key=lambda a: a.priority)
 
+    def reset_framebuffers(self):
+        for c in self:
+            c.fb = Framebuffer()
+
     def render(self):
         """
         Render the scene into its local framebuffer.
