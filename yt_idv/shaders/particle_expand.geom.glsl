@@ -40,7 +40,7 @@ void main() {
 
     // We don't want to allow each particle to be bigger than some maximum size
     // in clip space coordinates.
-    
+
     fragLeftCorner.x = max(fragLeftCorner.x, gl_in[0].gl_Position.x - max_particle_size/2.0);
     fragLeftCorner.y = max(fragLeftCorner.y, gl_in[0].gl_Position.y - max_particle_size/2.0);
     fragRightCorner.x = min(fragRightCorner.x, gl_in[0].gl_Position.x + max_particle_size/2.0);
@@ -48,7 +48,7 @@ void main() {
 
     // https://stackoverflow.com/questions/12239876/fastest-way-of-converting-a-quad-to-a-triangle-strip
     // or: https://en.wikipedia.org/wiki/Triangle_strip
-    // in section "OpenGL implementation" this corresponds to A = 1, B = 2, C = 3, D = 4 
+    // in section "OpenGL implementation" this corresponds to A = 1, B = 2, C = 3, D = 4
 
     gl_Position = vec4(fragLeftCorner.xy, gl_in[0].gl_Position.zw);
     field_value = vfield_value[0];

@@ -8,7 +8,7 @@ class OSMesaRenderingContext(OffscreenRenderingContext):
     """Rendering context using OSMesa (experimental)"""
 
     def __init__(self, width=1024, height=1024, **kwargs):
-        super(OSMesaRenderingContext, self).__init__(width, height, **kwargs)
+        super().__init__(width, height, **kwargs)
         self.osmesa = osmesa
         # Now we create our necessary bits.
         config_attribs = np.array(

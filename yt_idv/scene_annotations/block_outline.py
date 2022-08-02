@@ -24,7 +24,7 @@ class BlockOutline(SceneAnnotation):
             GL.glDrawArrays(GL.GL_POINTS, tex_ind * each, each)
 
     def render_gui(self, imgui, renderer, scene):
-        changed = super(BlockOutline, self).render_gui(imgui, renderer, scene)
+        changed = super().render_gui(imgui, renderer, scene)
         _, bw = imgui.slider_float("Width", self.box_width, 0.001, 2.50)
         if _:
             self.box_width = bw
