@@ -203,7 +203,8 @@ class SceneComponent(traitlets.HasTraits):
     @traitlets.default("base_quad")
     def _default_base_quad(self):
         bq = SceneData(
-            name="fullscreen_quad", vertex_array=VertexArray(name="tri", each=6),
+            name="fullscreen_quad",
+            vertex_array=VertexArray(name="tri", each=6),
         )
         fq = FULLSCREEN_QUAD.reshape((6, 3), order="C")
         bq.vertex_array.attributes.append(

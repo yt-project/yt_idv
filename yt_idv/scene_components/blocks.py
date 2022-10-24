@@ -165,4 +165,3 @@ class BlockRendering(SceneComponent):
             (iso_val - data_min) / (data_max - data_min) for iso_val in self.iso_layers
         ]
         return normalized_isovals
-
