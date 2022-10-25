@@ -8,7 +8,8 @@ from .base_context import BaseContext
 
 
 class PygletRenderingContext(pyglet.window.Window, BaseContext):
-    """Basic rendering context for IDV using GLFW3, that handles the main window even loop
+    """
+    Basic rendering context for IDV using GLFW3, that handles the main window event loop
 
     Parameters
     ----------
