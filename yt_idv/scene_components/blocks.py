@@ -105,6 +105,21 @@ class BlockRendering(SceneComponent):
                     data[xb1:xb2, 0, i] = np.mgrid[yv1 : yv2 : (xb2 - xb1) * 1j]
             if update:
                 self.transfer_function.data = (data * 255).astype("u1")
+
+        elif self.render_method == "slice":
+            imgui.text("Set slicing parameters:")
+
+            _, self.slice_position = imgui.input_float3(
+                "Position", *self.slice_position
+            )
+            changed = changed or _
+
+            _, self.slice_normal = imgui.input_float3("Normal", *self.slice_normal)
+            changed = changed or _
+
+            # self.slice_position
+            # self.slice_normal
+
         return changed
 
     @traitlets.default("transfer_function")
