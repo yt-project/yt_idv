@@ -84,7 +84,7 @@ class SceneGraph(traitlets.HasTraits):
                 self.data_objects.append(TextCharacters())
                 self.data_objects[-1].build_textures()
             kwargs["data"] = next(
-                (_ for _ in self.data_objects if _.name == "text_overlay")
+                _ for _ in self.data_objects if _.name == "text_overlay"
             )
         self.annotations.append(
             TextAnnotation(text=text, origin=origin, scale=scale, **kwargs)
@@ -115,8 +115,11 @@ class SceneGraph(traitlets.HasTraits):
 
         """
         elements = self.components + self.annotations
-        for element in sorted(elements, key=lambda a: a.priority):
-            yield element
+        yield from sorted(elements, key=lambda a: a.priority)
+
+    def reset_framebuffers(self):
+        for c in self:
+            c.fb = Framebuffer()
 
     def render(self):
         """

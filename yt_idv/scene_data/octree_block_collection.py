@@ -73,7 +73,7 @@ class OctreeBlockCollection(SceneData):
 
         if self.max_val != self.min_val:
             data = (data - self.min_val) / (
-                (self.max_val - self.min_val)
+                self.max_val - self.min_val
             )  # * self.diagonal)
 
         self.vertex_array.attributes.append(

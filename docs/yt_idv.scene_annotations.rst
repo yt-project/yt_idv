@@ -8,4 +8,3 @@ Scene Annotations
 .. autoclass:: yt_idv.scene_annotations.box.BoxAnnotation
 
 .. autoclass:: yt_idv.scene_annotations.text.TextAnnotation
-
