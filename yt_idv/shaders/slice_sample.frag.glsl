@@ -1,5 +1,4 @@
-flat in vec4 v_model;
-flat in vec3 v_camera_pos;
+in vec4 v_model;
 flat in vec3 dx;
 flat in vec3 left_edge;
 flat in vec3 right_edge;
@@ -40,7 +39,7 @@ void main()
     vec3 ray_position = (inverse_pmvm * clipPos).xyz;
 
     // Five samples
-    vec3 dir = normalize(v_camera_pos.xyz - ray_position);
+    vec3 dir = normalize(camera_pos.xyz - ray_position);
     dir = max(abs(dir), 0.0001) * sign(dir);
     vec4 curr_color = vec4(0.0);
 
