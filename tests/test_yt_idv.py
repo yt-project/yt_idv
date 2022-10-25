@@ -4,6 +4,7 @@ import base64
 
 import pytest
 import yt
+import yt.testing
 from pytest_html import extras
 
 import yt_idv
