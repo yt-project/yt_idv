@@ -241,13 +241,6 @@ component_shaders:
       first_fragment: transfer_function
       second_vertex: passthrough
       second_fragment: passthrough
-    slice:
-      description: Slice
-      first_vertex: grid_position
-      first_geometry: grid_expand
-      first_fragment: slice_sample
-      second_vertex: passthrough
-      second_fragment: apply_colormap
   block_outline:
     default_value: default
     default:
