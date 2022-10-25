@@ -4,7 +4,7 @@ on: [push, pull_request]
 
 jobs:
   build-and-publish:
-    name: Build (and Publish
+    name: Check Build
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@master
