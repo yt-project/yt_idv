@@ -27,7 +27,9 @@ class Plane(SceneComponent):
 
     def draw(self, scene, program):
         with self.data.texture_object.bind(0):
+            GL.glDisable(GL.GL_CULL_FACE)  # default, two-sided rendering
             GL.glDrawElements(GL.GL_TRIANGLES, self.data.size, GL.GL_UNSIGNED_INT, None)
+            GL.glEnable(GL.GL_CULL_FACE)  # back to what it was
 
     def _set_uniforms(self, scene, shader_program):
         cam = scene.camera

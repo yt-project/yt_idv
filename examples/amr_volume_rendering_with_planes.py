@@ -13,12 +13,14 @@ ds = yt.load_sample("IsolatedGalaxy")
 rc = yt_idv.render_context(height=800, width=800, gui=True)
 sg = rc.add_scene(ds, "density", no_ghost=True)
 
+field = ("index", "z")
+
 # add some planes (these are independent objects, not linked to the volume rendering)
 
 # slice
 slc = ds.slice(0, 0.5)
 slc_data = PlaneData(data_source=slc)
-slc_data.add_data("density", 1.0, (400, 400))
+slc_data.add_data(field, 1.0, (400, 400))
 slc_render = Plane(data=slc_data, cmap_log=True)
 rc.scene.data_objects.append(slc_data)
 rc.scene.components.append(slc_render)
@@ -27,7 +29,7 @@ rc.scene.components.append(slc_render)
 slc = ds.slice(1, 0.5)
 slc_data = PlaneData(data_source=slc)
 slc_data.add_data(
-    "density",
+    field,
     unyt_quantity(400, "kpc"),
     (400, 400),
     center=np.array([0.65, slc.coord, 0.5]),
@@ -40,7 +42,7 @@ rc.scene.components.append(slc_render)
 slc = ds.slice(2, 0.5)
 slc_data = PlaneData(data_source=slc)
 slc_data.add_data(
-    "density",
+    field,
     unyt_quantity(400, "kpc"),
     (400, 400),
 )
@@ -53,15 +55,15 @@ normal = np.array([1.0, 1.0, 0.0], dtype="float64")
 center = ds.domain_center.to("code_length").value
 cut = ds.cutting(normal, center)
 cut_data = PlaneData(data_source=cut)
-cut_data.add_data("density", 1.0, (400, 400))
+cut_data.add_data(field, 1.0, (400, 400))
 cut_render = Plane(data=cut_data, cmap_log=True)
 rc.scene.data_objects.append(cut_data)
 rc.scene.components.append(cut_render)
 
 # projection
-proj = ds.proj("density", 0)
+proj = ds.proj(field, 0)
 proj_data = PlaneData(data_source=proj)
-proj_data.add_data("density", 1.0, (400, 400))
+proj_data.add_data(field, 1.0, (400, 400))
 proj_render = Plane(data=proj_data, cmap_log=True)
 rc.scene.data_objects.append(proj_data)
 rc.scene.components.append(proj_render)
