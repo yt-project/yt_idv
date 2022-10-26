@@ -6,6 +6,7 @@ from unyt.exceptions import UnitParseError
 from yt.data_objects.construction_data_containers import YTProj
 from yt.data_objects.data_containers import YTDataContainer
 from yt.data_objects.selection_objects.slices import YTCuttingPlane, YTSlice
+from yt.utilities.orientation import Orientation
 
 from yt_idv.opengl_support import Texture2D, VertexArray, VertexAttribute
 from yt_idv.scene_data.base_data import SceneData
@@ -40,9 +41,6 @@ class BasePlane(SceneData):
 
     north_vec: ndarray with shape (3,)
         the north vector lying within the plane in 3d cartesian image coordinates
-    east_vec: ndarray with shape (3,)
-        the east vector lying within the plane in 3d cartesian image coordinates.
-        (should equal the cross product between plane_normal and north_vec)
 
     Both of these must be set manually if the normal vector is not aligned with
     the usual cartesian axes.
@@ -69,7 +67,7 @@ class BasePlane(SceneData):
     width = traitlets.Float(allow_none=False)
     height = traitlets.Float(allow_none=False)
 
-    _calculate_translation = False
+    _calculate_translation = True
 
     def _set_transformation(self):
         """
@@ -77,25 +75,11 @@ class BasePlane(SceneData):
         coordinates returns the world coordinates.
         """
         # set the in-plane coordinate vectors, basis_u = east, basis_v = north
-        unit_normal = self.normal / np.linalg.norm(self.normal)
-        if self.east_vec is None or self.north_vec is None:
-            if unit_normal[0] == 0 and unit_normal[1] == 0:
-                east_vec = np.array([1.0, 0.0, 0.0])
-                north_vec = np.array([0.0, 1.0, 0.0])
-            elif unit_normal[1] == 0 and unit_normal[2] == 0:
-                east_vec = np.array([0.0, 1.0, 0.0])
-                north_vec = np.array([0.0, 0.0, 1.0])
-            elif unit_normal[0] == 0 and unit_normal[2] == 0:
-                east_vec = np.array([1.0, 0.0, 0.0])
-                north_vec = np.array([0.0, 0.0, 1.0])
-            else:
-                raise ValueError(
-                    "It looks like your plane is not normal to an axis, please"
-                    " set east_vec and north_vec before calling add_data()."
-                )
-        else:
-            east_vec = self.east_vec
-            north_vec = self.north_vec
+        orientation = Orientation(self.normal, north_vector=self.north_vec)
+        unit_vecs = orientation.unit_vectors
+        unit_east = unit_vecs[0, :]
+        unit_north = unit_vecs[1, :]
+        unit_normal = unit_vecs[2, :]
 
         # total transformation
         #    M * [U, V, 0., 1], where M = T * W * S
@@ -111,8 +95,8 @@ class BasePlane(SceneData):
 
         # homogenous projection matrix from in-plane coords to world at origin
         W = np.eye(4)
-        W[0:3, 0] = east_vec
-        W[0:3, 1] = north_vec
+        W[0:3, 0] = unit_east
+        W[0:3, 1] = unit_north
         W[0:3, 2] = unit_normal
 
         to_world = np.matmul(W, S)
@@ -126,6 +110,7 @@ class BasePlane(SceneData):
             current_center = np.matmul(to_world, np.array([0.5, 0.5, 0.0, 1.0]).T)
             T[0:3, 3] = self.center - current_center[0:3]
         else:
+            print("setting homogenous translation matrix center")
             T[0:3, 3] = self.center
 
         # combined homogenous projection matrix
@@ -199,7 +184,7 @@ class PlaneData(BasePlane):
     data_source = traitlets.Instance(YTDataContainer)
     _calculate_translation = True
 
-    def _sanitize_length_var(self, var, return_scalar=True):
+    def _sanitize_length_var(self, var):
         # pulls out the code_length value for var if it is a unyt quantity
         if hasattr(var, "units"):
             try:
@@ -208,14 +193,7 @@ class PlaneData(BasePlane):
                 var = unyt_quantity(
                     var.value, var.units, registry=self.data_source.ds.unit_registry
                 )
-                var = var.to("code_length")
-            # hmmm, the following line is a problem. will change scalar to
-            # array... figure out why I added this...
-            var = var / self.data_source.ds.domain_width
-            if return_scalar:
-                var = var.d
-            # if return_scalar:
-            #     var = float(var)
+            var = var.to("code_length").d
         return var
 
     def add_data(
@@ -262,12 +240,9 @@ class PlaneData(BasePlane):
                 frb_kw_args[kw] = val
 
         frb = self.data_source.to_frb(width, **frb_kw_args)
-        # field_vals = frb[field]
-        # if hasattr(field_vals, 'units'):
-        #     field_vals = field_vals.value
         self.data = frb[field]
         if np.any(center):
-            center = self._sanitize_length_var(center, return_scalar=False)
+            center = self._sanitize_length_var(center)
             self._calculate_translation = True
 
         def calc_center(axis_coord_val):
@@ -320,8 +295,10 @@ class PlaneData(BasePlane):
         self.normal = normal
         if height is None:
             height = width
+
+        # need to set the width and height relative to the screen coordinates
         for dimstr, dim in [("width", width), ("height", height)]:
-            dim_s = self._sanitize_length_var(dim)
+            dim_s = float(self._sanitize_length_var(dim))
             setattr(self, dimstr, dim_s)
 
         super().add_data()

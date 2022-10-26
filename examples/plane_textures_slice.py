@@ -4,7 +4,9 @@ from unyt import unyt_quantity
 
 from yt_idv import render_context
 from yt_idv.cameras.trackball_camera import TrackballCamera
+from yt_idv.scene_annotations.grid_outlines import GridOutlines  # NOQA
 from yt_idv.scene_components.plane import Plane  # NOQA
+from yt_idv.scene_data.grid_positions import GridPositions  # NOQA
 from yt_idv.scene_data.plane import PlaneData  # NOQA
 from yt_idv.scene_graph import SceneGraph
 
@@ -49,5 +51,12 @@ slice_data.add_data(
 slice_render = Plane(data=slice_data, cmap_log=True)
 rc.scene.data_objects.append(slice_data)
 rc.scene.components.append(slice_render)
+
+# add grids
+grids = ds.index.grids.tolist()
+gp = GridPositions(grid_list=grids)
+rc.scene.data_objects.append(gp)
+go = GridOutlines(data=gp)
+rc.scene.components.append(go)
 
 rc.run()

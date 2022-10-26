@@ -26,7 +26,6 @@ image_plane = BasePlane(
     width=1,
     height=1,
 )
-image_plane.east_vec = np.array([0.0, 1.0, 0.0])
 image_plane.north_vec = np.array([0.0, 0.0, 1.0])
 image_plane.add_data()
 
