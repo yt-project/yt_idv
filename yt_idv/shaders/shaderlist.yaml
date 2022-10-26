@@ -63,12 +63,12 @@ shader_definitions:
       - zero
       blend_equation: func add
     plane:
-        info: A vertex shader for a 2D plane in plane-coordinates.
+        info: A fragment shader for a 2D plane in plane-coordinates.
         source: plane.frag.glsl
         depth_test: less
         blend_func:
-        - one
-        - zero
+        - src alpha
+        - dst alpha
         blend_equation: func add
     noop:
       info: A second pass fragment shader that performs no operation.  Usually used
