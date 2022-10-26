@@ -51,7 +51,6 @@ class BasePlane(SceneData):
 
     # calculated or sterilized:
     plane_normal = None
-    # plane_pt = None
     east_vec = None
     north_vec = None
 
