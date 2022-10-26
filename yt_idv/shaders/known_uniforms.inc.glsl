@@ -27,6 +27,10 @@ uniform int channel;
 // Mesh rendering
 uniform mat4 model_to_clip;
 
+// Slicing
+uniform vec3 slice_position;
+uniform vec3 slice_normal;
+
 // Matrices for projection and positions
 uniform mat4 modelview;
 uniform mat4 projection;
