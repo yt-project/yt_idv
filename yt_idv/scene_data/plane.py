@@ -209,10 +209,13 @@ class PlaneData(BasePlane):
                     var.value, var.units, registry=self.data_source.ds.unit_registry
                 )
                 var = var.to("code_length")
+            # hmmm, the following line is a problem. will change scalar to
+            # array... figure out why I added this...
             var = var / self.data_source.ds.domain_width
-            var = var.value
             if return_scalar:
-                var = float(var)
+                var = var.d
+            # if return_scalar:
+            #     var = float(var)
         return var
 
     def add_data(
@@ -318,6 +321,7 @@ class PlaneData(BasePlane):
         if height is None:
             height = width
         for dimstr, dim in [("width", width), ("height", height)]:
-            setattr(self, dimstr, self._sanitize_length_var(dim))
+            dim_s = self._sanitize_length_var(dim)
+            setattr(self, dimstr, dim_s)
 
         super().add_data()
