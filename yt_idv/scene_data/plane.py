@@ -67,8 +67,6 @@ class BasePlane(SceneData):
     width = traitlets.Float(allow_none=False)
     height = traitlets.Float(allow_none=False)
 
-    _calculate_translation = True
-
     def _set_transformation(self):
         """
         here we build the transformation matrix that when applied to the in-plane
@@ -103,15 +101,9 @@ class BasePlane(SceneData):
 
         # homogenous translation matrix
         T = np.eye(4)
-        if self._calculate_translation:
-            # aligns the center of the UV coords with the true center for when
-            # the image data array center is not the center. alternatively,
-            # could adjust the vertex points, but this seems easier.
-            current_center = np.matmul(to_world, np.array([0.5, 0.5, 0.0, 1.0]).T)
-            T[0:3, 3] = self.center - current_center[0:3]
-        else:
-            print("setting homogenous translation matrix center")
-            T[0:3, 3] = self.center
+        # align the center of the UV coords with the true center
+        current_center = np.matmul(to_world, np.array([0.5, 0.5, 0.0, 1.0]).T)
+        T[0:3, 3] = self.center - current_center[0:3]
 
         # combined homogenous projection matrix
         self.to_worldview = np.matmul(T, to_world)
@@ -243,7 +235,6 @@ class PlaneData(BasePlane):
         self.data = frb[field]
         if np.any(center):
             center = self._sanitize_length_var(center)
-            self._calculate_translation = True
 
         def calc_center(axis_coord_val):
             center = np.zeros((3,))
@@ -274,7 +265,6 @@ class PlaneData(BasePlane):
             normal = self.data_source.orienter.normal_vector
             normal = normal / np.linalg.norm(normal)  # make sure it's a unit normal
             self.east_vec = np.cross(normal, self.north_vec)
-            self._calculate_translation = True
             if np.any(center) is None:
                 center = self.data_source.center.value
         elif isinstance(self.data_source, YTProj):
