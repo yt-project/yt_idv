@@ -4,6 +4,7 @@ import numpy as np
 import traitlets
 from OpenGL import GL
 
+from yt_idv.gui_support import add_popup_help
 from yt_idv.opengl_support import TransferFunctionTexture
 from yt_idv.scene_components.base_component import SceneComponent
 from yt_idv.scene_data.block_collection import BlockCollection
@@ -113,12 +114,12 @@ class BlockRendering(SceneComponent):
                 "Position", *self.slice_position
             )
             changed = changed or _
-
+            _ = add_popup_help(imgui, "The position of a point on the slicing plane.")
+            changed = changed or _
             _, self.slice_normal = imgui.input_float3("Normal", *self.slice_normal)
             changed = changed or _
-
-            # self.slice_position
-            # self.slice_normal
+            _ = add_popup_help(imgui, "The normal vector of the slicing plane.")
+            changed = changed or _
 
         return changed
 

@@ -61,6 +61,14 @@ def test_snapshots(osmesa_fake_amr, image_store):
     image_store(osmesa_fake_amr)
 
 
+def test_slice(osmesa_fake_amr, image_store):
+    osmesa_fake_amr.scene.components[0].render_method = "slice"
+    image_store(osmesa_fake_amr)
+    osmesa_fake_amr.scene.components[0].slice_normal = (1.0, 1.0, 0.0)
+    osmesa_fake_amr.scene.components[0].slice_position = (0.5, 0.25, 0.5)
+    image_store(osmesa_fake_amr)
+
+
 def test_annotate_boxes(osmesa_empty, image_store):
     """Check the box annotation."""
     osmesa_empty.scene.add_box([0.0, 0.0, 0.0], [1.0, 1.0, 1.0])
