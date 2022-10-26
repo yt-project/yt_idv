@@ -35,10 +35,10 @@ class Plane(SceneComponent):
         shader_program._set_uniform("modelview", cam.view_matrix)
         shader_program._set_uniform("to_worldview", self.data.to_worldview)
 
-    def render_gui(self, imgui, renderer):
-        changed = super().render_gui(imgui, renderer)
-        ui_changes = [
-            take_log_checkbox(imgui, self),
-            colormap_list(imgui, self),
-        ]
-        changed = changed or any(ui_changes)
+    def render_gui(self, imgui, renderer, scene):
+        changed, self.visible = imgui.checkbox("Visible", self.visible)
+        _ = take_log_checkbox(imgui, self)
+        changed = changed or _
+        _ = colormap_list(imgui, self)
+        changed = changed or _
+        return changed

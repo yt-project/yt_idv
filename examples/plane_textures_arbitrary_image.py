@@ -4,7 +4,9 @@ import yt
 from PIL import Image
 
 import yt_idv
+from yt_idv.scene_annotations.grid_outlines import GridOutlines  # NOQA
 from yt_idv.scene_components.plane import Plane
+from yt_idv.scene_data.grid_positions import GridPositions  # NOQA
 from yt_idv.scene_data.plane import BasePlane
 
 # create a volume rendering
@@ -19,7 +21,7 @@ im = np.array(Image.open(requests.get(im_url, stream=True).raw).convert("LA"))[:
 # create a plane for our 2d data, add the data
 image_plane = BasePlane(
     normal=np.array([1.0, 0.0, 0.0]),
-    center=np.array([0.0, 0.0, 0.0]),
+    center=np.array([0.5, 0.0, 0.0]),
     data=im,
     width=1,
     height=1,
@@ -32,5 +34,13 @@ image_plane.add_data()
 plane_render = Plane(data=image_plane, cmap_log=False)
 rc.scene.data_objects.append(image_plane)
 rc.scene.components.append(plane_render)
+
+# add grids
+grids = ds.index.grids.tolist()
+gp = GridPositions(grid_list=grids)
+rc.scene.data_objects.append(gp)
+go = GridOutlines(data=gp)
+rc.scene.components.append(go)
+
 
 rc.run()
