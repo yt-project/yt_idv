@@ -353,7 +353,9 @@ class VertexAttribute(traitlets.HasTraits):
                 _ = GL.glEnableVertexAttribArray(loc)
         _ = GL.glBindBuffer(GL.GL_ARRAY_BUFFER, self.id)
         if loc >= 0:
-            GL.glVertexAttribPointer(loc, self.each, self.opengl_type, False, 0, None)
+            each_n = self.each
+            print((loc, each_n))
+            GL.glVertexAttribPointer(loc, each_n, self.opengl_type, False, 0, None)
         yield
         if loc >= 0:
             GL.glDisableVertexAttribArray(loc)

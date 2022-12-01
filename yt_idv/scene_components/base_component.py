@@ -235,6 +235,12 @@ class SceneComponent(traitlets.HasTraits):
                 p._set_uniform(
                     "is_spherical", self.data.data_source.ds.geometry == "spherical"
                 )
+                if self.data.data_source.ds.geometry == "spherical":
+                    axis_id = self.data.data_source.ds.coordinates.axis_id
+                    p._set_uniform("id_theta", axis_id["theta"])
+                    p._set_uniform("id_r", axis_id["r"])
+                    p._set_uniform("id_phi", axis_id["phi"])
+
                 scene.camera._set_uniforms(scene, p)
                 self._set_uniforms(scene, p)
                 p._set_uniform("iso_tolerance", float(self.iso_tolerance))

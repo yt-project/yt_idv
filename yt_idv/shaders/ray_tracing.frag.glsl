@@ -1,10 +1,10 @@
-in vec4 v_model;
-flat in vec3 dx;
-flat in vec3 left_edge;
-flat in vec3 right_edge;
-flat in mat4 inverse_proj;
-flat in mat4 inverse_mvm;
-flat in mat4 inverse_pmvm;
+in vec4 v_model; // spherical
+flat in vec3 dx;  // spherical
+flat in vec3 left_edge;  // spherical
+flat in vec3 right_edge;  // spherical
+flat in mat4 inverse_proj;  // cartesian
+flat in mat4 inverse_mvm; // cartesian
+flat in mat4 inverse_pmvm; // cartesian
 flat in ivec3 texture_offset;
 out vec4 output_color;
 
@@ -17,12 +17,10 @@ bool within_bb(vec3 pos)
 
 vec3 transform_vec3(vec3 v) {
     if (is_spherical) {
-        int theta = 2;
-        int phi = 1;
         return vec3(
-            v[0] * sin(v[phi]) * cos(v[theta]),
-            v[0] * sin(v[phi]) * sin(v[theta]),
-            v[0] * cos(v[phi])
+            v[id_r] * sin(v[id_phi]) * cos(v[id_theta]),
+            v[id_r] * sin(v[id_phi]) * sin(v[id_theta]),
+            v[id_r] * cos(v[id_phi])
         );
     } else {
         return v;
@@ -46,20 +44,22 @@ vec4 cleanup_phase(in vec4 curr_color, in vec3 dir, in float t0, in float t1);
 
 void sph_main()
 {
-    vec3 ray_position = v_model.xyz;
+    vec3 ray_position = v_model.xyz; // now spherical
+
     vec3 p0 = camera_pos.xyz;
     vec4 curr_color = vec4(0.0);
 
-    vec3 temp_left_edge = transform_vec3(left_edge);
-    vec3 temp_right_edge = transform_vec3(right_edge);
-    vec3 c_left_edge = min(temp_left_edge, temp_right_edge);
-    vec3 c_right_edge = max(temp_left_edge, temp_right_edge);
-
-    vec3 range = (c_right_edge + dx/2.0) - (c_left_edge - dx/2.0);
+    vec3 range = (right_edge + dx/2.0) - (left_edge - dx/2.0);
     vec3 nzones = range / dx;
     vec3 ndx = 1.0/nzones;
 
-    vec3 tex_curr_pos = (ray_position - c_left_edge) / range;
+    vec3 tex_curr_pos = (ray_position - left_edge) / range;
+
+    // need a bounds check too
+
+    // should get texture position in spherical space
+    // cartesian_to_spherical(ray position)
+
     tex_curr_pos = (tex_curr_pos * (1.0 - ndx)) + ndx/2.0;
     bool sampled = sample_texture(tex_curr_pos, curr_color, 0.0, 0.0, vec3(0.0));
     if (sampled) {

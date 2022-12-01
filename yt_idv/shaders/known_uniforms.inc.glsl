@@ -63,3 +63,6 @@ uniform float iso_max;
 
 // spherical coordinates
 uniform bool is_spherical;
+uniform int id_theta;
+uniform int id_r;
+uniform int id_phi;

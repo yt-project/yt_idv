@@ -62,8 +62,6 @@ class BlockCollection(SceneData):
             vert.append([1.0, 1.0, 1.0, 1.0])
             dds = (block.RightEdge - block.LeftEdge) / block.source_mask.shape
             dx.append(dds.tolist())
-            le.append(block.LeftEdge.tolist())
-            re.append(block.RightEdge.tolist())
         for (g, node, (sl, _dims, _gi)) in self.data_source.tiles.slice_traverse():
             block = node.data
             self.blocks_by_grid[g.id - g._id_offset].append((id(block), i))

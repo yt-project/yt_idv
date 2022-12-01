@@ -1,9 +1,9 @@
 layout ( points ) in;
 layout ( triangle_strip, max_vertices = 14 ) out;
 
-flat in vec3 vdx[];
-flat in vec3 vleft_edge[];
-flat in vec3 vright_edge[];
+flat in vec3 vdx[];  // spherical
+flat in vec3 vleft_edge[]; // spherical
+flat in vec3 vright_edge[]; // spherical
 
 flat out vec3 dx;
 flat out vec3 left_edge;
@@ -13,10 +13,10 @@ flat out mat4 inverse_mvm;
 flat out mat4 inverse_pmvm;
 out vec4 v_model;
 
-flat in mat4 vinverse_proj[];
-flat in mat4 vinverse_mvm[];
-flat in mat4 vinverse_pmvm[];
-flat in vec4 vv_model[];
+flat in mat4 vinverse_proj[];  // cartesian
+flat in mat4 vinverse_mvm[]; // cartesian
+flat in mat4 vinverse_pmvm[]; // cartesian
+flat in vec4 vv_model[];  // spherical
 
 flat out ivec3 texture_offset;
 
@@ -38,12 +38,10 @@ uniform int aindex[14] = int[](6, 7, 4, 5, 1, 7, 3, 6, 2, 4, 0, 1, 2, 3);
 
 vec3 transform_vec3(vec3 v) {
     if (is_spherical) {
-        int theta = 2;
-        int phi = 1;
         return vec3(
-            v[0] * sin(v[phi]) * cos(v[theta]),
-            v[0] * sin(v[phi]) * sin(v[theta]),
-            v[0] * cos(v[phi])
+            v[id_r] * sin(v[id_phi]) * cos(v[id_theta]),
+            v[id_r] * sin(v[id_phi]) * sin(v[id_theta]),
+            v[id_r] * cos(v[id_phi])
         );
     } else {
         return v;
@@ -52,24 +50,31 @@ vec3 transform_vec3(vec3 v) {
 
 void main() {
 
-    vec4 center = gl_in[0].gl_Position;
+    vec4 center = gl_in[0].gl_Position;  // cartesian
 
-    vec3 width = vright_edge[0] - vleft_edge[0];
+    vec3 width = vright_edge[0] - vleft_edge[0];  // spherical
 
     vec4 newPos;
+    vec3 current_pos;
 
     for (int i = 0; i < 14; i++) {
-        newPos = vec4(transform_vec3(vleft_edge[0] + width * arrangement[aindex[i]]), 1.0);
-        gl_Position = projection * modelview * newPos;
-        left_edge = vleft_edge[0];
-        right_edge = vright_edge[0];
+        // walks through each vertex of the triangle strip, emits it
+        current_pos = vec3(vleft_edge[0] + width * arrangement[aindex[i]]);
+        newPos = vec4(transform_vec3(current_pos), 1.0);
+        // need to emit gl_positionin cartesian, but pass native coords out in v_model
+        gl_Position = projection * modelview * newPos;  // cartesian
+        left_edge = vleft_edge[0];  // spherical
+        right_edge = vright_edge[0]; // spherical
         inverse_pmvm = vinverse_pmvm[0];
         inverse_proj = vinverse_proj[0];
         inverse_mvm = vinverse_mvm[0];
-        dx = vdx[0];
-        v_model = newPos;
+        dx = vdx[0];  // spherical
+        v_model = vec4(current_pos, 1.0);  // now spherical!
         texture_offset = ivec3(0);
         EmitVertex();
+        // EmitVertex emits the current values of output variables to the
+        // current output primitive on the first (and possibly only) primitive
+        // stream
+        // https://registry.khronos.org/OpenGL-Refpages/gl4/html/EmitVertex.xhtml
     }
-
 }
