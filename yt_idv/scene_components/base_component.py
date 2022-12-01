@@ -240,6 +240,15 @@ class SceneComponent(traitlets.HasTraits):
                     p._set_uniform("id_theta", axis_id["theta"])
                     p._set_uniform("id_r", axis_id["r"])
                     p._set_uniform("id_phi", axis_id["phi"])
+                    # print("setting axis ordering uniforms")
+                    # print({"id_theta": axis_id["theta"],
+                    #        "id_r": axis_id["r"],
+                    #        "id_phi": axis_id["phi"],
+                    #        })
+                else:
+                    p._set_uniform("id_theta", 0)
+                    p._set_uniform("id_r", 0)
+                    p._set_uniform("id_phi", 0)
 
                 scene.camera._set_uniforms(scene, p)
                 self._set_uniforms(scene, p)
