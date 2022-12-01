@@ -45,20 +45,18 @@ vec4 cleanup_phase(in vec4 curr_color, in vec3 dir, in float t0, in float t1);
 void sph_main()
 {
     vec3 ray_position = v_model.xyz; // now spherical
-
+    vec3 ray_position_xyz = transform_vec3(ray_position);
     vec3 p0 = camera_pos.xyz;
+    vec3 dir = -normalize(camera_pos.xyz - ray_position_xyz);
     vec4 curr_color = vec4(0.0);
+
+
 
     vec3 range = (right_edge + dx/2.0) - (left_edge - dx/2.0);
     vec3 nzones = range / dx;
     vec3 ndx = 1.0/nzones;
 
     vec3 tex_curr_pos = (ray_position - left_edge) / range;
-
-    // need a bounds check too
-
-    // should get texture position in spherical space
-    // cartesian_to_spherical(ray position)
 
     tex_curr_pos = (tex_curr_pos * (1.0 - ndx)) + ndx/2.0;
     bool sampled = sample_texture(tex_curr_pos, curr_color, 0.0, 0.0, vec3(0.0));
