@@ -8,14 +8,14 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: [3.7, 3.8]
+        python-version: [3.8, 3.9]
 
     steps:
     - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v2
+      uses: actions/setup-python@v3
       with:
         python-version: ${{ matrix.python-version }}
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
     - name: Install dependencies
       run: |
         sudo apt-get update && sudo apt-get upgrade
@@ -31,7 +31,7 @@ jobs:
       env:
           PYOPENGL_PLATFORM: osmesa
       run: pytest --html=report.html --self-contained-html
-    - uses: actions/upload-artifact@v2
+    - uses: actions/upload-artifact@v3
       name: Upload pytest report
       with:
         name: pytest-report

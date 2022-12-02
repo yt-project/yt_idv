@@ -130,8 +130,15 @@ shader_definitions:
       info: Use field values as input
       source: field_value.frag.glsl
       blend_func:
-        - one
-        - one
+      - one
+      - one
+    slice_sample:
+      info: Slice through a block collection
+      source: slice_sample.frag.glsl
+      depth_test: less
+      blend_func:
+      - one
+      - zero
       blend_equation: func add
   vertex:
     default:
@@ -215,11 +222,11 @@ component_shaders:
       first_fragment: isocontour
       second_vertex: passthrough
       second_fragment: apply_colormap
-    constant:
-      description: Constant Color
+    slice:
+      description: Slice
       first_vertex: grid_position
       first_geometry: grid_expand
-      first_fragment: constant
+      first_fragment: slice_sample
       second_vertex: passthrough
       second_fragment: apply_colormap
   octree_block_rendering:

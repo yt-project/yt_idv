@@ -41,7 +41,9 @@ class BaseCamera(traitlets.HasTraits):
     fov = traitlets.Float(45.0)
     near_plane = traitlets.Float(0.001)
     far_plane = traitlets.Float(20.0)
-    aspect_ratio = traitlets.Float(8.0 / 6.0)
+    aspect_ratio = traitlets.Float(
+        1.0
+    )  # This was 8.0/6.0 for a long time. I don't know why.
 
     projection_matrix = traittypes.Array(np.zeros((4, 4))).valid(
         ndarray_shape(4, 4), ndarray_ro()
@@ -82,6 +84,9 @@ class BaseCamera(traitlets.HasTraits):
         """Regenerate all position, view and projection matrices of the camera."""
         with self.hold_traits(self._compute_matrices):
             pass
+
+    def _update_matrices(self):
+        pass
 
     def update_orientation(self, start_x, start_y, end_x, end_y):
         """Change camera orientation matrix using delta of mouse's cursor position

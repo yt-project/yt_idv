@@ -4,6 +4,7 @@ import base64
 
 import pytest
 import yt
+import yt.testing
 from pytest_html import extras
 
 import yt_idv
@@ -57,6 +58,14 @@ def test_snapshots(osmesa_fake_amr, image_store):
     osmesa_fake_amr.scene.components[0].render_method = "projection"
     image_store(osmesa_fake_amr)
     osmesa_fake_amr.scene.components[0].render_method = "transfer_function"
+    image_store(osmesa_fake_amr)
+
+
+def test_slice(osmesa_fake_amr, image_store):
+    osmesa_fake_amr.scene.components[0].render_method = "slice"
+    image_store(osmesa_fake_amr)
+    osmesa_fake_amr.scene.components[0].slice_normal = (1.0, 1.0, 0.0)
+    osmesa_fake_amr.scene.components[0].slice_position = (0.5, 0.25, 0.5)
     image_store(osmesa_fake_amr)
 
 

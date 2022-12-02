@@ -3,6 +3,7 @@
 [![](https://img.shields.io/pypi/v/yt_idv.svg)](https://pypi.python.org/pypi/yt_idv)
 
 [![Doc Status](https://readthedocs.org/projects/yt-idv/badge/?version=latest)](https://yt-idv.readthedocs.io/en/latest/?badge=latest)
+[![pre-commit.ci status](https://results.pre-commit.ci/badge/github/yt-project/yt_idv/main.svg)](https://results.pre-commit.ci/latest/github/yt-project/yt_idv/main)
 
 This package provides interactive visualization using OpenGL for datasets
 loaded in yt.  It is written to provide both scripting and interactive access.

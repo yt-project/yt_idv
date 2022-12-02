@@ -1,0 +1,22 @@
+name: Check Build
+
+on: [push, pull_request]
+
+jobs:
+  check-build:
+    name: Check Build
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@master
+    - name: Set up Python 3.9
+      uses: actions/setup-python@v1
+      with:
+        python-version: 3.9
+    - name: Install check-build dependencies
+      run: |
+        python -m pip install --upgrade pip
+        python -m pip install --user build twine
+    - name: Build source tarball
+      run: python -m build --sdist --outdir dist/ .
+    - name: Check with twine
+      run: twine check dist/*

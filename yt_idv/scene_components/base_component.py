@@ -3,6 +3,7 @@ import traitlets
 from OpenGL import GL
 
 from yt_idv.constants import FULLSCREEN_QUAD
+from yt_idv.gui_support import add_popup_help
 from yt_idv.opengl_support import (
     ColormapTexture,
     Framebuffer,
@@ -77,6 +78,10 @@ class SceneComponent(traitlets.HasTraits):
         changed, self.visible = imgui.checkbox("Visible", self.visible)
         _, self.use_db = imgui.checkbox("Depth Buffer", self.use_db)
         changed = changed or _
+        _ = add_popup_help(
+            imgui, "If checked, will render the depth buffer of the current view."
+        )
+        changed = changed or _
         _, self.iso_tolerance = imgui.slider_float(
             "Isocontour Tolerance", self.iso_tolerance, 0.0, 0.1
         )
@@ -98,11 +103,19 @@ class SceneComponent(traitlets.HasTraits):
         if _:
             self.colormap.colormap_name = _cmaps[cmap_index]
         changed = changed or _
+        _ = add_popup_help(imgui, "Select the colormap to use for the rendering.")
+        changed = changed or _
         _, self.cmap_log = imgui.checkbox("Take log", self.cmap_log)
+        changed = changed or _
+        _ = add_popup_help(
+            imgui, "If checked, the rendering will use log-normalized values."
+        )
         changed = changed or _
         if imgui.button("Reset Colorbounds"):
             self._cmap_bounds_invalid = True
             changed = True
+        _ = add_popup_help(imgui, "Click to reset the colorbounds of the current view.")
+        changed = changed or _
 
         return changed
 
