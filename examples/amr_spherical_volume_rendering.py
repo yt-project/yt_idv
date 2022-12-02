@@ -1,14 +1,13 @@
 import numpy as np
 import yt
-import unyt
+
 import yt_idv
 
 # yt reminder: phi is the polar angle (0 to 2pi)
 # theta is the angle from north (0 to pi)
 
-bbox = np.array([[0.5, 1.0],  # r
-                 [0.0, np.pi/4],  # phi
-                 [np.pi/4, np.pi/2]])  # theta
+# coord ordering here will be r, phi, theta
+bbox = np.array([[0.5, 1.0], [0.0, np.pi / 4], [np.pi / 4, np.pi / 2]])
 sz = (256, 256, 256)
 fake_data = {"density": np.random.random(sz)}
 ds = yt.load_uniform_grid(
