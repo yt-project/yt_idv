@@ -38,10 +38,12 @@ uniform int aindex[14] = int[](6, 7, 4, 5, 1, 7, 3, 6, 2, 4, 0, 1, 2, 3);
 
 vec3 transform_vec3(vec3 v) {
     if (is_spherical) {
+        // yt reminder: phi is the polar angle (0 to 2pi)
+        // theta is the angle from north (0 to pi)
         return vec3(
-            v[id_r] * sin(v[id_phi]) * cos(v[id_theta]),
-            v[id_r] * sin(v[id_phi]) * sin(v[id_theta]),
-            v[id_r] * cos(v[id_phi])
+            v[id_r] * sin(v[id_theta]) * cos(v[id_phi]),
+            v[id_r] * sin(v[id_theta]) * sin(v[id_phi]),
+            v[id_r] * cos(v[id_theta])
         );
     } else {
         return v;

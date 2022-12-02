@@ -6,9 +6,9 @@ import yt_idv
 # yt reminder: phi is the polar angle (0 to 2pi)
 # theta is the angle from north (0 to pi)
 
-bbox = np.array([[0.0, 1.0],  # r
-                 [0.0, np.pi],  # theta
-                 [0.0, 2*np.pi]])  # phi
+bbox = np.array([[0.3, 1.0],  # r
+                 [0.0, 3*np.pi/2],  # phi
+                 [0.0, np.pi]])  # theta
 sz = (256, 256, 256)
 fake_data = {"density": np.random.random(sz)}
 ds = yt.load_uniform_grid(
@@ -16,7 +16,7 @@ ds = yt.load_uniform_grid(
     sz,
     bbox=bbox,
     nprocs=4096,
-    geometry=("spherical", ("r", "theta", "phi")),
+    geometry=("spherical", ("r", "phi", "theta")),
     length_unit="m",
 )
 
@@ -54,6 +54,6 @@ dd = ds.all_data()
 dd.max_level = 1
 # sg = rc.add_scene(ds, ("index", "r"), no_ghost=True)
 # sg = rc.add_scene(ds, ("index", "theta"), no_ghost=True)
-# sg = rc.add_scene(ds, ("index", "phi"), no_ghost=True)
-sg = rc.add_scene(ds, ("stream", "shell_fragment"), no_ghost=True)
+sg = rc.add_scene(ds, ("index", "phi"), no_ghost=True)
+# sg = rc.add_scene(ds, ("stream", "shell_fragment"), no_ghost=True)
 rc.run()
