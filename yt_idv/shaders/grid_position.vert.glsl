@@ -1,19 +1,23 @@
-in vec4 model_vertex; // The location of the vertex in model space
+// note: all in/out variables below are always in native coordinates (e.g.,
+// spherical or cartesian) except when noted.
+
+in vec4 model_vertex;
 in vec3 in_dx;
 in vec3 in_left_edge;
 in vec3 in_right_edge;
-flat out vec4 vv_model;  // spherical
-flat out mat4 vinverse_proj;  // cartesian
-flat out mat4 vinverse_mvm; // cartesian
-flat out mat4 vinverse_pmvm; // cartesian
-flat out vec3 vdx; // spherical
-flat out vec3 vleft_edge; // spherical
-flat out vec3 vright_edge; // spherical
+flat out vec4 vv_model;
+flat out mat4 vinverse_proj;  // always cartesian
+flat out mat4 vinverse_mvm;  // always cartesian
+flat out mat4 vinverse_pmvm; // always cartesian
+flat out vec3 vdx;
+flat out vec3 vleft_edge;
+flat out vec3 vright_edge;
 
 vec3 transform_vec3(vec3 v) {
-    // yt reminder: phi is the polar angle (0 to 2pi)
-    // theta is the angle from north (0 to pi)
     if (is_spherical) {
+        // in yt, phi is the polar angle from (0, 2pi), theta is the azimuthal
+        // angle (0, pi). the id_ values below are uniforms that depend on the
+        // yt dataset coordinate ordering
         return vec3(
             v[id_r] * sin(v[id_theta]) * cos(v[id_phi]),
             v[id_r] * sin(v[id_theta]) * sin(v[id_phi]),
@@ -33,13 +37,13 @@ void main()
 {
     // camera uniforms:
     // projection, modelview
-    vv_model = model_vertex; //spherical coords
+    vv_model = model_vertex;
     vinverse_proj = inverse(projection);
     // inverse model-view-matrix
     vinverse_mvm = inverse(modelview);
     vinverse_pmvm = inverse(projection * modelview);
     gl_Position = projection * modelview * transform_vec4(model_vertex);
-    vdx = vec3(in_dx);  // spherical coords
-    vleft_edge = vec3(in_left_edge); // spherical coords
-    vright_edge = vec3(in_right_edge); // spheerical coords
+    vdx = vec3(in_dx);
+    vleft_edge = vec3(in_left_edge);
+    vright_edge = vec3(in_right_edge);
 }

@@ -1,10 +1,10 @@
-in vec4 v_model; // spherical
-flat in vec3 dx;  // spherical
-flat in vec3 left_edge;  // spherical
-flat in vec3 right_edge;  // spherical
-flat in mat4 inverse_proj;  // cartesian
-flat in mat4 inverse_mvm; // cartesian
-flat in mat4 inverse_pmvm; // cartesian
+in vec4 v_model;
+flat in vec3 dx;
+flat in vec3 left_edge;
+flat in vec3 right_edge;
+flat in mat4 inverse_proj;  // always cartesian
+flat in mat4 inverse_mvm; // always cartesian
+flat in mat4 inverse_pmvm; // always cartesian
 flat in ivec3 texture_offset;
 out vec4 output_color;
 
@@ -18,8 +18,9 @@ bool within_bb(vec3 pos)
 vec3 transform_vec3(vec3 v) {
     if (is_spherical) {
         return vec3(
-        // yt reminder: phi is the polar angle (0 to 2pi)
-        // theta is the angle from north (0 to pi)
+            // in yt, phi is the polar angle from (0, 2pi), theta is the azimuthal
+            // angle (0, pi). the id_ values below are uniforms that depend on the
+            // yt dataset coordinate ordering
             v[id_r] * sin(v[id_theta]) * cos(v[id_phi]),
             v[id_r] * sin(v[id_theta]) * sin(v[id_phi]),
             v[id_r] * cos(v[id_theta])
@@ -44,16 +45,15 @@ vec4 cleanup_phase(in vec4 curr_color, in vec3 dir, in float t0, in float t1);
 //   void (vec3 tex_curr_pos, inout vec4 curr_color, float tdelta, float t,
 //         vec3 direction);
 
-void sph_main()
+void spherical_coord_shortcircuit()
 {
     vec3 ray_position = v_model.xyz; // now spherical
-    vec3 ray_position_xyz = transform_vec3(ray_position);
-    vec3 p0 = camera_pos.xyz;
+    vec3 ray_position_xyz = transform_vec3(ray_position); // cartesian
+    vec3 p0 = camera_pos.xyz; // cartesian
     vec3 dir = -normalize(camera_pos.xyz - ray_position_xyz);
     vec4 curr_color = vec4(0.0);
 
-
-
+    // do the texture evaluation in the native coordinate space
     vec3 range = (right_edge + dx/2.0) - (left_edge - dx/2.0);
     vec3 nzones = range / dx;
     vec3 ndx = 1.0/nzones;
@@ -78,7 +78,7 @@ void main()
     // Obtain screen coordinates
     // https://www.opengl.org/wiki/Compute_eye_space_from_window_space#From_gl_FragCoord
     if (is_spherical) {
-        sph_main();
+        spherical_coord_shortcircuit();
         return;
     }
 

@@ -63,6 +63,6 @@ uniform float iso_max;
 
 // spherical coordinates
 uniform bool is_spherical;
-uniform int id_theta;
-uniform int id_r;
-uniform int id_phi;
+uniform int id_theta;  // azimuthal angle (0 to pi) index in the yt dataset
+uniform int id_r;  // radial index in the yt dataset
+uniform int id_phi;  // polar angle (0 to 2pi) indexi n the yt dataset
