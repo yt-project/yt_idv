@@ -139,6 +139,15 @@ class BlockRendering(SceneComponent):
                         GL.glDrawArrays(GL.GL_POINTS, tex_ind * each, each)
 
     def _set_uniforms(self, scene, shader_program):
+        shader_program._set_uniform(
+            "is_spherical", self.data.data_source.ds.geometry == "spherical"
+        )
+        if self.data.data_source.ds.geometry == "spherical":
+            axis_id = self.data.data_source.ds.coordinates.axis_id
+            shader_program._set_uniform("id_theta", axis_id["theta"])
+            shader_program._set_uniform("id_r", axis_id["r"])
+            shader_program._set_uniform("id_phi", axis_id["phi"])
+
         shader_program._set_uniform("box_width", self.box_width)
         shader_program._set_uniform("sample_factor", self.sample_factor)
         shader_program._set_uniform("ds_tex", 0)
