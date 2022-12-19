@@ -3,8 +3,9 @@ import traitlets
 from yt.data_objects.selection_objects.data_selection_objects import (
     YTSelectionContainer2D,
 )
-from yt_idv.scene_data.base_data import SceneData
+
 from yt_idv.opengl_support import VertexArray, VertexAttribute
+from yt_idv.scene_data.base_data import SceneData
 
 
 class VariableMeshContainer(SceneData):
