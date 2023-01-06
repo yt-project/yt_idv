@@ -5,6 +5,10 @@ in vec4 model_vertex;
 in vec3 in_dx;
 in vec3 in_left_edge;
 in vec3 in_right_edge;
+
+in vec4 phi_plane_le;  // first 3 elements are the normal vector, final is constant
+in vec4 phi_plane_re;
+
 flat out vec4 vv_model;
 flat out mat4 vinverse_proj;  // always cartesian
 flat out mat4 vinverse_mvm;  // always cartesian
@@ -12,6 +16,9 @@ flat out mat4 vinverse_pmvm; // always cartesian
 flat out vec3 vdx;
 flat out vec3 vleft_edge;
 flat out vec3 vright_edge;
+
+flat out vec4 vphi_plane_le;
+flat out vec4 vphi_plane_re;
 
 vec3 transform_vec3(vec3 v) {
     if (is_spherical) {
@@ -46,4 +53,7 @@ void main()
     vdx = vec3(in_dx);
     vleft_edge = vec3(in_left_edge);
     vright_edge = vec3(in_right_edge);
+
+    vphi_plane_le = vec4(phi_plane_le);
+    vphi_plane_re = vec4(phi_plane_re);
 }

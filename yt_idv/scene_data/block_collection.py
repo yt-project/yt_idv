@@ -41,6 +41,39 @@ class BlockCollection(SceneData):
         # Every time we change our data source, we wipe all existing ones.
         # We now set up our vertices into our current data source.
         vert, dx, le, re = [], [], [], []
+
+        # spherical-only: SHOULD ONLY DO THIS IF DATASET IS SPHERICAL
+        # normal vectors and plane constants for min/max phi face
+        phi_plane_le = []
+        phi_plane_re = []
+
+        axis_id = self.data_source.ds.coordinates.axis_id
+
+        def calculate_phi_normal_plane(le_or_re):
+            # calculates the parameters for a plane parallel to the z-axis and
+            # passing through the x-y values defined by the polar angle phi
+            # the result plane defines the boundary on +/-phi faces.
+            #
+            # eq of plane:
+            # X dot N = d where N is a normal vector, d is a constant,
+            #             X is a position vector
+            # this function returns N and d.
+            phi = le_or_re[axis_id["phi"]]
+            theta = le_or_re[axis_id["theta"]]
+            r = le_or_re[axis_id["r"]]
+
+            # prob can/should use a yt func here to ensure consistency....
+            z = r * np.cos(theta)
+            r_xy = r * np.sin(theta)
+            x = r_xy * np.cos(phi)
+            y = r_xy * np.sin(phi)
+            pt = np.array([x, y, z])
+
+            z_hat = np.array([0, 0, 1])
+            normal_vec = np.cross(pt, z_hat)
+            d = np.dot(normal_vec, pt)
+            return normal_vec, d
+
         self.min_val = +np.inf
         self.max_val = -np.inf
         if self.scale:
@@ -64,6 +97,12 @@ class BlockCollection(SceneData):
             dx.append(dds.tolist())
             le.append(block.LeftEdge.tolist())
             re.append(block.RightEdge.tolist())
+
+            normal, const = calculate_phi_normal_plane(le[-1])
+            phi_plane_le.append(np.array([*normal, const]))
+
+            normal, const = calculate_phi_normal_plane(re[-1])
+            phi_plane_re.append(np.array([*normal, const]))
 
         for (g, node, (sl, _dims, _gi)) in self.data_source.tiles.slice_traverse():
             block = node.data
@@ -93,6 +132,15 @@ class BlockCollection(SceneData):
         )
         self.vertex_array.attributes.append(
             VertexAttribute(name="in_right_edge", data=re)
+        )
+
+        phi_plane_re = np.array(phi_plane_re, dtype="f4")
+        phi_plane_le = np.array(phi_plane_le, dtype="f4")
+        self.vertex_array.attributes.append(
+            VertexAttribute(name="phi_plane_le", data=phi_plane_le)
+        )
+        self.vertex_array.attributes.append(
+            VertexAttribute(name="phi_plane_re", data=phi_plane_re)
         )
 
         # Now we set up our textures

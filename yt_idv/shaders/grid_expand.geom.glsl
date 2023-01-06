@@ -6,6 +6,8 @@ layout ( triangle_strip, max_vertices = 14 ) out;
 flat in vec3 vdx[];
 flat in vec3 vleft_edge[];
 flat in vec3 vright_edge[];
+flat in vec4 vphi_plane_le[];
+flat in vec4 vphi_plane_re[];
 
 flat out vec3 dx;
 flat out vec3 left_edge;
@@ -21,6 +23,9 @@ flat in mat4 vinverse_pmvm[]; // always cartesian
 flat in vec4 vv_model[];
 
 flat out ivec3 texture_offset;
+
+flat out vec4 phi_plane_le;
+flat out vec4 phi_plane_re;
 
 // https://stackoverflow.com/questions/28375338/cube-using-single-gl-triangle-strip
 // suggests that the triangle strip we want for the cube is
@@ -73,6 +78,8 @@ void main() {
         inverse_pmvm = vinverse_pmvm[0];
         inverse_proj = vinverse_proj[0];
         inverse_mvm = vinverse_mvm[0];
+        phi_plane_le = vphi_plane_le[0];
+        phi_plane_re = vphi_plane_re[0];
         dx = vdx[0];
         v_model = vec4(current_pos, 1.0);
         texture_offset = ivec3(0);
