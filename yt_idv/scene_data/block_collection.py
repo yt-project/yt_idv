@@ -5,6 +5,7 @@ import traitlets
 from yt.data_objects.data_containers import YTDataContainer
 
 from yt_idv.opengl_support import Texture3D, VertexArray, VertexAttribute
+from yt_idv.scene_data._geometry_utils import phi_normal_planes
 from yt_idv.scene_data.base_data import SceneData
 
 
@@ -42,38 +43,6 @@ class BlockCollection(SceneData):
         # We now set up our vertices into our current data source.
         vert, dx, le, re = [], [], [], []
 
-        # spherical-only: SHOULD ONLY DO THIS IF DATASET IS SPHERICAL
-        # normal vectors and plane constants for min/max phi face
-        phi_plane_le = []
-        phi_plane_re = []
-
-        axis_id = self.data_source.ds.coordinates.axis_id
-
-        def calculate_phi_normal_plane(le_or_re):
-            # calculates the parameters for a plane parallel to the z-axis and
-            # passing through the x-y values defined by the polar angle phi
-            # the result plane defines the boundary on +/-phi faces.
-            #
-            # eq of plane:
-            # X dot N = d where N is a normal vector, d is a constant,
-            #             X is a position vector
-            # this function returns N and d.
-            phi = le_or_re[axis_id["phi"]]
-            theta = le_or_re[axis_id["theta"]]
-            r = le_or_re[axis_id["r"]]
-
-            # prob can/should use a yt func here to ensure consistency....
-            z = r * np.cos(theta)
-            r_xy = r * np.sin(theta)
-            x = r_xy * np.cos(phi)
-            y = r_xy * np.sin(phi)
-            pt = np.array([x, y, z])
-
-            z_hat = np.array([0, 0, 1])
-            normal_vec = np.cross(pt, z_hat)
-            d = np.dot(normal_vec, pt)
-            return normal_vec, d
-
         self.min_val = +np.inf
         self.max_val = -np.inf
         if self.scale:
@@ -98,12 +67,6 @@ class BlockCollection(SceneData):
             le.append(block.LeftEdge.tolist())
             re.append(block.RightEdge.tolist())
 
-            normal, const = calculate_phi_normal_plane(le[-1])
-            phi_plane_le.append(np.array([*normal, const]))
-
-            normal, const = calculate_phi_normal_plane(re[-1])
-            phi_plane_re.append(np.array([*normal, const]))
-
         for (g, node, (sl, _dims, _gi)) in self.data_source.tiles.slice_traverse():
             block = node.data
             self.blocks_by_grid[g.id - g._id_offset].append((id(block), i))
@@ -117,34 +80,50 @@ class BlockCollection(SceneData):
         LE = np.array([b.LeftEdge for i, b in self.blocks.values()]).min(axis=0)
         RE = np.array([b.RightEdge for i, b in self.blocks.values()]).max(axis=0)
         self.diagonal = np.sqrt(((RE - LE) ** 2).sum())
+
         # Now we set up our buffer
         vert = np.array(vert, dtype="f4")
         dx = np.array(dx, dtype="f4")
-        le = np.array(le, dtype="f4")
-        re = np.array(re, dtype="f4")
+        le = np.array(le)  # delay type conversion until after _set_geometry_attributes
+        re = np.array(re)
+        self._set_geometry_attributes(le, re)
 
         self.vertex_array.attributes.append(
             VertexAttribute(name="model_vertex", data=vert)
         )
         self.vertex_array.attributes.append(VertexAttribute(name="in_dx", data=dx))
         self.vertex_array.attributes.append(
-            VertexAttribute(name="in_left_edge", data=le)
+            VertexAttribute(name="in_left_edge", data=le.astype("f4"))
         )
         self.vertex_array.attributes.append(
-            VertexAttribute(name="in_right_edge", data=re)
-        )
-
-        phi_plane_re = np.array(phi_plane_re, dtype="f4")
-        phi_plane_le = np.array(phi_plane_le, dtype="f4")
-        self.vertex_array.attributes.append(
-            VertexAttribute(name="phi_plane_le", data=phi_plane_le)
-        )
-        self.vertex_array.attributes.append(
-            VertexAttribute(name="phi_plane_re", data=phi_plane_re)
+            VertexAttribute(name="in_right_edge", data=re.astype("f4"))
         )
 
         # Now we set up our textures
         self._load_textures()
+
+    def _set_geometry_attributes(self, le, re):
+        # set any vertex_array attributes that depend on the yt geometry type
+
+        # note: these comparisons should change to literal comparisons to enum
+        # members with future yt, see https://github.com/yt-project/yt/pull/4244
+        yt_geom = self.data_source.ds.geometry
+        if yt_geom == "cartesian":
+            return
+        elif yt_geom == "spherical":
+            axis_id = self.data_source.ds.coordinates.axis_id
+            phi_plane_le = phi_normal_planes(le, axis_id, cast_type="f4")
+            phi_plane_re = phi_normal_planes(re, axis_id, cast_type="f4")
+            self.vertex_array.attributes.append(
+                VertexAttribute(name="phi_plane_le", data=phi_plane_le)
+            )
+            self.vertex_array.attributes.append(
+                VertexAttribute(name="phi_plane_re", data=phi_plane_re)
+            )
+        else:
+            raise NotImplementedError(
+                f"{self.name} does not implement {yt_geom} geometries."
+            )
 
     def viewpoint_iter(self, camera):
         for block in self.data_source.tiles.traverse(viewpoint=camera.position):
