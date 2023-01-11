@@ -277,9 +277,12 @@ class Shader(traitlets.HasTraits):
         # files.
         if not isinstance(source, (tuple, list)):
             source = (source,)
-        source = ("header.inc.glsl",) + tuple(self.preprocessor_defs) + (
-            "known_uniforms.inc.glsl",
-        ) + tuple(source)
+        source = (
+            ("header.inc.glsl",)
+            + tuple(self.preprocessor_defs)
+            + ("known_uniforms.inc.glsl",)
+            + tuple(source)
+        )
         full_source = []
         for fn in source:
             if isinstance(fn, tuple):
