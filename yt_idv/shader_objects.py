@@ -306,8 +306,6 @@ class Shader(traitlets.HasTraits):
             source = self.source
             if source is None:
                 raise RuntimeError
-        if parameters is not None:
-            raise NotImplementedError
         source = self._get_source(source)
         shader_type_enum = getattr(GL, f"GL_{self.shader_type.upper()}_SHADER")
         shader = GL.glCreateShader(shader_type_enum)
