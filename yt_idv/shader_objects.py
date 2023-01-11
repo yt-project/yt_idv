@@ -264,6 +264,7 @@ class Shader(traitlets.HasTraits):
         GLValue(),
         default_value=("none", "none", "none", "none"),
     )
+    preprocessor_defs = traitlets.List(trait = traitlets.Unicode)
 
     def _get_source(self, source):
         if ";" in source:
@@ -296,7 +297,12 @@ class Shader(traitlets.HasTraits):
         source = _NULL_SOURCES[self.shader_type]
         self.compile(source=source)
 
-    def compile(self, source=None, parameters=None):
+    @property
+    def defines(self):
+        return "\n".join([f"#define {var}" for var in
+                         self.preprocessor_defs])
+
+    def compile(self, source=None):
         if source is None:
             source = self.source
             if source is None:
@@ -308,7 +314,7 @@ class Shader(traitlets.HasTraits):
         shader = GL.glCreateShader(shader_type_enum)
         # We could do templating here if we wanted.
         self.shader_source = source
-        GL.glShaderSource(shader, source)
+        GL.glShaderSource(shader, [self.defines, source])
         GL.glCompileShader(shader)
         result = GL.glGetShaderiv(shader, GL.GL_COMPILE_STATUS)
         if not (result):
