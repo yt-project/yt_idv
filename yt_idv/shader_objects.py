@@ -264,7 +264,7 @@ class Shader(traitlets.HasTraits):
         GLValue(),
         default_value=("none", "none", "none", "none"),
     )
-    preprocessor_defs = traitlets.List(trait=traitlets.Unicode)
+    preprocessor_defs = traitlets.List(trait=traitlets.Tuple)
 
     def _get_source(self, source):
         if ";" in source:
@@ -277,12 +277,14 @@ class Shader(traitlets.HasTraits):
         # files.
         if not isinstance(source, (tuple, list)):
             source = (source,)
-        source = (
-            "header.inc.glsl",
+        source = ("header.inc.glsl",) + tuple(self.preprocessor_defs) + (
             "known_uniforms.inc.glsl",
         ) + tuple(source)
         full_source = []
         for fn in source:
+            if isinstance(fn, tuple):
+                full_source.append(f"#define {fn[0]} {fn[1]}\n")
+                continue
             if os.path.isfile(fn):
                 sh_directory = ""
             else:
@@ -311,7 +313,7 @@ class Shader(traitlets.HasTraits):
         shader = GL.glCreateShader(shader_type_enum)
         # We could do templating here if we wanted.
         self.shader_source = source
-        GL.glShaderSource(shader, [self.defines, source])
+        GL.glShaderSource(shader, source)
         GL.glCompileShader(shader)
         result = GL.glGetShaderiv(shader, GL.GL_COMPILE_STATUS)
         if not (result):
