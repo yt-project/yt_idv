@@ -303,7 +303,6 @@ class SceneComponent(traitlets.HasTraits):
         return True
 
     def _construct_isolayer_table(self, imgui) -> bool:
-
         imgui.columns(2, "iso_layers_cols", False)
         i = 0
         changed = False

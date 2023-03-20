@@ -8,7 +8,6 @@ from .opengl_support import Texture2D
 
 
 class SimpleGUI:
-
     renderer = None
     callbacks = None
     context = None
