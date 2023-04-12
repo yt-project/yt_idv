@@ -134,19 +134,11 @@ vec2 get_ray_cone_intersection(float theta, vec3 ray_origin, vec3 ray_dir)
     }
     else
     {
-        vec2 t = vec2((-b - sqrt(determinate))/ a_2, (-b + sqrt(determinate))/ a_2);
-
-        // check that t values are not for the shadow cone
-        float cutoff_t = (-1.0 * ro_dot_vhat) / dir_dot_vhat;
-        if (t[0] < cutoff_t)
-        {
-            t[0] = INFINITY;
-        }
-        else if (t[1] < cutoff_t)
-        {
-            t[1] = INFINITY;
-        }
-        return t;
+        // note: it is possible to have real solutions that intersect the shadow cone
+        // and not the actual cone. those values should be discarded. But they will
+        // fail subsequent bounds checks for interesecting the volume, so we can
+        // just handle it there instead of adding another check here.
+        return vec2((-b - sqrt(determinate))/ a_2, (-b + sqrt(determinate))/ a_2);
     }
 }
 
@@ -160,7 +152,7 @@ void spherical_coord_shortcircuit()
 
     // intersections
     vec2 t_sphere_outer = get_ray_sphere_intersection(right_edge[id_r], ray_position_xyz, dir);
-    if (t_sphere_outer[0] == INFINITY && t_sphere_outer[1] == INFINITY)
+    if (isinf(t_sphere_outer[0]) && isinf(t_sphere_outer[1]))
     {
         // if there are no intersections with the outer sphere, then there
         // will be no intersections with the remaining faces and we can stop
