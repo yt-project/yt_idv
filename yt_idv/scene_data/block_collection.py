@@ -79,10 +79,11 @@ class BlockCollection(SceneData):
         self.diagonal = np.sqrt(((RE - LE) ** 2).sum())
         # Now we set up our buffer
         vert = np.array(vert, dtype="f4")
-        dx = np.array(dx, dtype="f4")
-        le = np.array(le, dtype="f4")
-        re = np.array(re, dtype="f4")
-
+        units = self.data_source.ds.units
+        ratio = (units.code_length / units.unitary).base_value
+        dx = np.array(dx, dtype="f4") * ratio
+        le = np.array(le, dtype="f4") * ratio
+        re = np.array(re, dtype="f4") * ratio
         self.vertex_array.attributes.append(
             VertexAttribute(name="model_vertex", data=vert)
         )
