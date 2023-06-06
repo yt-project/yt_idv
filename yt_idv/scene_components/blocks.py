@@ -4,6 +4,7 @@ import numpy as np
 import traitlets
 from OpenGL import GL
 
+from yt_idv.gui_support import add_popup_help
 from yt_idv.opengl_support import TransferFunctionTexture
 from yt_idv.scene_components.base_component import SceneComponent
 from yt_idv.scene_data.block_collection import BlockCollection
@@ -26,6 +27,8 @@ class BlockRendering(SceneComponent):
     tf_min = traitlets.CFloat(0.0)
     tf_max = traitlets.CFloat(1.0)
     tf_log = traitlets.Bool(True)
+    slice_position = traitlets.Tuple((0.5, 0.5, 0.5), trait=traitlets.CFloat())
+    slice_normal = traitlets.Tuple((1.0, 0.0, 0.0), trait=traitlets.CFloat())
 
     priority = 10
 
@@ -103,6 +106,21 @@ class BlockRendering(SceneComponent):
                     data[xb1:xb2, 0, i] = np.mgrid[yv1 : yv2 : (xb2 - xb1) * 1j]
             if update:
                 self.transfer_function.data = (data * 255).astype("u1")
+
+        elif self.render_method == "slice":
+            imgui.text("Set slicing parameters:")
+
+            _, self.slice_position = imgui.input_float3(
+                "Position", *self.slice_position
+            )
+            changed = changed or _
+            _ = add_popup_help(imgui, "The position of a point on the slicing plane.")
+            changed = changed or _
+            _, self.slice_normal = imgui.input_float3("Normal", *self.slice_normal)
+            changed = changed or _
+            _ = add_popup_help(imgui, "The normal vector of the slicing plane.")
+            changed = changed or _
+
         return changed
 
     @traitlets.default("transfer_function")
@@ -129,6 +147,8 @@ class BlockRendering(SceneComponent):
         shader_program._set_uniform("tf_min", self.tf_min)
         shader_program._set_uniform("tf_max", self.tf_max)
         shader_program._set_uniform("tf_log", float(self.tf_log))
+        shader_program._set_uniform("slice_normal", np.array(self.slice_normal))
+        shader_program._set_uniform("slice_position", np.array(self.slice_position))
 
     def _get_sanitized_iso_layers(self):
         # return the sanitized layers

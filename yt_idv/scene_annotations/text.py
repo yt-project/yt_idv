@@ -10,7 +10,6 @@ from yt_idv.scene_data.text_characters import TextCharacters
 
 
 class TextAnnotation(SceneAnnotation):
-
     name = "text_annotation"
     data = traitlets.Instance(TextCharacters)
     text = traitlets.CUnicode()

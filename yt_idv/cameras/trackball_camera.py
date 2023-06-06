@@ -67,7 +67,6 @@ class TrackballCamera(BaseCamera):
         )
 
     def _update_matrices(self):
-
         self.view_matrix = get_lookat_matrix(self.position, self.focus, self.up)
         self.orientation = rotation_matrix_to_quaternion(self.view_matrix[0:3, 0:3])
 

@@ -54,6 +54,8 @@ class SceneComponent(traitlets.HasTraits):
     _program2_invalid = True
     _cmap_bounds_invalid = True
 
+    display_name = traitlets.Unicode(allow_none=True)
+
     # These attributes are
     cmap_min = traitlets.CFloat(None, allow_none=True)
     cmap_max = traitlets.CFloat(None, allow_none=True)
@@ -118,6 +120,10 @@ class SceneComponent(traitlets.HasTraits):
         changed = changed or _
 
         return changed
+
+    @traitlets.default("display_name")
+    def _default_display_name(self):
+        return self.name
 
     @traitlets.default("render_method")
     def _default_render_method(self):
@@ -303,7 +309,6 @@ class SceneComponent(traitlets.HasTraits):
         return True
 
     def _construct_isolayer_table(self, imgui) -> bool:
-
         imgui.columns(2, "iso_layers_cols", False)
         i = 0
         changed = False

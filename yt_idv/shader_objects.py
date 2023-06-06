@@ -264,6 +264,7 @@ class Shader(traitlets.HasTraits):
         GLValue(),
         default_value=("none", "none", "none", "none"),
     )
+    preprocessor_defs = traitlets.List(trait=traitlets.Tuple)
 
     def _get_source(self, source):
         if ";" in source:
@@ -277,11 +278,16 @@ class Shader(traitlets.HasTraits):
         if not isinstance(source, (tuple, list)):
             source = (source,)
         source = (
-            "header.inc.glsl",
-            "known_uniforms.inc.glsl",
-        ) + tuple(source)
+            ("header.inc.glsl",)
+            + tuple(self.preprocessor_defs)
+            + ("known_uniforms.inc.glsl",)
+            + tuple(source)
+        )
         full_source = []
         for fn in source:
+            if isinstance(fn, tuple):
+                full_source.append(f"#define {fn[0]} {fn[1]}\n")
+                continue
             if os.path.isfile(fn):
                 sh_directory = ""
             else:
@@ -296,13 +302,15 @@ class Shader(traitlets.HasTraits):
         source = _NULL_SOURCES[self.shader_type]
         self.compile(source=source)
 
-    def compile(self, source=None, parameters=None):
+    @property
+    def defines(self):
+        return "\n".join([f"#define {var}" for var in self.preprocessor_defs])
+
+    def compile(self, source=None):
         if source is None:
             source = self.source
             if source is None:
                 raise RuntimeError
-        if parameters is not None:
-            raise NotImplementedError
         source = self._get_source(source)
         shader_type_enum = getattr(GL, f"GL_{self.shader_type.upper()}_SHADER")
         shader = GL.glCreateShader(shader_type_enum)
