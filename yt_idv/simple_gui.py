@@ -60,7 +60,7 @@ class SimpleGUI:
             changed = changed or _
             # imgui.show_style_editor()
             for i, element in enumerate(scene):
-                if imgui.tree_node(f"element {i + 1}: {element.name}"):
+                if imgui.tree_node(f"element {i + 1}: {element.display_name}"):
                     changed = changed or element.render_gui(imgui, self.renderer, scene)
                     imgui.tree_pop()
             self.window._do_update = self.window._do_update or changed
