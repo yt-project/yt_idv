@@ -7,7 +7,6 @@ class OffscreenRenderingContext(BaseContext):
     """Base class for offscreen rendering."""
 
     def run(self):
-
         if self.scene is None:
             return
         self.scene.render()

@@ -17,7 +17,6 @@ class CurveData(SceneData):
         return va
 
     def add_data(self, curve):
-
         # curve is a collection of ndarray of points
         assert curve.shape[0] > 1  # a curve needs at least 2 points
         assert curve.shape[1] == 3  # a curve needs at least 3 dimensions
@@ -43,7 +42,6 @@ class CurveCollection(CurveData):
     n_vertices = traitlets.CInt()
 
     def add_curve(self, curve):
-
         # curve is a collection of ndarray of points
         assert curve.shape[0] > 1  # a curve needs at least 2 points
         assert curve.shape[1] == 3  # a curve needs at least 3 dimensions
@@ -60,7 +58,6 @@ class CurveCollection(CurveData):
             self.data = data
 
     def add_data(self):
-
         self.n_vertices = self.data.shape[0]
 
         self.vertex_array.attributes.append(
