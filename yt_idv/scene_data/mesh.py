@@ -33,6 +33,8 @@ class MeshData(SceneData):
         mesh = data_source.ds.index.meshes[mesh_id - 1]
         offset = mesh._index_offset
         vertices = mesh.connectivity_coords
+        if hasattr(vertices, "in_units"):
+            vertices = vertices.in_units("unitary")
         indices = mesh.connectivity_indices - offset
 
         data = data_source[field]
