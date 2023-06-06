@@ -18,4 +18,7 @@ class VariableMeshDisplay(SceneComponent):
     def draw(self, scene, program):
         GL.glEnable(GL.GL_CULL_FACE)
         GL.glCullFace(GL.GL_BACK)
-        GL.glDrawArrays(GL.GL_TRIANGLE_STRIP, 0, 4, self.data.size)
+        GL.glDrawArraysInstanced(GL.GL_TRIANGLE_STRIP, 0, 4, self.data.size)
+
+    def _set_uniforms(self, scene, program):
+        pass

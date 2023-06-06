@@ -133,6 +133,13 @@ shader_definitions:
       - one
       - zero
       blend_equation: func add
+    variable_mesh:
+      info: Sample a flat field value
+      source: variable_mesh.frag.glsl
+      depth_test: less
+      blend_func:
+      - one
+      - zero
   vertex:
     default:
       info: A first pass vertex shader that tranlates the location of vertices from
@@ -160,6 +167,9 @@ shader_definitions:
     octree_position:
       info: Expect instanced rendering of octree nodes
       source: octree_position.vert.glsl
+    variable_mesh:
+      info: Billboard some variable mesh values
+      source: variable_mesh.vert.glsl
   geometry:
     grid_expand:
       info: Expand grid left and right edges into a set of triangles
@@ -167,6 +177,9 @@ shader_definitions:
     particle_expand:
       info: Expand particles from points to triangulated quads
       source: particle_expand.geom.glsl
+    variable_mesh_expand:
+      info: Expand variable mesh points to quads
+      source: variable_mesh_expand.geom.glsl
 component_shaders:
   curve_rendering:
       default_value: default
@@ -315,3 +328,13 @@ component_shaders:
       first_fragment: field_value
       second_vertex: passthrough
       second_fragment: apply_colormap
+  variable_mesh_display:
+    default_value: default
+    default:
+      description: Display variable mesh as quads
+      first_vertex: variable_mesh
+      first_geometry: variable_mesh_expand
+      first_fragment: variable_mesh
+      second_vertex: passthrough
+      second_fragment: apply_colormap
+

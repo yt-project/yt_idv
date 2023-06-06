@@ -15,6 +15,7 @@ class VariableMeshContainer(SceneData):
     @traitlets.default("vertex_array")
     def _default_vertex_array(self):
         rv = VertexArray(name="vm_positions", each=1)
+        return rv
 
     def add_data(self, field):
         if len(self.vertex_array.attributes) > 0:
@@ -22,7 +23,9 @@ class VariableMeshContainer(SceneData):
             self.vertex_array.attributes[-1].data = self.data_source[field].astype("f4")
             return
         for vfield in ("px", "py", "pdx", "pdy"):
+            f = self.data_source[vfield].in_units('unitary').astype("f4")
             self.vertex_array.attributes.append(
-                VertexAttribute(name=vfield, data=self.data_source[vfield].astype("f4")
+                VertexAttribute(name=vfield, data=f)
             )
         self.vertex_array.attributes.append(VertexAttribute(name = "field", data = self.data_source[field].astype("f4")))
+        self.size = self.data_source['px'].size
