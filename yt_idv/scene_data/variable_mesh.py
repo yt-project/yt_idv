@@ -23,9 +23,9 @@ class VariableMeshContainer(SceneData):
             self.vertex_array.attributes[-1].data = self.data_source[field].astype("f4")
             return
         for vfield in ("px", "py", "pdx", "pdy"):
-            f = self.data_source[vfield].in_units('unitary').astype("f4")
-            self.vertex_array.attributes.append(
-                VertexAttribute(name=vfield, data=f)
-            )
-        self.vertex_array.attributes.append(VertexAttribute(name = "field", data = self.data_source[field].astype("f4")))
-        self.size = self.data_source['px'].size
+            f = self.data_source[vfield].in_units("unitary").astype("f4")
+            self.vertex_array.attributes.append(VertexAttribute(name=vfield, data=f))
+        self.vertex_array.attributes.append(
+            VertexAttribute(name="field", data=self.data_source[field].astype("f4"))
+        )
+        self.size = self.data_source["px"].size

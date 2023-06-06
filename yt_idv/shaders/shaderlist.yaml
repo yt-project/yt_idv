@@ -337,4 +337,3 @@ component_shaders:
       first_fragment: variable_mesh
       second_vertex: passthrough
       second_fragment: apply_colormap
-
