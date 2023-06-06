@@ -12,7 +12,7 @@ sg = rc.add_scene(ds, None, no_ghost=True)
 
 odata = OctreeBlockCollection(data_source=dd)
 odata.add_data("density")
-oren = OctreeBlockRendering(data=odata)
+oren = OctreeBlockRendering(data=odata, display_name="density")
 
 sg.data_objects.append(odata)
 sg.components.append(oren)

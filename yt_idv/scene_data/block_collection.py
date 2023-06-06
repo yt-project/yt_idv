@@ -64,7 +64,7 @@ class BlockCollection(SceneData):
             dx.append(dds.tolist())
             le.append(block.LeftEdge.tolist())
             re.append(block.RightEdge.tolist())
-        for (g, node, (sl, _dims, _gi)) in self.data_source.tiles.slice_traverse():
+        for g, node, (sl, _dims, _gi) in self.data_source.tiles.slice_traverse():
             block = node.data
             self.blocks_by_grid[g.id - g._id_offset].append((id(block), i))
             self.grids_by_block[id(node.data)] = (g.id - g._id_offset, sl)
@@ -79,10 +79,11 @@ class BlockCollection(SceneData):
         self.diagonal = np.sqrt(((RE - LE) ** 2).sum())
         # Now we set up our buffer
         vert = np.array(vert, dtype="f4")
-        dx = np.array(dx, dtype="f4")
-        le = np.array(le, dtype="f4")
-        re = np.array(re, dtype="f4")
-
+        units = self.data_source.ds.units
+        ratio = (units.code_length / units.unitary).base_value
+        dx = np.array(dx, dtype="f4") * ratio
+        le = np.array(le, dtype="f4") * ratio
+        re = np.array(re, dtype="f4") * ratio
         self.vertex_array.attributes.append(
             VertexAttribute(name="model_vertex", data=vert)
         )

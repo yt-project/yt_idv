@@ -41,6 +41,7 @@ sg = rc.add_scene(ds, "density", no_ghost=True)
 curved = CurveData()
 curved.add_data(streamlines.streamlines[0])
 curve_render = CurveRendering(data=curved, curve_rgba=(1.0, 0.0, 0.0, 1.0))
+curve_render.display_name = "single streamline"
 rc.scene.data_objects.append(curved)
 rc.scene.components.append(curve_render)
 
@@ -52,6 +53,7 @@ for stream in streamlines.streamlines[1:]:
 curve_collection.add_data()  # call add_data() after done adding curves
 
 cc_render = CurveCollectionRendering(data=curve_collection)
+cc_render.display_name = "multiple streamlines"
 rc.scene.data_objects.append(curve_collection)
 rc.scene.components.append(cc_render)
 
