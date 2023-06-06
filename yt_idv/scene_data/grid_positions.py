@@ -17,9 +17,9 @@ class GridPositions(SceneData):
         le = []
         re = []
         for g in self.grid_list:
-            dx.append(g.dds.tolist())
-            le.append(g.LeftEdge.tolist())
-            re.append(g.RightEdge.tolist())
+            dx.append(g.dds.in_units("unitary").tolist())
+            le.append(g.LeftEdge.in_units("unitary").tolist())
+            re.append(g.RightEdge.in_units("unitary").tolist())
         positions = np.ones((len(self.grid_list), 4), dtype="f4")
         dx = np.array(dx).astype("f4")
         le = np.array(le).astype("f4")
