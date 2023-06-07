@@ -87,10 +87,6 @@ class SceneComponent(traitlets.HasTraits):
         )
         changed = changed or _
 
-        if self.render_method == "isocontours":
-            _ = self._render_isolayer_inputs(imgui)
-            changed = changed or _
-
         if imgui.button("Recompile Shader"):
             changed = self._recompile_shader()
         _, cmap_index = imgui.listbox(
@@ -113,11 +109,15 @@ class SceneComponent(traitlets.HasTraits):
         _ = add_popup_help(imgui, "Click to reset the colorbounds of the current view.")
         changed = changed or _
 
+        if self.render_method == "isocontours":
+            _ = self._render_isolayer_inputs(imgui)
+            changed = changed or _
+
         return changed
 
     @traitlets.observe("iso_log")
     def _switch_iso_log(self, change):
-        # if iso_log, the the user is setting 10**x, otherwise they are setting
+        # if iso_log, then the user is setting 10**x, otherwise they are setting
         # x directly. So when toggling this checkbox we convert the existing
         # values between the two forms.
         if change["old"]:
@@ -385,6 +385,9 @@ class SceneComponent(traitlets.HasTraits):
         changed = False
         if imgui.tree_node("Isocontours"):
             _, self.iso_log = imgui.checkbox("set exponent", self.iso_log)
+            _ = add_popup_help(
+                imgui, "If checked, will treat isocontour values as base-10 exponents."
+            )
             changed = changed or _
 
             imgui.columns(2, "iso_tol_cols", False)
@@ -394,10 +397,12 @@ class SceneComponent(traitlets.HasTraits):
                 self.iso_tolerance,
                 flags=imgui.INPUT_TEXT_ENTER_RETURNS_TRUE,
             )
+            _ = add_popup_help(imgui, "The tolerance for selecting an isocontour.")
             changed = changed or _
 
             imgui.next_column()
             _, self.iso_tol_is_pct = imgui.checkbox("%", self.iso_tol_is_pct)
+            _ = add_popup_help(imgui, "If checked, the tolerance is a percent.")
             changed = changed or _
             imgui.columns(1)
 
@@ -422,6 +427,7 @@ class SceneComponent(traitlets.HasTraits):
                 self.iso_layers[i],
                 flags=imgui.INPUT_TEXT_ENTER_RETURNS_TRUE,
             )
+            _ = add_popup_help(imgui, "The value of the isocontour layer.")
             changed = changed or _
 
             imgui.next_column()
@@ -430,6 +436,7 @@ class SceneComponent(traitlets.HasTraits):
                 self.iso_layers_alpha[i],
                 flags=imgui.INPUT_TEXT_ENTER_RETURNS_TRUE,
             )
+            _ = add_popup_help(imgui, "The opacity of the isocontour layer.")
             changed = changed or _
 
             imgui.next_column()
