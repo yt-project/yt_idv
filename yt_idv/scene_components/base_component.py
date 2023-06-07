@@ -256,7 +256,8 @@ class SceneComponent(traitlets.HasTraits):
     def _set_iso_uniforms(self, p):
         # these could be handled better by watching traits.
         p._set_uniform("iso_num_layers", int(len(self.iso_layers)))
-        p._set_uniform("iso_layers", self._get_sanitized_iso_layers())
+        isolayervals = self._get_sanitized_iso_layers()
+        p._set_uniform("iso_layers", isolayervals)
         p._set_uniform("iso_layer_tol", self._get_sanitized_iso_tol())
         avals = np.zeros((32,), dtype="float32")
         avals[: len(self.iso_layers)] = np.array(self.iso_layers_alpha)
@@ -411,7 +412,7 @@ class SceneComponent(traitlets.HasTraits):
         return changed
 
     def _construct_isolayer_table(self, imgui) -> bool:
-        imgui.columns(2, "iso_layers_cols", False)
+        imgui.columns(3, "iso_layers_cols", False)
 
         i = 0
         changed = False
