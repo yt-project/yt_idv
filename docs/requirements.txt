@@ -1,5 +1,5 @@
 Click>=7.0
-yt>=3.6.0
+yt>=4.1.0
 traitlets>=5.0.5
 pyOpenGL>=3.1.5
 traittypes>=0.2.1
@@ -11,3 +11,4 @@ imgui>=1.2.0
 m2r2>=0.2.5
 sphinx==3.2.1
 more_itertools>=8.6.0
+Jinja2<3.1  # https://github.com/sphinx-doc/sphinx/issues/10306

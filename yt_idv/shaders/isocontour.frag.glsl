@@ -24,8 +24,8 @@ vec3 get_offset_texture_position(sampler3D tex, vec3 tex_curr_pos)
 bool sample_texture(vec3 tex_curr_pos, inout vec4 curr_color, float tdelta,
                     float t, vec3 dir)
 {
-    vec3 offset_pos = get_offset_texture_position(ds_tex, tex_curr_pos);
-    vec3 tex_sample = texture(ds_tex, offset_pos).rgb;
+    vec3 offset_pos = get_offset_texture_position(ds_tex[0], tex_curr_pos);
+    vec3 tex_sample = texture(ds_tex[0], offset_pos).rgb;
     vec3 offset_bmap_pos = get_offset_texture_position(bitmap_tex, tex_curr_pos);
     float map_sample = texture(bitmap_tex, offset_bmap_pos).r;
     if ((map_sample > 0.0) && (length(curr_color.rgb) < length(tex_sample))) {

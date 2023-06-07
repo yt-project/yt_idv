@@ -1,4 +1,3 @@
-# encoding: utf-8
 """
 Shader and ShaderProgram wrapper classes for vertex and fragment shaders used
 in Interactive Data Visualization
@@ -217,7 +216,7 @@ class ColormapTexture(Texture1D):
     def __init__(self, *args, **kwargs):
         # Override...
         kwargs["boundary_x"] = "clamp"
-        super(ColormapTexture, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
     @traitlets.validate("colormap_name")
     def _validate_name(self, proposal):
@@ -275,7 +274,7 @@ class TransferFunctionTexture(Texture2D):
     def __init__(self, *args, **kwargs):
         kwargs["boundary_x"] = "clamp"
         kwargs["boundary_y"] = "clamp"
-        super(TransferFunctionTexture, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
 
 class DepthBuffer(Texture2D):

@@ -30,7 +30,7 @@ class OctreeBlockRendering(SceneComponent):
     priority = 10
 
     def render_gui(self, imgui, renderer, scene):
-        changed = super(OctreeBlockRendering, self).render_gui(imgui, renderer, scene)
+        changed = super().render_gui(imgui, renderer, scene)
         _, sample_factor = imgui.slider_float(
             "Sample Factor", self.sample_factor, 1.0, 20.0
         )
@@ -127,7 +127,7 @@ class OctreeBlockRendering(SceneComponent):
     def _set_uniforms(self, scene, shader_program):
         shader_program._set_uniform("box_width", self.box_width)
         shader_program._set_uniform("sample_factor", self.sample_factor)
-        shader_program._set_uniform("ds_tex", 0)
+        shader_program._set_uniform("ds_tex", np.array([0, 0, 0, 0, 0, 0]))
         shader_program._set_uniform("bitmap_tex", 1)
         shader_program._set_uniform("tf_tex", 2)
         shader_program._set_uniform("tf_min", self.tf_min)

@@ -47,7 +47,7 @@ class TrackballCamera(BaseCamera):
             y /= mag
             z = 0.0
         else:
-            z = np.sqrt(1.0 - mag ** 2)
+            z = np.sqrt(1.0 - mag**2)
         return np.array([x, -y, z])
 
     def update_orientation(self, start_x, start_y, end_x, end_y):
@@ -67,7 +67,6 @@ class TrackballCamera(BaseCamera):
         )
 
     def _update_matrices(self):
-
         self.view_matrix = get_lookat_matrix(self.position, self.focus, self.up)
         self.orientation = rotation_matrix_to_quaternion(self.view_matrix[0:3, 0:3])
 

@@ -22,7 +22,7 @@ class EGLRenderingContext(OffscreenRenderingContext):
     """
 
     def __init__(self, width=1024, height=1024, **kwargs):
-        super(EGLRenderingContext, self).__init__(width, height, **kwargs)
+        super().__init__(width, height, **kwargs)
 
         self.EGL = EGL
         self.display = EGL.eglGetDisplay(EGL.EGL_DEFAULT_DISPLAY)

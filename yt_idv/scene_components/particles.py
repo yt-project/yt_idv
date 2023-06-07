@@ -15,12 +15,12 @@ class ParticleRendering(SceneComponent):
     max_particle_size = traitlets.CFloat(1e-3)
 
     def render_gui(self, imgui, renderer, scene):
-        changed = super(ParticleRendering, self).render_gui(imgui, renderer, scene)
+        changed = super().render_gui(imgui, renderer, scene)
         _, new_value = imgui.slider_float(
             "Log Scale", math.log10(self.scale), -8.0, 2.0
         )
         if _:
-            self.scale = 10 ** new_value
+            self.scale = 10**new_value
             changed = True
         imgui.text("Filter Particle Max Size")
         _, new_value = imgui.slider_float("", 1.0 / self.max_particle_size, 1.0, 100.0)

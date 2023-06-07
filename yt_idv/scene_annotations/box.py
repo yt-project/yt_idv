@@ -23,7 +23,7 @@ class BoxAnnotation(SceneAnnotation):
         GL.glDrawArrays(GL.GL_TRIANGLES, 0, each)
 
     def render_gui(self, imgui, renderer, scene):
-        changed = super(BoxAnnotation, self).render_gui(imgui, renderer, scene)
+        changed = super().render_gui(imgui, renderer, scene)
         _, bw = imgui.slider_float("Width", self.box_width, 0.001, 0.250)
         if _:
             self.box_width = bw

@@ -1,4 +1,3 @@
-# encoding: utf-8
 """
 Shader and ShaderProgram wrapper classes for vertex and fragment shaders used
 in Interactive Data Visualization
@@ -265,6 +264,7 @@ class Shader(traitlets.HasTraits):
         GLValue(),
         default_value=("none", "none", "none", "none"),
     )
+    preprocessor_defs = traitlets.List(trait=traitlets.Tuple)
 
     def _get_source(self, source):
         if ";" in source:
@@ -277,9 +277,17 @@ class Shader(traitlets.HasTraits):
         # files.
         if not isinstance(source, (tuple, list)):
             source = (source,)
-        source = ("header.inc.glsl", "known_uniforms.inc.glsl",) + tuple(source)
+        source = (
+            ("header.inc.glsl",)
+            + tuple(self.preprocessor_defs)
+            + ("known_uniforms.inc.glsl",)
+            + tuple(source)
+        )
         full_source = []
         for fn in source:
+            if isinstance(fn, tuple):
+                full_source.append(f"#define {fn[0]} {fn[1]}\n")
+                continue
             if os.path.isfile(fn):
                 sh_directory = ""
             else:
@@ -287,20 +295,22 @@ class Shader(traitlets.HasTraits):
             fn = os.path.join(sh_directory, fn)
             if not os.path.isfile(fn):
                 raise YTInvalidShaderType(fn)
-            full_source.append(open(fn, "r").read())
+            full_source.append(open(fn).read())
         return "\n\n".join(full_source)
 
     def _enable_null_shader(self):
         source = _NULL_SOURCES[self.shader_type]
         self.compile(source=source)
 
-    def compile(self, source=None, parameters=None):
+    @property
+    def defines(self):
+        return "\n".join([f"#define {var}" for var in self.preprocessor_defs])
+
+    def compile(self, source=None):
         if source is None:
             source = self.source
             if source is None:
                 raise RuntimeError
-        if parameters is not None:
-            raise NotImplementedError
         source = self._get_source(source)
         shader_type_enum = getattr(GL, f"GL_{self.shader_type.upper()}_SHADER")
         shader = GL.glCreateShader(shader_type_enum)
@@ -376,7 +386,7 @@ default_shader_combos = {}
 # We'll load our shaders here from shaderlist.yaml
 _shlist_fn = os.path.join(os.path.dirname(__file__), "shaders", "shaderlist.yaml")
 if os.path.exists(_shlist_fn):
-    with open(_shlist_fn, "r") as f:
+    with open(_shlist_fn) as f:
         shader_info = yaml.load(f, yaml.SafeLoader)
     known_shaders.update(shader_info["shader_definitions"])
     component_shaders.update(shader_info["component_shaders"])

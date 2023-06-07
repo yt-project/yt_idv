@@ -41,6 +41,8 @@ class OctreeBlockCollection(SceneData):
         right_edges = []
         dx = []
         data = []
+        units = self.data_source.ds.units
+        ratio = (units.code_length / units.unitary).base_value
 
         for obj in self.data_source._current_chunk.objs:
             bs = OctreeSubsetBlockSlice(obj, ds)
@@ -57,9 +59,9 @@ class OctreeBlockCollection(SceneData):
             )
 
         # Let's reshape ...
-        left_edges = np.concatenate(left_edges, axis=0).astype("f4")
-        right_edges = np.concatenate(right_edges, axis=0).astype("f4")
-        dx = np.concatenate(dx, axis=0).astype("f4")
+        left_edges = np.concatenate(left_edges, axis=0).astype("f4") * ratio
+        right_edges = np.concatenate(right_edges, axis=0).astype("f4") * ratio
+        dx = np.concatenate(dx, axis=0).astype("f4") * ratio
         data = np.concatenate(data, axis=-1).astype("f4")
         data = data.reshape((3, 3, -1))
 
@@ -73,7 +75,7 @@ class OctreeBlockCollection(SceneData):
 
         if self.max_val != self.min_val:
             data = (data - self.min_val) / (
-                (self.max_val - self.min_val)
+                self.max_val - self.min_val
             )  # * self.diagonal)
 
         self.vertex_array.attributes.append(

@@ -1,5 +1,5 @@
 import numpy
-from setuptools import Extension, find_packages, setup
+from setuptools import setup
 
 from Cython.Build import cythonize  # isort:skip
 

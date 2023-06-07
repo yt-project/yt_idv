@@ -27,6 +27,10 @@ uniform int channel;
 // Mesh rendering
 uniform mat4 model_to_clip;
 
+// Slicing
+uniform vec3 slice_position;
+uniform vec3 slice_normal;
+
 // Matrices for projection and positions
 uniform mat4 modelview;
 uniform mat4 projection;
@@ -42,7 +46,7 @@ uniform sampler2D db_tex;
 uniform sampler2D fb_tex;
 uniform sampler2D tf_tex;
 uniform sampler3D bitmap_tex;
-uniform sampler3D ds_tex;
+uniform sampler3D ds_tex[6];
 
 // ray tracing control
 uniform float sample_factor;

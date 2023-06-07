@@ -8,20 +8,20 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: [3.7, 3.8]
+        python-version: [3.8, 3.9]
 
     steps:
-    - uses: actions/checkout@v2
     - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v2
+      uses: actions/setup-python@v3
       with:
         python-version: ${{ matrix.python-version }}
+    - uses: actions/checkout@v3
     - name: Install dependencies
       run: |
         sudo apt-get update && sudo apt-get upgrade
         sudo apt install libgl1-mesa-dri libegl1-mesa libgbm1 libosmesa6 libosmesa6-dev
         python -m pip install --upgrade pip
-        python -m pip install flake8 pytest
+        python -m pip install pytest
         if [ -f tests/test_requirements.txt ]; then python -m pip install -r tests/test_requirements.txt; fi
         python -m pip install --upgrade numpy PyOpenGL_accelerate
     - name: Setup yt_idv
@@ -31,7 +31,7 @@ jobs:
       env:
           PYOPENGL_PLATFORM: osmesa
       run: pytest --html=report.html --self-contained-html
-    - uses: actions/upload-artifact@v2
+    - uses: actions/upload-artifact@v3
       name: Upload pytest report
       with:
         name: pytest-report

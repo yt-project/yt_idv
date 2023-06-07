@@ -3,6 +3,7 @@ import traitlets
 from OpenGL import GL
 
 from yt_idv.constants import FULLSCREEN_QUAD
+from yt_idv.gui_support import add_popup_help
 from yt_idv.opengl_support import (
     ColormapTexture,
     Framebuffer,
@@ -56,6 +57,8 @@ class SceneComponent(traitlets.HasTraits):
     _program2_invalid = True
     _cmap_bounds_invalid = True
 
+    display_name = traitlets.Unicode(allow_none=True)
+
     # These attributes are
     cmap_min = traitlets.CFloat(None, allow_none=True)
     cmap_max = traitlets.CFloat(None, allow_none=True)
@@ -79,6 +82,9 @@ class SceneComponent(traitlets.HasTraits):
     def render_gui(self, imgui, renderer, scene):
         changed, self.visible = imgui.checkbox("Visible", self.visible)
         _, self.use_db = imgui.checkbox("Depth Buffer", self.use_db)
+        _ = add_popup_help(
+            imgui, "If checked, will render the depth buffer of the current view."
+        )
         changed = changed or _
 
         if self.render_method == "isocontours":
@@ -93,11 +99,19 @@ class SceneComponent(traitlets.HasTraits):
         if _:
             self.colormap.colormap_name = _cmaps[cmap_index]
         changed = changed or _
+        _ = add_popup_help(imgui, "Select the colormap to use for the rendering.")
+        changed = changed or _
         _, self.cmap_log = imgui.checkbox("Take log", self.cmap_log)
+        changed = changed or _
+        _ = add_popup_help(
+            imgui, "If checked, the rendering will use log-normalized values."
+        )
         changed = changed or _
         if imgui.button("Reset Colorbounds"):
             self._cmap_bounds_invalid = True
             changed = True
+        _ = add_popup_help(imgui, "Click to reset the colorbounds of the current view.")
+        changed = changed or _
 
         return changed
 
@@ -108,14 +122,18 @@ class SceneComponent(traitlets.HasTraits):
         # values between the two forms.
         if change["old"]:
             # if True, we were taking the log, but now are not:
-            self.iso_tolerance = 10 ** self.iso_tolerance
-            new_iso_layers = [10 ** iso_val for iso_val in self.iso_layers]
+            self.iso_tolerance = 10**self.iso_tolerance
+            new_iso_layers = [10**iso_val for iso_val in self.iso_layers]
             self.iso_layers = new_iso_layers
         else:
             # we were not taking the log but now we are, so convert to the exponent
             self.iso_tolerance = np.log10(self.iso_tolerance)
             new_iso_layers = [np.log10(iso_val) for iso_val in self.iso_layers]
             self.iso_layers = new_iso_layers
+
+    @traitlets.default("display_name")
+    def _default_display_name(self):
+        return self.name
 
     @traitlets.default("render_method")
     def _default_render_method(self):
@@ -202,7 +220,8 @@ class SceneComponent(traitlets.HasTraits):
     @traitlets.default("base_quad")
     def _default_base_quad(self):
         bq = SceneData(
-            name="fullscreen_quad", vertex_array=VertexArray(name="tri", each=6),
+            name="fullscreen_quad",
+            vertex_array=VertexArray(name="tri", each=6),
         )
         fq = FULLSCREEN_QUAD.reshape((6, 3), order="C")
         bq.vertex_array.attributes.append(
@@ -291,7 +310,7 @@ class SceneComponent(traitlets.HasTraits):
         # to max number of contours (32).
         iso_vals = np.asarray(self.iso_layers)
         if self.iso_log:
-            iso_vals = 10 ** iso_vals
+            iso_vals = 10**iso_vals
 
         if normalize:
             iso_vals = self.data._normalize_by_min_max(iso_vals)
@@ -370,7 +389,9 @@ class SceneComponent(traitlets.HasTraits):
             imgui.columns(2, "iso_tol_cols", False)
 
             _, self.iso_tolerance = imgui.input_float(
-                "tol", self.iso_tolerance, flags=imgui.INPUT_TEXT_ENTER_RETURNS_TRUE,
+                "tol",
+                self.iso_tolerance,
+                flags=imgui.INPUT_TEXT_ENTER_RETURNS_TRUE,
             )
             changed = changed or _
 
@@ -390,8 +411,8 @@ class SceneComponent(traitlets.HasTraits):
         return changed
 
     def _construct_isolayer_table(self, imgui) -> bool:
+        imgui.columns(2, "iso_layers_cols", False)
 
-        imgui.columns(3, "iso_layers_cols", False)
         i = 0
         changed = False
         while i < len(self.iso_layers):
