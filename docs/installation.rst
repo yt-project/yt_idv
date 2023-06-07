@@ -47,18 +47,18 @@ Once you have a copy of the source, you can install it with:
     $ python setup.py install
 
 
-.. _Github repo: https://github.com/yt-project/yt_idv
-.. _tarball: https://github.com/yt-project/yt_idv/tarball/master
+Extra steps for linux
+---------------------
 
+A number of linux distros (Ubuntu 21+, Fedora 34+) have switched the default graphics backend from Xorg to Wayland.
 
-yt_idv on Wayland
------------------
+To Use yt_idv on these linux distributions, you may need enforce Xorg usage, which you can do in several ways:
 
-A number of linux distros (Ubuntu 21.04+, Fedora 34+) have switched the default graphics backend from Xorg to Wayland. To use yt_idv on these systems, you'll need to enforce Xorg, which you can do in several ways:
+1. Log into an Xorg session. For Ubuntu, you can still select to launch an Xorg session on the login screen (see `here <https://askubuntu.com/a/961345>`_).
 
-1. Log into an Xorg session. For Ubuntu, you can select an Xorg session on the login screen.
+OR
 
-2. Set the ``PYOPENGL_PLATFORM`` environment variable to ``"gdx"`` to In a bash shell:
+2. Set the ``PYOPENGL_PLATFORM`` environment variable to ``"gdx"``.  In a bash shell:
 
 .. code-block:: console
 
@@ -66,4 +66,7 @@ A number of linux distros (Ubuntu 21.04+, Fedora 34+) have switched the default 
 
 To avoid having to set this variable each time, you can add the above line to your ``.bashrc`` or ``.bash_aliases`` file.
 
-See `Issue 81 <https://github.com/yt-project/yt_idv/issues/81>`_ for background.
+See `Issue 81 <https://github.com/yt-project/yt_idv/issues/81>`_ for more information.
+
+.. _Github repo: https://github.com/yt-project/yt_idv
+.. _tarball: https://github.com/yt-project/yt_idv/tarball/master
