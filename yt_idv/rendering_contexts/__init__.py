@@ -30,7 +30,7 @@ def render_context(engine="pyglet", **kwargs):
                     "It looks like you have encountered an OpenGL context error while trying to start the GUI. "
                     "If you are running headless, try specifying 'osmesa' or 'egl' with the engine argument. If you "
                     "are running a newer Ubuntu (21+) or Fedora (34+) release, you may need to enforce Xorg usage "
-                    "in PyOpenGL: see https://yt-idv.readthedocs.io/en/latest/installation.html#extra-steps-for-linux."
+                    "in PyOpenGL: see https://yt-idv.readthedocs.io/en/latest/installation.html#extra-steps-for-linux"
                 )
                 raise Exception(extramsg) from oee
             raise oee
