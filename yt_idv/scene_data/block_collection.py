@@ -123,9 +123,8 @@ class BlockCollection(SceneData):
             n_data = np.abs(block.my_data[0]).copy(order="F").astype("float32").d
             # Avoid setting to NaNs
             if self.max_val != self.min_val:
-                n_data = (n_data - self.min_val) / (
-                    self.max_val - self.min_val
-                )  # * self.diagonal)
+                n_data = self._normalize_by_min_max(n_data)
+
             data_tex = Texture3D(data=n_data)
             bitmap_tex = Texture3D(
                 data=block.source_mask * 255, min_filter="nearest", mag_filter="nearest"

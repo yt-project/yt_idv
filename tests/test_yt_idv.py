@@ -111,3 +111,8 @@ def test_annotate_text(osmesa_empty, image_store):
     text.text = "S 2.0"
     text.scale = 2.0
     image_store(osmesa_empty)
+
+
+def test_isocontour_functionality(osmesa_fake_amr, image_store):
+    osmesa_fake_amr.scene.components[0].render_method = "isocontours"
+    image_store(osmesa_fake_amr)

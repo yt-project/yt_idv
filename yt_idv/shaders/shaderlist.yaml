@@ -42,7 +42,7 @@ shader_definitions:
       source: isocontour.frag.glsl
       blend_func:
       - src alpha
-      - dst alpha
+      - one minus src alpha
       blend_equation: func add
     max_intensity:
       info: A first pass fragment shader that computes Maximum Intensity Projection
