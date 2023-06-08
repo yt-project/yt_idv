@@ -104,10 +104,7 @@ void main()
     float depth = 1.0;
 
     ray_position = p0;
-
-    // precomputed so we don't need to call log 4 times per sample.
-    float log_iso_min = log(iso_min);
-    float log_iso_range = log(iso_max)-log(iso_min);
+    float data_value = 0.0;
     bool is_layer = false;
 
     while(t <= t1) {
@@ -122,13 +119,14 @@ void main()
             v_clip_coord = projection * modelview * vec4(ray_position, 1.0);
             f_ndc_depth = v_clip_coord.z / v_clip_coord.w;
             depth = min(depth, (1.0 - 0.0) * 0.5 * f_ndc_depth + (1.0 + 0.0) * 0.5);
-            float color_len = length(curr_color.rgb);
-            if (iso_log) {
-                color_len = (log((iso_max - iso_min) * color_len + iso_min) - log_iso_min) / log_iso_range;
-            }
+            data_value = curr_color.r;  // ds texture stores data in r channel
+            // note that these texture values are already normalized. i.e.,
+            // current_data_value = (raw block value - iso_min) / (iso_range);
+            // the iso_layer values below also come in already normalized.
             for (int i = 0; i < iso_num_layers; i++) {
-                if (abs(color_len - iso_layers[i]) <= iso_tolerance) {
+                if (abs(data_value - iso_layers[i]) <= iso_layer_tol[i]) {
                     is_layer = true;
+                    curr_color.a = iso_alphas[i];
                     break;
                 }
             }
