@@ -82,11 +82,15 @@ class BlockCollection(SceneData):
 
         # Now we set up our buffer
         vert = np.array(vert, dtype="f4")
-        units = self.data_source.ds.units
-        ratio = (units.code_length / units.unitary).base_value
-        dx = np.array(dx, dtype="f4") * ratio
-        le = np.array(le, dtype="f4") * ratio
-        re = np.array(re, dtype="f4") * ratio
+        dx = np.array(dx, dtype="f4")
+        le = np.array(le, dtype="f4")
+        re = np.array(re, dtype="f4")
+        if self._yt_geom_str == "cartesian":
+            units = self.data_source.ds.units
+            ratio = (units.code_length / units.unitary).base_value
+            dx = dx * ratio
+            le = le * ratio
+            re = re * ratio
         self._set_geometry_attributes(le, re)
         self.vertex_array.attributes.append(
             VertexAttribute(name="model_vertex", data=vert)
@@ -102,15 +106,19 @@ class BlockCollection(SceneData):
         # Now we set up our textures
         self._load_textures()
 
+    @property
+    def _yt_geom_str(self):
+        # note: casting to string for compatibility with new and old geometry
+        # attributes (now an enum member in latest yt),
+        # see https://github.com/yt-project/yt/pull/4244
+        return str(self.data_source.ds.geometry)
+
     def _set_geometry_attributes(self, le, re):
         # set any vertex_array attributes that depend on the yt geometry type
 
-        # note: these comparisons should change to literal comparisons to enum
-        # members with future yt, see https://github.com/yt-project/yt/pull/4244
-        yt_geom = self.data_source.ds.geometry
-        if yt_geom == "cartesian":
+        if self._yt_geom_str == "cartesian":
             return
-        elif yt_geom == "spherical":
+        elif self._yt_geom_str == "spherical":
             axis_id = self.data_source.ds.coordinates.axis_id
             phi_plane_le = phi_normal_planes(le, axis_id, cast_type="f4")
             phi_plane_re = phi_normal_planes(re, axis_id, cast_type="f4")
@@ -122,7 +130,7 @@ class BlockCollection(SceneData):
             )
         else:
             raise NotImplementedError(
-                f"{self.name} does not implement {yt_geom} geometries."
+                f"{self.name} does not implement {self._yt_geom_str} geometries."
             )
 
     def viewpoint_iter(self, camera):
