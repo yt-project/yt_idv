@@ -11,8 +11,6 @@ out vec4 output_color;
 flat in vec4 phi_plane_le;
 flat in vec4 phi_plane_re;
 
-const float INFINITY = 1. / 0.;
-const float PI = 3.1415926535897932384626433832795;
 bool within_bb(vec3 pos)
 {
     bvec3 left =  greaterThanEqual(pos, left_edge);
