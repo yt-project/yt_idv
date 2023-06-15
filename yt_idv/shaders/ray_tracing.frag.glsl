@@ -206,34 +206,34 @@ void spherical_coord_shortcircuit()
     vec4 curr_color = vec4(0.0);
 
     // intersections
-    vec2 t_points = vec2(INFINITY, INFINITY);
+    vec2 t_points;
     int n_points = 0; // number of intersections found
 
     // outer sphere
-    get_ray_sphere_intersection(t_points, n_points, right_edge[id_r], ray_position_xyz, dir);
+    get_ray_sphere_intersection(t_points, n_points, right_edge[id_r], p0, dir);
     // note: the order of geometry intersections is important. we are not
     // explicitly handling the case of a 3 or 4-point intersection where a ray
     // intersects the two phi-planes and the inner sphere. But by checking the
     // phi-planes first, we will at least sample some of those points.
     // left edge fixed phi-plane
     if (n_points < 2){
-        get_ray_plane_intersection(t_points, n_points, vec3(phi_plane_le), phi_plane_le[3], ray_position_xyz, dir);
+        get_ray_plane_intersection(t_points, n_points, vec3(phi_plane_le), phi_plane_le[3], p0, dir);
     }
     // right edge fixed phi-plane
     if (n_points < 2){
-        get_ray_plane_intersection(t_points, n_points, vec3(phi_plane_re), phi_plane_re[3], ray_position_xyz, dir);
+        get_ray_plane_intersection(t_points, n_points, vec3(phi_plane_re), phi_plane_re[3], p0, dir);
     }
     // inner sphere
     if (n_points < 2){
-        get_ray_sphere_intersection(t_points, n_points, left_edge[id_r], ray_position_xyz, dir);
+        get_ray_sphere_intersection(t_points, n_points, left_edge[id_r], p0, dir);
     }
     // outer cone surface
     if (n_points < 2){
-        get_ray_cone_intersection(t_points, n_points, right_edge[id_theta], ray_position_xyz, dir);
+        get_ray_cone_intersection(t_points, n_points, right_edge[id_theta], p0, dir);
     }
     // inner cone surface
     if (n_points < 2){
-        get_ray_cone_intersection(t_points, n_points, left_edge[id_theta], ray_position_xyz, dir);
+        get_ray_cone_intersection(t_points, n_points, left_edge[id_theta], p0, dir);
     }
 
     if (n_points < 1) {
@@ -245,14 +245,10 @@ void spherical_coord_shortcircuit()
     vec3 ndx = 1.0/nzones;
 
     // take those t values, get the spherical position for sampling
-    float t_mid;
-
     if (n_points == 1){
 
         // single intersection: on cusp. just return a single sample.
-        t_mid = t_points[0];
-
-        ray_position = ray_position_to_native_coords(t_mid, ray_position, dir);
+        ray_position = ray_position_to_native_coords(t_points[0], p0, dir);
         vec3 tex_curr_pos = (ray_position - left_edge) / range;
 
         tex_curr_pos = (tex_curr_pos * (1.0 - ndx)) + ndx/2.0;
@@ -266,50 +262,51 @@ void spherical_coord_shortcircuit()
     }
 
     // sample once at the midpoint (works?)
-//    t_mid = (t_points[1] + t_points[0])/2.;
-//    ray_position = ray_position_to_native_coords(t_mid, ray_position, dir);
-//    vec3 tex_curr_pos = (ray_position - left_edge) / range;
-//
-//    tex_curr_pos = (tex_curr_pos * (1.0 - ndx)) + ndx/2.0;
-//    bool sampled = sample_texture(tex_curr_pos, curr_color, 0.0, 0.0, vec3(0.0));
-//    if (sampled) {
-//        output_color = curr_color;
-//    } else {
-//        output_color = vec4(0.0);
-//    }
-//    return;
+    float t_mid = (t_points[1] + t_points[0])/2.;
+    ray_position = ray_position_to_native_coords(t_mid, p0, dir);
+    vec3 tex_curr_pos = (ray_position - left_edge) / range;
 
-    // ray tracing here
-    vec3 ray_origin = ray_position; // should this be p0, camera instead?
-    float t_start = min(t_points[0], t_points[1]);
-    float t_end = max(t_points[0], t_points[1]);
-    float n_samples = 4.0;
-    float dt = (t_end - t_start)/n_samples;
-    float current_t = t_start;
-    bool ever_sampled = false;
-    bool sampled;
-    vec4 v_clip_coord;
-    float f_ndc_depth;
-    float depth = 1.0;
-    while (current_t <= t_end ){
-        ray_position = ray_position_to_native_coords(current_t, ray_origin, dir);
-        vec3 tex_curr_pos = (ray_position - left_edge) / range;
-
-
-        current_t = current_t + dt;
-        tex_curr_pos = (tex_curr_pos * (1.0 - ndx)) + ndx/2.0;
-        sampled = sample_texture(tex_curr_pos, curr_color, 0.0, 0.0, vec3(0.0));
-//        if (sampled) {
-//            ever_sampled = true;
-//            v_clip_coord = projection * modelview * vec4(transform_vec3(ray_position), 1.0);
-//            f_ndc_depth = v_clip_coord.z / v_clip_coord.w;
-//            depth = min(depth, (1.0 - 0.0) * 0.5 * f_ndc_depth + (1.0 + 0.0) * 0.5);
-//
-//        }
-
+    tex_curr_pos = (tex_curr_pos * (1.0 - ndx)) + ndx/2.0;
+    bool sampled = sample_texture(tex_curr_pos, curr_color, 0.0, 0.0, vec3(0.0));
+    if (sampled) {
+        output_color = curr_color;
+    } else {
+        output_color = vec4(0.0);
     }
+    return;
 
-    output_color = cleanup_phase(curr_color, dir, t_start, t_end);
+    // ray tracing here... hmm... not super stable
+//    vec3 ray_origin = ray_position; // should this be p0, camera instead?
+//    float t_start = min(t_points[0], t_points[1]);
+//    float t_end = max(t_points[0], t_points[1]);
+//    float n_samples = 4.0;
+//    float dt = (t_end - t_start)/n_samples;
+//    float current_t = t_start;
+////    bool ever_sampled = false;
+//    bool sampled;
+//    vec3 tex_curr_pos;
+////    vec4 v_clip_coord;
+////    float f_ndc_depth;
+////    float depth = 1.0;
+//    while (current_t <= t_end ){
+//        ray_position = ray_position_to_native_coords(current_t, p0, dir);
+//        tex_curr_pos = (ray_position - left_edge) / range;
+////        if (tex_curr_pos[0] >0 && tex_curr_pos[1] > 0 && tex_curr_pos[2] >0){
+//        tex_curr_pos = (tex_curr_pos * (1.0 - ndx)) + ndx/2.0;
+//        sampled = sample_texture(tex_curr_pos, curr_color, 0.0, 0.0, vec3(0.0));
+//
+//            //        if (sampled) {
+//            //            ever_sampled = true;
+//            //            v_clip_coord = projection * modelview * vec4(transform_vec3(ray_position), 1.0);
+//            //            f_ndc_depth = v_clip_coord.z / v_clip_coord.w;
+//            //            depth = min(depth, (1.0 - 0.0) * 0.5 * f_ndc_depth + (1.0 + 0.0) * 0.5);
+//            //
+//            //        }
+////        }
+//        current_t = current_t + dt;
+//    }
+//
+//    output_color = cleanup_phase(curr_color, dir, t_start, t_end);
 
 //    if (ever_sampled) {
 //        gl_FragDepth = depth;
