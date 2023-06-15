@@ -202,6 +202,7 @@ void spherical_coord_shortcircuit()
     vec3 ray_position = v_model.xyz; // now spherical
     vec3 ray_position_xyz = transform_vec3(ray_position); // cartesian
     vec3 p0 = camera_pos.xyz; // cartesian
+//    vec3 p0 = ray_position_xyz;
     vec3 dir = -normalize(camera_pos.xyz - ray_position_xyz);
     vec4 curr_color = vec4(0.0);
 
@@ -244,6 +245,10 @@ void spherical_coord_shortcircuit()
     vec3 nzones = range / dx;
     vec3 ndx = 1.0/nzones;
 
+    vec4 v_clip_coord;
+    float f_ndc_depth;
+    float depth = 1.0;
+
     // take those t values, get the spherical position for sampling
     if (n_points == 1){
 
@@ -255,6 +260,9 @@ void spherical_coord_shortcircuit()
         bool sampled = sample_texture(tex_curr_pos, curr_color, 0.0, 0.0, vec3(0.0));
         if (sampled) {
             output_color = curr_color;
+            v_clip_coord = projection * modelview * vec4(transform_vec3(ray_position), 1.0);
+            f_ndc_depth = v_clip_coord.z / v_clip_coord.w;
+            gl_FragDepth = min(depth, (1.0 - 0.0) * 0.5 * f_ndc_depth + (1.0 + 0.0) * 0.5);
         } else {
             output_color = vec4(0.0);
         }
@@ -270,6 +278,9 @@ void spherical_coord_shortcircuit()
     bool sampled = sample_texture(tex_curr_pos, curr_color, 0.0, 0.0, vec3(0.0));
     if (sampled) {
         output_color = curr_color;
+        v_clip_coord = projection * modelview * vec4(transform_vec3(ray_position), 1.0);
+        f_ndc_depth = v_clip_coord.z / v_clip_coord.w;
+        gl_FragDepth = min(depth, (1.0 - 0.0) * 0.5 * f_ndc_depth + (1.0 + 0.0) * 0.5);
     } else {
         output_color = vec4(0.0);
     }
