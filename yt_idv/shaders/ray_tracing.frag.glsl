@@ -13,8 +13,8 @@ flat in vec4 phi_plane_re;
 
 bool within_bb(vec3 pos)
 {
-    bvec3 left =  greaterThanEqual(pos, left_edge-0.001);
-    bvec3 right = lessThanEqual(pos, right_edge+0.001);
+    bvec3 left =  greaterThanEqual(pos, left_edge);
+    bvec3 right = lessThanEqual(pos, right_edge);
     return all(left) && all(right);
 }
 
@@ -24,8 +24,8 @@ vec3 transform_vec3(vec3 v) {
             // in yt, phi is the polar angle from (0, 2pi), theta is the azimuthal
             // angle (0, pi). the id_ values below are uniforms that depend on the
             // yt dataset coordinate ordering
-            v[id_r] * sin(v[id_theta]) * cos(v[id_phi]),
             v[id_r] * sin(v[id_theta]) * sin(v[id_phi]),
+            v[id_r] * sin(v[id_theta]) * cos(v[id_phi]),
             v[id_r] * cos(v[id_theta])
         );
     } else {
@@ -35,10 +35,40 @@ vec3 transform_vec3(vec3 v) {
 
 vec3 reverse_transform_vec3(vec3 v) {
     if (is_spherical) {
+        // glsl atan docs.
+//        atan returns either the angle whose trigonometric arctangent is
+//        y/x or y_over_x, depending on which overload is invoked.
+//        In the first overload, the signs of y and x are used to determine
+//        the quadrant that the angle lies in. The value returned by atan in
+//        this case is in the range [−π,π]. The result is undefined if x=0
+//
+//.
+//
+//       For the second overload, atan returns the angle whose tangent
+//        is y_over_x. The value returned in this case is in the range
+//       [−π/2,π/2]
+//.
         vec3 vout = vec3(0.);
         vout[id_r] = length(v);
-        vout[id_phi] = atan(v[1], v[0]);
-        vout[id_theta] = atan(sqrt(v[1]*v[1] + v[0]*v[0]), v[2]);
+        // phi: the 0 to 2pi angle
+        float xy = sqrt(v[0]*v[0] + v[1] * v[1]);
+//        vout[id_phi] = acos(v[1]/xy);// + PI;  // want 0 to 2pi
+//        vout[id_phi] = atan(v[1], v[0]) + PI;//
+        // theta: the polar 0 to pi angle
+        vout[id_theta] = acos(v[2]/vout[id_r]);//atan(sqrt(v[1]*v[1] + v[0]*v[0]) , v[2]);// + PI/2;
+
+        float phi = acos(abs(v[0]/xy));
+        if (v[0] < 0. && v[1] >0){
+            phi += PI/2;
+        }
+        if (v[0] < 0. && v[1] < 0){
+            phi += PI;
+        }
+        if (v[0] > 0 && v[1] <0){
+            phi = 2 * PI - phi;
+        }
+        vout[id_phi] = phi;
+
         return vout;
     } else {
         return v;
@@ -73,15 +103,18 @@ void get_ray_plane_intersection(inout vec2 t_points, inout int n_points, vec3 p_
     float n_dot_u = dot(p_normal, ray_dir);
     float n_dot_ro = dot(p_normal, ray_origin);
     // add check for n_dot_u == 0 (ray is parallel to plane)
-    if (n_dot_u != float(0.0))
+    if (n_dot_u == float(0.0))
     {
-        float t_point = (p_constant - n_dot_ro) / n_dot_u;
-        if (within_bb(ray_position_to_native_coords(t_point, ray_origin, ray_dir)))
-        {
-            t_points[n_points] = t_point;
-            n_points = n_points + 1;
-        }
+        return;
     }
+
+    float t_point = (p_constant - n_dot_ro) / n_dot_u;
+    if (within_bb(ray_position_to_native_coords(t_point, ray_origin, ray_dir)))
+    {
+        t_points[n_points] = t_point;
+        n_points = n_points + 1;
+    }
+
     // otherwise, the ray is parallel to the plane. there are either no intersections
     // or infinite intersections. In the second case, we are guaranteed
     // to intersect the other faces, so we can drop this plane.
@@ -101,7 +134,10 @@ void get_ray_sphere_intersection(inout vec2 t_points, inout int n_points, float 
     float c =  ro_dot_ro - rsq;
     float determinate = b*b - 2.0 * a_2 * c;
     float t_point;
-    if (determinate == 0.0)
+    if (determinate < 0.0) {
+        return;
+    }
+    else if (determinate == 0.0)
     {
         t_point = -b / a_2;
         if (within_bb(ray_position_to_native_coords(t_point, ray_origin, ray_dir)))
@@ -110,11 +146,11 @@ void get_ray_sphere_intersection(inout vec2 t_points, inout int n_points, float 
             n_points = n_points + 1;
         }
     }
-    else if (determinate > 0.0)
+    else
     {
 
         t_point = (-b - sqrt(determinate))/ a_2;
-        if (within_bb(ray_position_to_native_coords(t_point, ray_origin, ray_dir)))
+        if (n_points<2 && within_bb(ray_position_to_native_coords(t_point, ray_origin, ray_dir)))
         {
             t_points[n_points] = t_point;
             n_points = n_points + 1;
@@ -178,11 +214,10 @@ void get_ray_cone_intersection(inout vec2 t_points, inout int n_points, float th
     else
     {
         // note: it is possible to have real solutions that intersect the shadow cone
-        // and not the actual cone. those values should be discarded. But they will
-        // fail subsequent bounds checks for interesecting the volume, so we can
-        // just handle it there instead of adding another check here.
+        // and not the actual cone. those values will fail the bounds checks for
+        // interesecting the volume so no special treatment is needed.
         t_point = (-b - sqrt(determinate))/ a_2;
-        if (within_bb(ray_position_to_native_coords(t_point, ray_origin, ray_dir)))
+        if (n_points < 2 && within_bb(ray_position_to_native_coords(t_point, ray_origin, ray_dir)))
         {
             t_points[n_points] = t_point;
             n_points = n_points + 1;
@@ -201,8 +236,8 @@ void spherical_coord_shortcircuit()
 {
     vec3 ray_position = v_model.xyz; // now spherical
     vec3 ray_position_xyz = transform_vec3(ray_position); // cartesian
-    vec3 p0 = camera_pos.xyz; // cartesian
-//    vec3 p0 = ray_position_xyz;
+//    vec3 p0 = camera_pos.xyz; // cartesian
+    vec3 p0 = ray_position_xyz;
     vec3 dir = -normalize(camera_pos.xyz - ray_position_xyz);
     vec4 curr_color = vec4(0.0);
 
@@ -237,9 +272,37 @@ void spherical_coord_shortcircuit()
         get_ray_cone_intersection(t_points, n_points, left_edge[id_theta], p0, dir);
     }
 
-    if (n_points < 1) {
-        discard;
+//    if (n_points == 0) {
+//        discard;
+//    }
+    // hmm, losing theta > pi/2 values... NO. loosing phi values
+    if (n_points == 1){
+        output_color = vec4(1.,0., 0., 1.);
+    } else if (n_points == 2){
+        output_color = vec4(0.,1., 0., 1.);
+    } else if (n_points == 0){
+        output_color = vec4(0., 0., 1., 1.);
     }
+//    vec3 roundtrip = reverse_transform_vec3(ray_position_xyz);
+//    output_color = vec4(0., 0., 1., 1.);
+    // correct: id_r, id_theta
+    // incorrect: id_phi
+//    if (abs(roundtrip[id_phi] - ray_position[id_phi]) < 0.01){
+//        output_color = vec4(1., 0, 0., 1.);
+//    }
+//    if (roundtrip[id_phi] > 2 * PI){
+//        output_color = vec4(1., 0., 0., 1);
+//    }
+//    // all y < 0 are being missed.
+//    if (ray_position_xyz[1] > 0) {
+//        output_color = vec4(1., 0., 0., 1);
+//    } else {
+//        output_color = vec4(0., 1., 0., 1);
+//    }
+//    output_color = vec4(ray_position_xyz[1], 0., 0., 1);
+
+    return;
+
     // do the texture evaluation in the native coordinate space
     vec3 range = (right_edge + dx/2.0) - (left_edge - dx/2.0);
     vec3 nzones = range / dx;
