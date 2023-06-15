@@ -48,7 +48,7 @@ vec4 cleanup_phase(in vec4 curr_color, in vec3 dir, in float t0, in float t1);
 //   void (vec3 tex_curr_pos, inout vec4 curr_color, float tdelta, float t,
 //         vec3 direction);
 
-float get_ray_plane_intersection(vec3 p_normal, float p_constant, vec3 ray_origin, vec3 ray_dir)
+float get_ray_plane_intersection(inout vec2 t_points, vec3 p_normal, float p_constant, vec3 ray_origin, vec3 ray_dir)
 {
     float n_dot_u = dot(p_normal, ray_dir);
     float n_dot_ro = dot(p_normal, ray_origin);
@@ -64,8 +64,9 @@ float get_ray_plane_intersection(vec3 p_normal, float p_constant, vec3 ray_origi
     return (p_constant - n_dot_ro) / n_dot_u;
 }
 
-vec2 get_ray_sphere_intersection(float r, vec3 ray_origin, vec3 ray_dir)
+void get_ray_sphere_intersection(inout vec2 t_points, float r, vec3 ray_origin, vec3 ray_dir)
 {
+    // gets called first
     float dir_dot_dir = dot(ray_dir, ray_dir);
     float ro_dot_ro = dot(ray_origin, ray_origin);
     float dir_dot_ro = dot(ray_dir, ray_origin);
@@ -75,18 +76,16 @@ vec2 get_ray_sphere_intersection(float r, vec3 ray_origin, vec3 ray_dir)
     float b = 2.0 * dir_dot_ro;
     float c =  ro_dot_ro - rsq;
     float determinate = b*b - 2.0 * a_2 * c;
-    float cutoff_val = 0.0;
-    if (determinate < cutoff_val)
+    float t_point;
+    if (determinate == 0.0)
     {
-        return vec2(INFINITY, INFINITY);
+        t_point = -b / a_2;
+        if within_bbox(ge)
     }
-    else if (determinate == cutoff_val)
+    else if (determinate > 0.0)
     {
-        return vec2(-b / a_2, INFINITY);
-    }
-    else
-    {
-        return vec2((-b - sqrt(determinate))/ a_2, (-b + sqrt(determinate))/ a_2);
+        t_points[0] = (-b - sqrt(determinate))/ a_2;
+        t_points[1] = (-b + sqrt(determinate))/ a_2;
     }
 
 }
@@ -149,6 +148,8 @@ void spherical_coord_shortcircuit()
     vec4 curr_color = vec4(0.0);
 
     // intersections
+    vec2 t_points = vec2(INFINITY, INFINITY);
+
     vec2 t_sphere_outer = get_ray_sphere_intersection(right_edge[id_r], ray_position_xyz, dir);
     if (isinf(t_sphere_outer[0]) && isinf(t_sphere_outer[1]))
     {
