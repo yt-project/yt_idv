@@ -13,8 +13,8 @@ flat in vec4 phi_plane_re;
 
 bool within_bb(vec3 pos)
 {
-    bvec3 left =  greaterThanEqual(pos, left_edge);
-    bvec3 right = lessThanEqual(pos, right_edge);
+    bvec3 left =  greaterThanEqual(pos, left_edge-0.001);
+    bvec3 right = lessThanEqual(pos, right_edge+0.001);
     return all(left) && all(right);
 }
 
@@ -33,6 +33,26 @@ vec3 transform_vec3(vec3 v) {
     }
 }
 
+vec3 reverse_transform_vec3(vec3 v) {
+    if (is_spherical) {
+        vec3 vout = vec3(0.);
+        vout[id_r] = length(v);
+        vout[id_phi] = atan(v[1], v[0]);
+        vout[id_theta] = atan(sqrt(v[1]*v[1] + v[0]*v[0]), v[2]);
+        return vout;
+    } else {
+        return v;
+    }
+}
+
+vec3 ray_position_to_native_coords(float t, vec3 ray_origin, vec3 ray_dir) {
+    vec3 xyz = ray_origin + t * ray_dir;
+    if (is_spherical){
+        return reverse_transform_vec3(xyz);
+    }
+    return xyz;
+}
+
 vec3 get_offset_texture_position(sampler3D tex, vec3 tex_curr_pos)
 {
     ivec3 texsize = textureSize(tex, 0); // lod (mipmap level) always 0?
@@ -48,23 +68,27 @@ vec4 cleanup_phase(in vec4 curr_color, in vec3 dir, in float t0, in float t1);
 //   void (vec3 tex_curr_pos, inout vec4 curr_color, float tdelta, float t,
 //         vec3 direction);
 
-float get_ray_plane_intersection(inout vec2 t_points, vec3 p_normal, float p_constant, vec3 ray_origin, vec3 ray_dir)
+void get_ray_plane_intersection(inout vec2 t_points, inout int n_points, vec3 p_normal, float p_constant, vec3 ray_origin, vec3 ray_dir)
 {
     float n_dot_u = dot(p_normal, ray_dir);
     float n_dot_ro = dot(p_normal, ray_origin);
     // add check for n_dot_u == 0 (ray is parallel to plane)
-    if (n_dot_u == float(0.0))
+    if (n_dot_u != float(0.0))
     {
-        // the ray is parallel to the plane. there are either no intersections
-        // or infinite intersections. In the second case, we are guaranteed
-        // to intersect one of the other faces, so we can drop this plane.
-        return INFINITY;
+        float t_point = (p_constant - n_dot_ro) / n_dot_u;
+        if (within_bb(ray_position_to_native_coords(t_point, ray_origin, ray_dir)))
+        {
+            t_points[n_points] = t_point;
+            n_points = n_points + 1;
+        }
     }
+    // otherwise, the ray is parallel to the plane. there are either no intersections
+    // or infinite intersections. In the second case, we are guaranteed
+    // to intersect the other faces, so we can drop this plane.
 
-    return (p_constant - n_dot_ro) / n_dot_u;
 }
 
-void get_ray_sphere_intersection(inout vec2 t_points, float r, vec3 ray_origin, vec3 ray_dir)
+void get_ray_sphere_intersection(inout vec2 t_points, inout int n_points, float r, vec3 ray_origin, vec3 ray_dir)
 {
     // gets called first
     float dir_dot_dir = dot(ray_dir, ray_dir);
@@ -80,17 +104,33 @@ void get_ray_sphere_intersection(inout vec2 t_points, float r, vec3 ray_origin, 
     if (determinate == 0.0)
     {
         t_point = -b / a_2;
-        if within_bbox(ge)
+        if (within_bb(ray_position_to_native_coords(t_point, ray_origin, ray_dir)))
+        {
+            t_points[n_points] = t_point;
+            n_points = n_points + 1;
+        }
     }
     else if (determinate > 0.0)
     {
-        t_points[0] = (-b - sqrt(determinate))/ a_2;
-        t_points[1] = (-b + sqrt(determinate))/ a_2;
+
+        t_point = (-b - sqrt(determinate))/ a_2;
+        if (within_bb(ray_position_to_native_coords(t_point, ray_origin, ray_dir)))
+        {
+            t_points[n_points] = t_point;
+            n_points = n_points + 1;
+        }
+
+        t_point = (-b + sqrt(determinate))/ a_2;
+        if (n_points < 2 && within_bb(ray_position_to_native_coords(t_point, ray_origin, ray_dir)))
+        {
+            t_points[n_points] = t_point;
+            n_points = n_points + 1;
+        }
     }
 
 }
 
-vec2 get_ray_cone_intersection(float theta, vec3 ray_origin, vec3 ray_dir)
+void get_ray_cone_intersection(inout vec2 t_points, inout int n_points, float theta, vec3 ray_origin, vec3 ray_dir)
 {
     // note: cos(theta) and vhat could be calculated in vertex shader
     float costheta;
@@ -121,13 +161,19 @@ vec2 get_ray_cone_intersection(float theta, vec3 ray_origin, vec3 ray_dir)
     float b = 2.0 * (ro_dot_vhat * dir_dot_vhat - ro_dot_dir*cos2t);
     float c = pow(ro_dot_vhat, 2) - ro_dot_ro*cos2t;
     float determinate = b*b - 2.0 * a_2 * c;
+    float t_point;
     if (determinate < 0.0)
     {
-        return vec2(INFINITY, INFINITY);
+        return;
     }
     else if (determinate == 0.0)
     {
-        return vec2(-b / a_2, INFINITY);
+        t_point = -b / a_2;
+        if (within_bb(ray_position_to_native_coords(t_point, ray_origin, ray_dir)))
+        {
+            t_points[n_points] = t_point;
+            n_points = n_points + 1;
+        }
     }
     else
     {
@@ -135,7 +181,19 @@ vec2 get_ray_cone_intersection(float theta, vec3 ray_origin, vec3 ray_dir)
         // and not the actual cone. those values should be discarded. But they will
         // fail subsequent bounds checks for interesecting the volume, so we can
         // just handle it there instead of adding another check here.
-        return vec2((-b - sqrt(determinate))/ a_2, (-b + sqrt(determinate))/ a_2);
+        t_point = (-b - sqrt(determinate))/ a_2;
+        if (within_bb(ray_position_to_native_coords(t_point, ray_origin, ray_dir)))
+        {
+            t_points[n_points] = t_point;
+            n_points = n_points + 1;
+        }
+
+        t_point = (-b + sqrt(determinate))/ a_2;
+        if (n_points < 2 && within_bb(ray_position_to_native_coords(t_point, ray_origin, ray_dir)))
+        {
+            t_points[n_points] = t_point;
+            n_points = n_points + 1;
+        }
     }
 }
 
@@ -149,27 +207,41 @@ void spherical_coord_shortcircuit()
 
     // intersections
     vec2 t_points = vec2(INFINITY, INFINITY);
+    int n_points = 0; // number of intersections found
 
-    vec2 t_sphere_outer = get_ray_sphere_intersection(right_edge[id_r], ray_position_xyz, dir);
-    if (isinf(t_sphere_outer[0]) && isinf(t_sphere_outer[1]))
-    {
-        // if there are no intersections with the outer sphere, then there
-        // will be no intersections with the remaining faces and we can stop
-        // looking.
-        discard;
+    get_ray_sphere_intersection(t_points, n_points, right_edge[id_r], ray_position_xyz, dir);
+    if (n_points < 2){
+        get_ray_sphere_intersection(t_points, n_points, left_edge[id_r], ray_position_xyz, dir);
+    }
+    if (n_points < 2){
+        get_ray_plane_intersection(t_points, n_points, vec3(phi_plane_le), phi_plane_le[3], ray_position_xyz, dir);
+    }
+    if (n_points < 2){
+        get_ray_plane_intersection(t_points, n_points, vec3(phi_plane_re), phi_plane_re[3], ray_position_xyz, dir);
+    }
+    if (n_points < 2){
+        get_ray_cone_intersection(t_points, n_points, right_edge[id_theta], ray_position_xyz, dir);
+    }
+    if (n_points < 2){
+        get_ray_cone_intersection(t_points, n_points, left_edge[id_theta], ray_position_xyz, dir);
     }
 
-    vec2 t_sphere_inner = get_ray_sphere_intersection(left_edge[id_r], ray_position_xyz, dir);
-    float t_p_1 = get_ray_plane_intersection(vec3(phi_plane_le), phi_plane_le[3], ray_position_xyz, dir);
-    float t_p_2 = get_ray_plane_intersection(vec3(phi_plane_re), phi_plane_re[3], ray_position_xyz, dir);
-    vec2 t_cone_outer = get_ray_cone_intersection(right_edge[id_theta], ray_position_xyz, dir);
-    vec2 t_cone_inner= get_ray_cone_intersection(left_edge[id_theta], ray_position_xyz, dir);
-
+    if (n_points < 1) {
+        discard;
+    }
     // do the texture evaluation in the native coordinate space
     vec3 range = (right_edge + dx/2.0) - (left_edge - dx/2.0);
     vec3 nzones = range / dx;
     vec3 ndx = 1.0/nzones;
 
+    // take those t values, get the spherical position for sampling
+    float t_mid;
+    if (n_points == 1){
+        t_mid = t_points[0];
+    } else {
+        t_mid = (t_points[1] + t_points[0])/2.;
+    }
+    ray_position = ray_position_to_native_coords(t_mid, ray_position, dir);
     vec3 tex_curr_pos = (ray_position - left_edge) / range;
 
     tex_curr_pos = (tex_curr_pos * (1.0 - ndx)) + ndx/2.0;
