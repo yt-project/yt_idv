@@ -209,19 +209,29 @@ void spherical_coord_shortcircuit()
     vec2 t_points = vec2(INFINITY, INFINITY);
     int n_points = 0; // number of intersections found
 
+    // outer sphere
     get_ray_sphere_intersection(t_points, n_points, right_edge[id_r], ray_position_xyz, dir);
-    if (n_points < 2){
-        get_ray_sphere_intersection(t_points, n_points, left_edge[id_r], ray_position_xyz, dir);
-    }
+    // note: the order of geometry intersections is important. we are not
+    // explicitly handling the case of a 3 or 4-point intersection where a ray
+    // intersects the two phi-planes and the inner sphere. But by checking the
+    // phi-planes first, we will at least sample some of those points.
+    // left edge fixed phi-plane
     if (n_points < 2){
         get_ray_plane_intersection(t_points, n_points, vec3(phi_plane_le), phi_plane_le[3], ray_position_xyz, dir);
     }
+    // right edge fixed phi-plane
     if (n_points < 2){
         get_ray_plane_intersection(t_points, n_points, vec3(phi_plane_re), phi_plane_re[3], ray_position_xyz, dir);
     }
+    // inner sphere
+    if (n_points < 2){
+        get_ray_sphere_intersection(t_points, n_points, left_edge[id_r], ray_position_xyz, dir);
+    }
+    // outer cone surface
     if (n_points < 2){
         get_ray_cone_intersection(t_points, n_points, right_edge[id_theta], ray_position_xyz, dir);
     }
+    // inner cone surface
     if (n_points < 2){
         get_ray_cone_intersection(t_points, n_points, left_edge[id_theta], ray_position_xyz, dir);
     }
