@@ -5,7 +5,19 @@ from .base_offscreen import OffscreenRenderingContext
 
 
 class OSMesaRenderingContext(OffscreenRenderingContext):
-    """Rendering context using OSMesa (experimental)"""
+    """Offscreen rendering context using OSMesa (experimental)
+
+    Parameters
+    ----------
+    width : int, optional
+        The width of the off-screen buffer window.  For performance reasons it
+        is recommended to use values that are natural powers of 2.
+
+    height : int, optional
+        The height of the off-screen buffer window.  For performance reasons it
+        it is recommended to use values that are natural powers of 2.
+
+    """
 
     def __init__(self, width=1024, height=1024, **kwargs):
         super().__init__(width, height, **kwargs)
