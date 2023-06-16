@@ -291,7 +291,7 @@ void spherical_coord_shortcircuit()
 
         // single intersection: on cusp. just return a single sample.
         ray_position = ray_position_to_native_coords(t_points[0], p0, dir);
-        vec3 tex_curr_pos = (ray_position - left_edge) / range;
+        tex_curr_pos = (ray_position - left_edge) / range;
 
         tex_curr_pos = (tex_curr_pos * (1.0 - ndx)) + ndx/2.0;
         sampled = sample_texture(tex_curr_pos, curr_color, 0.0, 0.0, vec3(0.0));
