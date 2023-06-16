@@ -1,5 +1,17 @@
 # History
 
+## 0.3.1
+
+* add a display_name attribute by @chrishavlin in [62](https://github.com/yt-project/yt_idv/pull/62)
+* preprocessor directives by @matthewturk in [70](https://github.com/yt-project/yt_idv/pull/70)
+* Set unitary scale for the block collection by @matthewturk in [79](https://github.com/yt-project/yt_idv/pull/79)
+* ds_tex objects by @matthewturk in [47](https://github.com/yt-project/yt_idv/pull/47)
+* isocontour improvements by @chrishavlin in [43](https://github.com/yt-project/yt_idv/pull/43)
+* installation note for wayland on linux by @chrishavlin in [82](https://github.com/yt-project/yt_idv/pull/82)
+* updates to documentation by @chrishavlin in [85](https://github.com/yt-project/yt_idv/pull/85)
+
+**Full Changelog**: https://github.com/yt-project/yt_idv/compare/v0.3.0...v0.3.1
+
 ## 0.3.0
 
 * minimum yt version is now 4.1
