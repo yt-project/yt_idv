@@ -274,33 +274,6 @@ void spherical_coord_shortcircuit()
         // when discarding, loosing phi values corresponding to y<0...
         discard;
     }
-    // hmm, losing theta > pi/2 values... NO. loosing phi values
-    if (n_points == 1){
-        output_color = vec4(1.,0., 0., 1.);
-    } else if (n_points == 2){
-        output_color = vec4(0.,1., 0., 1.);
-    } else if (n_points == 0){
-        output_color = vec4(0., 0., 1., 1.);
-    }
-//    vec3 roundtrip = reverse_transform_vec3(ray_position_xyz);
-//    output_color = vec4(0., 0., 1., 1.);
-    // correct: id_r, id_theta
-    // incorrect: id_phi
-//    if (abs(roundtrip[id_phi] - ray_position[id_phi]) < 0.01){
-//        output_color = vec4(1., 0, 0., 1.);
-//    }
-//    if (roundtrip[id_phi] > 2 * PI){
-//        output_color = vec4(1., 0., 0., 1);
-//    }
-//    // all y < 0 are being missed.
-//    if (ray_position_xyz[1] > 0) {
-//        output_color = vec4(1., 0., 0., 1);
-//    } else {
-//        output_color = vec4(0., 1., 0., 1);
-//    }
-//    output_color = vec4(ray_position_xyz[1], 0., 0., 1);
-
-    return;
 
     // do the texture evaluation in the native coordinate space
     vec3 range = (right_edge + dx/2.0) - (left_edge - dx/2.0);
