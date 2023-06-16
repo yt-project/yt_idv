@@ -35,28 +35,26 @@ vec3 transform_vec3(vec3 v) {
 
 vec3 reverse_transform_vec3(vec3 v) {
     if (is_spherical) {
-        // glsl atan docs.
-//        atan returns either the angle whose trigonometric arctangent is
-//        y/x or y_over_x, depending on which overload is invoked.
-//        In the first overload, the signs of y and x are used to determine
-//        the quadrant that the angle lies in. The value returned by atan in
-//        this case is in the range [−π,π]. The result is undefined if x=0
-//
-//.
-//
-//       For the second overload, atan returns the angle whose tangent
-//        is y_over_x. The value returned in this case is in the range
-//       [−π/2,π/2]
-//.
+        // glsl atan docs:
+        //        atan returns either the angle whose trigonometric arctangent is
+        //        y/x or y_over_x, depending on which overload is invoked.
+        //        In the first overload, the signs of y and x are used to determine
+        //        the quadrant that the angle lies in. The value returned by atan in
+        //        this case is in the range [−π,π]. The result is undefined if x=0
+        //
+        //       For the second overload, atan returns the angle whose tangent
+        //        is y_over_x. The value returned in this case is in the range
+        //       [−π/2,π/2]
+        //
         vec3 vout = vec3(0.);
         vout[id_r] = length(v);
-        // phi: the 0 to 2pi angle
-        float xy = sqrt(v[0]*v[0] + v[1] * v[1]);
-//        vout[id_phi] = acos(v[1]/xy);// + PI;  // want 0 to 2pi
-//        vout[id_phi] = atan(v[1], v[0]) + PI;//
         // theta: the polar 0 to pi angle
-        vout[id_theta] = acos(v[2]/vout[id_r]);//atan(sqrt(v[1]*v[1] + v[0]*v[0]) , v[2]);// + PI/2;
-
+        vout[id_theta] = acos(v[2]/vout[id_r]);
+        // phi: the 0 to 2pi angle : leaving
+//        vout[id_phi] = atan(v[1], v[0]) + PI;
+        // note: stopped trusting the glsl atan, decided to write my own method
+        // here but the glsl atan is probably fine. need to figure out other things now...
+        float xy = sqrt(v[0]*v[0] + v[1] * v[1]);
         float phi = acos(abs(v[0]/xy));
         if (v[0] < 0. && v[1] >0){
             phi += PI/2;
@@ -272,9 +270,10 @@ void spherical_coord_shortcircuit()
         get_ray_cone_intersection(t_points, n_points, left_edge[id_theta], p0, dir);
     }
 
-//    if (n_points == 0) {
-//        discard;
-//    }
+    if (n_points == 0) {
+        // when discarding, loosing phi values corresponding to y<0...
+        discard;
+    }
     // hmm, losing theta > pi/2 values... NO. loosing phi values
     if (n_points == 1){
         output_color = vec4(1.,0., 0., 1.);
@@ -349,7 +348,8 @@ void spherical_coord_shortcircuit()
     }
     return;
 
-    // ray tracing here... hmm... not super stable
+    // ray tracing here... hmm... not super stable. some lag, occasional crashes.
+    // might be the shader is doing too much or might be something else...
 //    vec3 ray_origin = ray_position; // should this be p0, camera instead?
 //    float t_start = min(t_points[0], t_points[1]);
 //    float t_end = max(t_points[0], t_points[1]);
