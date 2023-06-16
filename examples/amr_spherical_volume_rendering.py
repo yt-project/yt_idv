@@ -43,8 +43,8 @@ if __name__ == "__main__":
     rc = yt_idv.render_context(height=800, width=800, gui=True)
     dd = ds.all_data()
     dd.max_level = 1
-    sg = rc.add_scene(ds, ("index", "r"), no_ghost=True)
+    # sg = rc.add_scene(ds, ("index", "r"), no_ghost=True)
     # sg = rc.add_scene(ds, ("index", "theta"), no_ghost=True)
-    # sg = rc.add_scene(ds, ("index", "phi"), no_ghost=True)
+    sg = rc.add_scene(ds, ("index", "phi"), no_ghost=True)
     sg.camera.focus = [0.0, 0.0, 0.0]
     rc.run()
