@@ -19,6 +19,12 @@ from yt_idv.scene_data.text_characters import TextCharacters
 
 
 class SceneGraph(traitlets.HasTraits):
+    """
+    The SceneGraph controls the data of a rendering context
+    including the data itself as well as annotations and camera controls.
+
+    """
+
     components = traitlets.List(
         trait=traitlets.Instance(SceneComponent), default_value=[]
     )

@@ -11,6 +11,7 @@ loaded in yt.  It is written to provide both scripting and interactive access.
 
 * Free software: BSD license
 * Documentation: https://yt-idv.readthedocs.io.
+* Source code: https://github.com/yt-project/yt_idv
 
 ![example of using yt_idv](https://i.imgur.com/Q4XPNZw.gif)
 
