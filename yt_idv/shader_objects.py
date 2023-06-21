@@ -82,7 +82,8 @@ class ShaderProgram:
         The geometry shader used in the pipeline; optional.
 
     preprocessor_defs : PreprocessorDefinitionState
-        a dictionary of preprocessor tuples for each shader; optional.
+        a PreprocessorDefinitionState instance defining any preprocessor
+        definitions if used; optional.
 
     """
 
