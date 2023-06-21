@@ -79,28 +79,62 @@ class ShaderProgram:
     geometry_shader : string
         or :class:`yt_idv.shader_objects.GeometryShader`
         The geometry shader used in the pipeline; optional.
+
+    preprocessor_defs : dict
+        a dictionary of preprocessor tuples for each shader; optional.
+
     """
 
-    def __init__(self, vertex_shader=None, fragment_shader=None, geometry_shader=None):
+    def __init__(
+        self,
+        vertex_shader=None,
+        fragment_shader=None,
+        geometry_shader=None,
+        preprocessor_defs=None,
+    ):
         # Don't allow just one.  Either neither or both.
         if vertex_shader is None and fragment_shader is None:
             pass
         elif None not in (vertex_shader, fragment_shader):
             # Geometry is optional
-            self.link(vertex_shader, fragment_shader, geometry_shader)
+            self.link(
+                vertex_shader,
+                fragment_shader,
+                geometry_shader,
+                preprocessor_defs=preprocessor_defs,
+            )
         else:
             raise RuntimeError
         self._uniform_funcs = OrderedDict()
 
-    def link(self, vertex_shader, fragment_shader, geometry_shader=None):
+    def link(
+        self,
+        vertex_shader,
+        fragment_shader,
+        geometry_shader=None,
+        preprocessor_defs: dict = None,
+    ):
+        # validate the _preprocessor_defs
+        if preprocessor_defs is None:
+            preprocessor_defs = {}
+        for ky in ["vertex", "fragment", "geometry"]:
+            if ky not in preprocessor_defs:
+                preprocessor_defs[ky] = []
+
         # We allow an optional geometry shader, but not tesselation (yet?)
         self.program = GL.glCreateProgram()
         if not isinstance(vertex_shader, Shader):
-            vertex_shader = Shader(source=vertex_shader)
+            vertex_shader = Shader(
+                source=vertex_shader, preprocessor_defs=preprocessor_defs["vertex"]
+            )
         if not isinstance(fragment_shader, Shader):
-            fragment_shader = Shader(source=fragment_shader)
+            fragment_shader = Shader(
+                source=fragment_shader, preprocessor_defs=preprocessor_defs["fragment"]
+            )
         if geometry_shader is not None and not isinstance(geometry_shader, Shader):
-            geometry_shader = Shader(source=geometry_shader)
+            geometry_shader = Shader(
+                source=geometry_shader, preprocessor_defs=preprocessor_defs["geometry"]
+            )
         self.vertex_shader = vertex_shader
         self.fragment_shader = fragment_shader
         self.geometry_shader = geometry_shader

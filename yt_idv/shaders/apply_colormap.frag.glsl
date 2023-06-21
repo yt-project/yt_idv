@@ -4,11 +4,11 @@ out vec4 color;
 
 void main(){
    float scaled = 0;
-   if (use_db) {
+   #ifdef USE_DB
       scaled = texture(db_tex, UV).x;
-   } else {
+   #else
       scaled = texture(fb_tex, UV).x;
-   }
+   #endif
    float alpha = texture(fb_tex, UV).a;  // the incoming framebuffer alpha
    if (alpha == 0.0) discard;
    float cm = cmap_min;
