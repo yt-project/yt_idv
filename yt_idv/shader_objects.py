@@ -7,6 +7,7 @@ import contextlib
 import ctypes
 import os
 from collections import OrderedDict
+from typing import Optional, Tuple
 
 import traitlets
 import yaml
@@ -80,7 +81,7 @@ class ShaderProgram:
         or :class:`yt_idv.shader_objects.GeometryShader`
         The geometry shader used in the pipeline; optional.
 
-    preprocessor_defs : dict
+    preprocessor_defs : PreprocessorDefinitionState
         a dictionary of preprocessor tuples for each shader; optional.
 
     """
@@ -112,28 +113,27 @@ class ShaderProgram:
         vertex_shader,
         fragment_shader,
         geometry_shader=None,
-        preprocessor_defs: dict = None,
+        preprocessor_defs=None,
     ):
-        # validate the _preprocessor_defs
         if preprocessor_defs is None:
-            preprocessor_defs = {}
-        for ky in ["vertex", "fragment", "geometry"]:
-            if ky not in preprocessor_defs:
-                preprocessor_defs[ky] = []
+            preprocessor_defs = PreprocessorDefinitionState()
 
         # We allow an optional geometry shader, but not tesselation (yet?)
         self.program = GL.glCreateProgram()
         if not isinstance(vertex_shader, Shader):
             vertex_shader = Shader(
-                source=vertex_shader, preprocessor_defs=preprocessor_defs["vertex"]
+                source=vertex_shader,
+                preprocessor_defs=preprocessor_defs.get_shader_defs("vertex"),
             )
         if not isinstance(fragment_shader, Shader):
             fragment_shader = Shader(
-                source=fragment_shader, preprocessor_defs=preprocessor_defs["fragment"]
+                source=fragment_shader,
+                preprocessor_defs=preprocessor_defs.get_shader_defs("fragment"),
             )
         if geometry_shader is not None and not isinstance(geometry_shader, Shader):
             geometry_shader = Shader(
-                source=geometry_shader, preprocessor_defs=preprocessor_defs["geometry"]
+                source=geometry_shader,
+                preprocessor_defs=preprocessor_defs.get_shader_defs("geometry"),
             )
         self.vertex_shader = vertex_shader
         self.fragment_shader = fragment_shader
@@ -311,6 +311,7 @@ class Shader(traitlets.HasTraits):
         if ";" in source:
             # This is probably safe, right?  Enh, probably.
             return source
+
         # What this does is concatenate multiple (if available) source files.
         # This gets around GLSL's composition issues, which means we can have
         # functions that get called at each step in a ray tracing process, for
@@ -405,13 +406,14 @@ class Shader(traitlets.HasTraits):
         self.delete_shader()
 
 
-def _validate_shader(shader_type, value, allow_null=True):
+def _instantiate_shader_from_str(shader_type, value, preprocessor_defs=None):
     shader_info = known_shaders[shader_type][value]
     shader_info.setdefault("shader_type", shader_type)
     shader_info["use_separate_blend"] = bool("blend_func_separate" in shader_info)
     shader_info.setdefault("shader_name", value)
-    shader = Shader(allow_null=allow_null, **shader_info)
-    return shader
+    if preprocessor_defs is not None:
+        shader_info["preprocessor_defs"] = preprocessor_defs
+    return Shader(**shader_info)
 
 
 class ShaderTrait(traitlets.TraitType):
@@ -419,15 +421,55 @@ class ShaderTrait(traitlets.TraitType):
     info_text = "A shader (vertex, fragment or geometry)"
 
     def validate(self, obj, value):
-        if isinstance(value, str):
+        if isinstance(value, str) or isinstance(value, tuple):
             try:
                 shader_type = self.metadata.get("shader_type", "vertex")
-                return _validate_shader(shader_type, value)
+                if isinstance(value, tuple):
+                    preprocessor_defs = value[1]
+                    value = value[0]
+                else:
+                    preprocessor_defs = None
+                return _instantiate_shader_from_str(
+                    shader_type, value, preprocessor_defs=preprocessor_defs
+                )
             except KeyError:
                 self.error(obj, value)
         elif isinstance(value, Shader):
             return value
         self.error(obj, value)
+
+
+class PreprocessorDefinitionState:
+    def __init__(self):
+        self.vertex = {}
+        self.geometry = {}
+        self.fragment = {}
+
+    def get_dict(self, shader_type: str) -> dict:
+        """return the dict of definitions for specifed shader_type"""
+        return getattr(self, shader_type)
+
+    def add_definition(self, shader_type: str, value: Tuple[str, str]):
+        """add a definition for specified shader_type, will overwrite
+        existing definitions.
+        """
+        self.get_dict(shader_type)[value[0]] = value[1]
+
+    def clear_definition(self, shader_type: str, value: Tuple[str, str]):
+        """remove the definition of value for specified shader_type"""
+        self.get_dict(shader_type).pop(value[0])
+
+    def get_shader_defs(self, shader_type: str) -> Tuple[str, str]:
+        """return the preprocessor definition list for specified shader_type"""
+        return list(self.get_dict(shader_type).items())
+
+    def reset(self, shader_type: Optional[str] = None):
+        if shader_type is None:
+            self.vertex = {}
+            self.geometry = {}
+            self.fragment = {}
+        else:
+            setattr(self, shader_type, {})
 
 
 known_shaders = {}

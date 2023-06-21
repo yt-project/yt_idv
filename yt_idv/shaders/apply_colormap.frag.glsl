@@ -5,9 +5,9 @@ out vec4 color;
 void main(){
    float scaled = 0;
    #ifdef USE_DB
-      scaled = texture(db_tex, UV).x;
+   scaled = texture(db_tex, UV).x;
    #else
-      scaled = texture(fb_tex, UV).x;
+   scaled = texture(fb_tex, UV).x;
    #endif
    float alpha = texture(fb_tex, UV).a;  // the incoming framebuffer alpha
    if (alpha == 0.0) discard;
