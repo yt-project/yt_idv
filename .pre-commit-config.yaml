@@ -1,6 +1,6 @@
 repos:
 -   repo: https://github.com/asottile/setup-cfg-fmt
-    rev: v2.4.0
+    rev: v2.5.0
     hooks:
     - id: setup-cfg-fmt
       args: [
@@ -8,7 +8,7 @@ repos:
         --max-py-version=3.10,
       ]
 -   repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.4.0
+    rev: v4.5.0
     hooks:
     - id: trailing-whitespace
     - id: end-of-file-fixer
@@ -17,12 +17,12 @@ repos:
     - id: check-executables-have-shebangs
     - id: check-yaml
 -   repo: https://github.com/asottile/pyupgrade
-    rev: v3.11.0
+    rev: v3.15.0
     hooks:
     - id: pyupgrade
       args: [--py37-plus]
 -   repo: https://github.com/psf/black
-    rev: 23.9.1
+    rev: 23.10.0
     hooks:
     - id: black-jupyter
 
