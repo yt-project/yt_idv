@@ -22,8 +22,8 @@ jobs:
         sudo apt install libgl1-mesa-dri libegl1-mesa libgbm1 libosmesa6 libosmesa6-dev
     - name: Setup yt_idv
       run: |
-        python -m pip install -e .[test]
         python -m pip install --upgrade pip
+        python -m pip install -e .[test]
     - name: Run Tests
       env:
           PYOPENGL_PLATFORM: osmesa
