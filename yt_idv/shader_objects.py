@@ -264,7 +264,7 @@ class Shader(traitlets.HasTraits):
         GLValue(),
         default_value=("none", "none", "none", "none"),
     )
-    preprocessor_defs = traitlets.List(trait=traitlets.Tuple)
+    preprocessor_defs = traitlets.List(trait=traitlets.Tuple())
 
     def _get_source(self, source):
         if ";" in source:
