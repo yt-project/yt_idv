@@ -7,6 +7,7 @@ import contextlib
 import ctypes
 import os
 from collections import OrderedDict
+from typing import Optional, Tuple
 
 import traitlets
 import yaml
@@ -79,28 +80,62 @@ class ShaderProgram:
     geometry_shader : string
         or :class:`yt_idv.shader_objects.GeometryShader`
         The geometry shader used in the pipeline; optional.
+
+    preprocessor_defs : PreprocessorDefinitionState
+        a PreprocessorDefinitionState instance defining any preprocessor
+        definitions if used; optional.
+
     """
 
-    def __init__(self, vertex_shader=None, fragment_shader=None, geometry_shader=None):
+    def __init__(
+        self,
+        vertex_shader=None,
+        fragment_shader=None,
+        geometry_shader=None,
+        preprocessor_defs=None,
+    ):
         # Don't allow just one.  Either neither or both.
         if vertex_shader is None and fragment_shader is None:
             pass
         elif None not in (vertex_shader, fragment_shader):
             # Geometry is optional
-            self.link(vertex_shader, fragment_shader, geometry_shader)
+            self.link(
+                vertex_shader,
+                fragment_shader,
+                geometry_shader,
+                preprocessor_defs=preprocessor_defs,
+            )
         else:
             raise RuntimeError
         self._uniform_funcs = OrderedDict()
 
-    def link(self, vertex_shader, fragment_shader, geometry_shader=None):
+    def link(
+        self,
+        vertex_shader,
+        fragment_shader,
+        geometry_shader=None,
+        preprocessor_defs=None,
+    ):
+        if preprocessor_defs is None:
+            preprocessor_defs = PreprocessorDefinitionState()
+
         # We allow an optional geometry shader, but not tesselation (yet?)
         self.program = GL.glCreateProgram()
         if not isinstance(vertex_shader, Shader):
-            vertex_shader = Shader(source=vertex_shader)
+            vertex_shader = Shader(
+                source=vertex_shader,
+                preprocessor_defs=preprocessor_defs.get_shader_defs("vertex"),
+            )
         if not isinstance(fragment_shader, Shader):
-            fragment_shader = Shader(source=fragment_shader)
+            fragment_shader = Shader(
+                source=fragment_shader,
+                preprocessor_defs=preprocessor_defs.get_shader_defs("fragment"),
+            )
         if geometry_shader is not None and not isinstance(geometry_shader, Shader):
-            geometry_shader = Shader(source=geometry_shader)
+            geometry_shader = Shader(
+                source=geometry_shader,
+                preprocessor_defs=preprocessor_defs.get_shader_defs("geometry"),
+            )
         self.vertex_shader = vertex_shader
         self.fragment_shader = fragment_shader
         self.geometry_shader = geometry_shader
@@ -270,6 +305,7 @@ class Shader(traitlets.HasTraits):
         if ";" in source:
             # This is probably safe, right?  Enh, probably.
             return source
+
         # What this does is concatenate multiple (if available) source files.
         # This gets around GLSL's composition issues, which means we can have
         # functions that get called at each step in a ray tracing process, for
@@ -356,27 +392,70 @@ class Shader(traitlets.HasTraits):
         self.delete_shader()
 
 
+def _instantiate_shader_from_str(shader_type, value, preprocessor_defs=None):
+    shader_info = known_shaders[shader_type][value]
+    shader_info.setdefault("shader_type", shader_type)
+    shader_info["use_separate_blend"] = bool("blend_func_separate" in shader_info)
+    shader_info.setdefault("shader_name", value)
+    if preprocessor_defs is not None:
+        shader_info["preprocessor_defs"] = preprocessor_defs
+    return Shader(**shader_info)
+
+
 class ShaderTrait(traitlets.TraitType):
     default_value = None
     info_text = "A shader (vertex, fragment or geometry)"
 
     def validate(self, obj, value):
-        if isinstance(value, str):
+        if isinstance(value, str) or isinstance(value, tuple):
             try:
                 shader_type = self.metadata.get("shader_type", "vertex")
-                shader_info = known_shaders[shader_type][value]
-                shader_info.setdefault("shader_type", shader_type)
-                shader_info["use_separate_blend"] = bool(
-                    "blend_func_separate" in shader_info
+                if isinstance(value, tuple):
+                    preprocessor_defs = value[1]
+                    value = value[0]
+                else:
+                    preprocessor_defs = None
+                return _instantiate_shader_from_str(
+                    shader_type, value, preprocessor_defs=preprocessor_defs
                 )
-                shader_info.setdefault("shader_name", value)
-                shader = Shader(**shader_info)
-                return shader
             except KeyError:
                 self.error(obj, value)
         elif isinstance(value, Shader):
             return value
         self.error(obj, value)
+
+
+class PreprocessorDefinitionState:
+    def __init__(self):
+        self.vertex = {}
+        self.geometry = {}
+        self.fragment = {}
+
+    def get_dict(self, shader_type: str) -> dict:
+        """return the dict of definitions for specifed shader_type"""
+        return getattr(self, shader_type)
+
+    def add_definition(self, shader_type: str, value: Tuple[str, str]):
+        """add a definition for specified shader_type, will overwrite
+        existing definitions.
+        """
+        self.get_dict(shader_type)[value[0]] = value[1]
+
+    def clear_definition(self, shader_type: str, value: Tuple[str, str]):
+        """remove the definition of value for specified shader_type"""
+        self.get_dict(shader_type).pop(value[0])
+
+    def get_shader_defs(self, shader_type: str) -> Tuple[str, str]:
+        """return the preprocessor definition list for specified shader_type"""
+        return list(self.get_dict(shader_type).items())
+
+    def reset(self, shader_type: Optional[str] = None):
+        if shader_type is None:
+            self.vertex = {}
+            self.geometry = {}
+            self.fragment = {}
+        else:
+            setattr(self, shader_type, {})
 
 
 known_shaders = {}
