@@ -2,17 +2,35 @@ in vec4 v_model;
 flat in vec3 dx;
 flat in vec3 left_edge;
 flat in vec3 right_edge;
-flat in mat4 inverse_proj;
-flat in mat4 inverse_mvm;
-flat in mat4 inverse_pmvm;
+flat in mat4 inverse_proj;  // always cartesian
+flat in mat4 inverse_mvm; // always cartesian
+flat in mat4 inverse_pmvm; // always cartesian
 flat in ivec3 texture_offset;
 out vec4 output_color;
+
+flat in vec4 phi_plane_le;
+flat in vec4 phi_plane_re;
 
 bool within_bb(vec3 pos)
 {
     bvec3 left =  greaterThanEqual(pos, left_edge);
     bvec3 right = lessThanEqual(pos, right_edge);
     return all(left) && all(right);
+}
+
+vec3 transform_vec3(vec3 v) {
+    if (is_spherical) {
+        return vec3(
+            // in yt, phi is the polar angle from (0, 2pi), theta is the azimuthal
+            // angle (0, pi). the id_ values below are uniforms that depend on the
+            // yt dataset coordinate ordering
+            v[id_r] * sin(v[id_theta]) * cos(v[id_phi]),
+            v[id_r] * sin(v[id_theta]) * sin(v[id_phi]),
+            v[id_r] * cos(v[id_theta])
+        );
+    } else {
+        return v;
+    }
 }
 
 vec3 get_offset_texture_position(sampler3D tex, vec3 tex_curr_pos)
@@ -30,10 +48,151 @@ vec4 cleanup_phase(in vec4 curr_color, in vec3 dir, in float t0, in float t1);
 //   void (vec3 tex_curr_pos, inout vec4 curr_color, float tdelta, float t,
 //         vec3 direction);
 
+float get_ray_plane_intersection(vec3 p_normal, float p_constant, vec3 ray_origin, vec3 ray_dir)
+{
+    float n_dot_u = dot(p_normal, ray_dir);
+    float n_dot_ro = dot(p_normal, ray_origin);
+    // add check for n_dot_u == 0 (ray is parallel to plane)
+    if (n_dot_u == float(0.0))
+    {
+        // the ray is parallel to the plane. there are either no intersections
+        // or infinite intersections. In the second case, we are guaranteed
+        // to intersect one of the other faces, so we can drop this plane.
+        return INFINITY;
+    }
+
+    return (p_constant - n_dot_ro) / n_dot_u;
+}
+
+vec2 get_ray_sphere_intersection(float r, vec3 ray_origin, vec3 ray_dir)
+{
+    float dir_dot_dir = dot(ray_dir, ray_dir);
+    float ro_dot_ro = dot(ray_origin, ray_origin);
+    float dir_dot_ro = dot(ray_dir, ray_origin);
+    float rsq = r * r; // could be calculated in vertex shader
+
+    float a_2 = 2.0 * dir_dot_dir;
+    float b = 2.0 * dir_dot_ro;
+    float c =  ro_dot_ro - rsq;
+    float determinate = b*b - 2.0 * a_2 * c;
+    float cutoff_val = 0.0;
+    if (determinate < cutoff_val)
+    {
+        return vec2(INFINITY, INFINITY);
+    }
+    else if (determinate == cutoff_val)
+    {
+        return vec2(-b / a_2, INFINITY);
+    }
+    else
+    {
+        return vec2((-b - sqrt(determinate))/ a_2, (-b + sqrt(determinate))/ a_2);
+    }
+
+}
+
+vec2 get_ray_cone_intersection(float theta, vec3 ray_origin, vec3 ray_dir)
+{
+    // note: cos(theta) and vhat could be calculated in vertex shader
+    float costheta;
+    vec3 vhat;
+    if (theta > PI/2.0)
+    {
+        // if theta is past PI/2, the cone will point in negative z and the
+        // half angle should be measured from the -z axis, not +z.
+        vhat = vec3(0.0, 0.0, -1.0);
+        costheta = cos(PI - theta);
+    }
+    else
+    {
+        vhat = vec3(0.0, 0.0, 1.0);
+        costheta = cos(theta);
+    }
+    float cos2t = pow(costheta, 2);
+    // note: theta = PI/2.0 is well defined. determinate = 0 in that case and
+    // the cone becomes a plane in x-y.
+
+    float dir_dot_vhat = dot(ray_dir, vhat);
+    float dir_dot_dir = dot(ray_dir, ray_dir);
+    float ro_dot_vhat = dot(ray_origin, vhat);
+    float ro_dot_dir = dot(ray_origin, ray_dir);
+    float ro_dot_ro = dot(ray_origin, ray_dir);
+
+    float a_2 = 2.0*(pow(dir_dot_vhat, 2) - dir_dot_dir * cos2t);
+    float b = 2.0 * (ro_dot_vhat * dir_dot_vhat - ro_dot_dir*cos2t);
+    float c = pow(ro_dot_vhat, 2) - ro_dot_ro*cos2t;
+    float determinate = b*b - 2.0 * a_2 * c;
+    if (determinate < 0.0)
+    {
+        return vec2(INFINITY, INFINITY);
+    }
+    else if (determinate == 0.0)
+    {
+        return vec2(-b / a_2, INFINITY);
+    }
+    else
+    {
+        // note: it is possible to have real solutions that intersect the shadow cone
+        // and not the actual cone. those values should be discarded. But they will
+        // fail subsequent bounds checks for interesecting the volume, so we can
+        // just handle it there instead of adding another check here.
+        return vec2((-b - sqrt(determinate))/ a_2, (-b + sqrt(determinate))/ a_2);
+    }
+}
+
+void spherical_coord_shortcircuit()
+{
+    vec3 ray_position = v_model.xyz; // now spherical
+    vec3 ray_position_xyz = transform_vec3(ray_position); // cartesian
+    vec3 p0 = camera_pos.xyz; // cartesian
+    vec3 dir = -normalize(camera_pos.xyz - ray_position_xyz);
+    vec4 curr_color = vec4(0.0);
+
+    // intersections
+    vec2 t_sphere_outer = get_ray_sphere_intersection(right_edge[id_r], ray_position_xyz, dir);
+    if (isinf(t_sphere_outer[0]) && isinf(t_sphere_outer[1]))
+    {
+        // if there are no intersections with the outer sphere, then there
+        // will be no intersections with the remaining faces and we can stop
+        // looking.
+        discard;
+    }
+
+    vec2 t_sphere_inner = get_ray_sphere_intersection(left_edge[id_r], ray_position_xyz, dir);
+    float t_p_1 = get_ray_plane_intersection(vec3(phi_plane_le), phi_plane_le[3], ray_position_xyz, dir);
+    float t_p_2 = get_ray_plane_intersection(vec3(phi_plane_re), phi_plane_re[3], ray_position_xyz, dir);
+    vec2 t_cone_outer = get_ray_cone_intersection(right_edge[id_theta], ray_position_xyz, dir);
+    vec2 t_cone_inner= get_ray_cone_intersection(left_edge[id_theta], ray_position_xyz, dir);
+
+    // do the texture evaluation in the native coordinate space
+    vec3 range = (right_edge + dx/2.0) - (left_edge - dx/2.0);
+    vec3 nzones = range / dx;
+    vec3 ndx = 1.0/nzones;
+
+    vec3 tex_curr_pos = (ray_position - left_edge) / range;
+
+    tex_curr_pos = (tex_curr_pos * (1.0 - ndx)) + ndx/2.0;
+    bool sampled = sample_texture(tex_curr_pos, curr_color, 0.0, 0.0, vec3(0.0));
+    if (sampled) {
+        output_color = curr_color;
+    } else {
+        output_color = vec4(0.0);
+    }
+}
+
 void main()
 {
+    // Draws the block outline
+    // output_color = vec4(1.0);
+    // return;
+
     // Obtain screen coordinates
     // https://www.opengl.org/wiki/Compute_eye_space_from_window_space#From_gl_FragCoord
+    if (is_spherical) {
+        spherical_coord_shortcircuit();
+        return;
+    }
+
     vec3 ray_position = v_model.xyz;
 
     // Five samples
@@ -61,7 +220,7 @@ void main()
     temp_t = min(tmax.xx, tmax.yz);
     float t1 = min(temp_t.x, temp_t.y);
     t0 = max(t0, 0.0);
-    if (t1 <= t0) discard;
+    // if (t1 <= t0) discard;
 
     // Some more discussion of this here:
     //  http://prideout.net/blog/?p=64
