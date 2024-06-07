@@ -15,10 +15,10 @@ in Interactive Data Visualization
 
 from contextlib import ExitStack, contextmanager
 
+import matplotlib.pyplot as plt
 import numpy as np
 import traitlets
 import traittypes
-from matplotlib import colormaps as cm
 from OpenGL import GL
 
 # Set up a mapping from numbers to names
@@ -221,7 +221,7 @@ class ColormapTexture(Texture1D):
     @traitlets.validate("colormap_name")
     def _validate_name(self, proposal):
         try:
-            cm.get_cmap(proposal["value"])
+            plt.get_cmap(proposal["value"])
         except ValueError:
             raise traitlets.TraitError(
                 "Colormap name needs to be known by" "matplotlib"
@@ -230,7 +230,7 @@ class ColormapTexture(Texture1D):
 
     @traitlets.observe("colormap_name")
     def _observe_colormap_name(self, change):
-        cmap = cm.get_cmap(change["new"])
+        cmap = plt.get_cmap(change["new"])
         cmap_vals = np.array(cmap(np.linspace(0, 1, 256)), dtype="f4")
         self.data = cmap_vals
 
