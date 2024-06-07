@@ -15,10 +15,10 @@ in Interactive Data Visualization
 
 from contextlib import ExitStack, contextmanager
 
+import matplotlib.pyplot as plt
 import numpy as np
 import traitlets
 import traittypes
-import matplotlib.pyplot as plt
 from OpenGL import GL
 
 # Set up a mapping from numbers to names
