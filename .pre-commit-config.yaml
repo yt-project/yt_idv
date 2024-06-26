@@ -5,7 +5,8 @@ repos:
     - id: setup-cfg-fmt
       args: [
         --include-version-classifiers,
-        --max-py-version=3.10,
+        --max-py-version=3.11,
+        --min-py-version=3.9,
       ]
 -   repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v4.6.0
