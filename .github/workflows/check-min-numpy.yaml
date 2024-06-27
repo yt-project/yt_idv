@@ -1,4 +1,4 @@
-name: Run tests
+name: Run min numpy tests
 
 on: [pull_request]
 
@@ -12,10 +12,10 @@ jobs:
 
     steps:
     - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v3
+      uses: actions/setup-python@v5
       with:
         python-version: ${{ matrix.python-version }}
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - name: Install osmesa
       run: |
         sudo apt-get update && sudo apt-get upgrade
@@ -28,7 +28,7 @@ jobs:
       env:
           PYOPENGL_PLATFORM: osmesa
       run: pytest --html=report.html --self-contained-html
-    - uses: actions/upload-artifact@v3
+    - uses: actions/upload-artifact@v4
       name: Upload pytest report
       with:
         name: pytest-report

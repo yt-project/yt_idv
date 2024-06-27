@@ -2,12 +2,15 @@
 
 import base64
 
+import numpy as np
 import pytest
 import yt
 import yt.testing
 from pytest_html import extras
 
 import yt_idv
+from yt_idv.scene_components.curves import CurveCollectionRendering, CurveRendering
+from yt_idv.scene_data.curve import CurveCollection, CurveData
 
 
 @pytest.fixture(autouse=True)
@@ -58,6 +61,8 @@ def test_snapshots(osmesa_fake_amr, image_store):
     osmesa_fake_amr.scene.components[0].render_method = "projection"
     image_store(osmesa_fake_amr)
     osmesa_fake_amr.scene.components[0].render_method = "transfer_function"
+    image_store(osmesa_fake_amr)
+    osmesa_fake_amr.scene.components[0]._recompile_shader()
     image_store(osmesa_fake_amr)
 
 
@@ -115,4 +120,36 @@ def test_annotate_text(osmesa_empty, image_store):
 
 def test_isocontour_functionality(osmesa_fake_amr, image_store):
     osmesa_fake_amr.scene.components[0].render_method = "isocontours"
+    image_store(osmesa_fake_amr)
+
+
+def test_curves(osmesa_fake_amr, image_store):
+    # add a single curve
+
+    curved = CurveData()
+    x1d = np.linspace(0, 1, 10)
+    xyz = np.column_stack([x1d, x1d, np.zeros((10,))])
+    curved.add_data(xyz)
+    curve_render = CurveRendering(
+        data=curved, curve_rgba=(1.0, 0.0, 0.0, 1.0), line_width=4
+    )
+    curve_render.display_name = "single streamline"
+    osmesa_fake_amr.scene.data_objects.append(curved)
+    osmesa_fake_amr.scene.components.append(curve_render)
+    image_store(osmesa_fake_amr)
+
+    curve_collection = CurveCollection()
+    xyz = np.column_stack([x1d, np.zeros((10,)), x1d])
+    curve_collection.add_curve(xyz)
+    xyz = np.column_stack([np.zeros((10,)), x1d, x1d])
+    curve_collection.add_curve(xyz)
+    curve_collection.add_data()  # call add_data() after done adding curves
+
+    cc_render = CurveCollectionRendering(
+        data=curve_collection, curve_rgb=(0.2, 0.2, 0.2, 1.0), line_width=4
+    )
+    cc_render.display_name = "multiple streamlines"
+    osmesa_fake_amr.scene.data_objects.append(curve_collection)
+    osmesa_fake_amr.scene.components.append(cc_render)
+
     image_store(osmesa_fake_amr)
