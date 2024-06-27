@@ -62,6 +62,8 @@ def test_snapshots(osmesa_fake_amr, image_store):
     image_store(osmesa_fake_amr)
     osmesa_fake_amr.scene.components[0].render_method = "transfer_function"
     image_store(osmesa_fake_amr)
+    osmesa_fake_amr.scene.components[0]._recompile_shader()
+    image_store(osmesa_fake_amr)
 
 
 def test_slice(osmesa_fake_amr, image_store):
