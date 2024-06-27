@@ -1,9 +1,19 @@
 # History
 
+## 0.4.1
+
+Bug fix release to fix slicing issue, some test improvements.
+
+### Changes
+* add test for curves, fix traitlets deprecation warnings, update github action versions by @chrishavlin in https://github.com/yt-project/yt_idv/pull/128
+* BUG: Fix slice rendering by @chrishavlin in https://github.com/yt-project/yt_idv/pull/131
+
+**Full Changelog**: https://github.com/yt-project/yt_idv/compare/v0.4.0...v0.4.1
+
 ## 0.4.0
 This release provides full support for numpy 2 and a number of other changes related to deprecations and maintenance.
 
-### Changes in this release
+### Changes
 
 * update readthedocs config by @chrishavlin in https://github.com/yt-project/yt_idv/pull/99
 * Update dependency organization, build-test action by @chrishavlin in https://github.com/yt-project/yt_idv/pull/98
