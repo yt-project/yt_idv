@@ -1,4 +1,4 @@
-name: Run tests
+name: Run min numpy tests
 
 on: [pull_request]
 
