@@ -68,7 +68,12 @@ def test_snapshots(osmesa_fake_amr, image_store):
 
 def test_slice(osmesa_fake_amr, image_store):
     osmesa_fake_amr.scene.components[0].render_method = "slice"
-    image_store(osmesa_fake_amr)
+    osmesa_fake_amr.scene.components[0].slice_position = (0.5, 0.5, 0.5)
+    for ax in [0, 1, 2]:
+        normal = [0.0, 0.0, 0.0]
+        normal[ax] = 1.0
+        osmesa_fake_amr.scene.components[0].slice_normal = tuple(normal)
+        image_store(osmesa_fake_amr)
     osmesa_fake_amr.scene.components[0].slice_normal = (1.0, 1.0, 0.0)
     osmesa_fake_amr.scene.components[0].slice_position = (0.5, 0.25, 0.5)
     image_store(osmesa_fake_amr)
