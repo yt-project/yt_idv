@@ -62,5 +62,5 @@ void main()
     float map_sample = texture(bitmap_tex, tex_curr_pos).r;
     if (!(map_sample > 0.0)) discard;
 
-    output_color = texture(ds_tex, tex_curr_pos);
+    output_color = texture(ds_tex[0], tex_curr_pos);
 }
