@@ -1,5 +1,23 @@
 # History
 
+## 0.4.0
+This release provides full support for numpy 2 and a number of other changes related to deprecations and maintenance.
+
+### Changes in this release
+
+* update readthedocs config by @chrishavlin in https://github.com/yt-project/yt_idv/pull/99
+* Update dependency organization, build-test action by @chrishavlin in https://github.com/yt-project/yt_idv/pull/98
+* add 3.10,3.11 to CI, drop 3.8 test by @chrishavlin in https://github.com/yt-project/yt_idv/pull/97
+* fix some warnings by @chrishavlin in https://github.com/yt-project/yt_idv/pull/100
+* Don't use deprecated matplotlib.cm.get_cmap. by @anntzer in https://github.com/yt-project/yt_idv/pull/118
+* Updates for np 2 and more by @chrishavlin in https://github.com/yt-project/yt_idv/pull/123
+* Fix docs build by @chrishavlin in https://github.com/yt-project/yt_idv/pull/124
+
+### New Contributors
+* @anntzer made their first contribution in https://github.com/yt-project/yt_idv/pull/118
+
+**Full Changelog**: https://github.com/yt-project/yt_idv/compare/v0.3.1...v0.4.0
+
 ## 0.3.1
 
 * add a display_name attribute by @chrishavlin in [62](https://github.com/yt-project/yt_idv/pull/62)
