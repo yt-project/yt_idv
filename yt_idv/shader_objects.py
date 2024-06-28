@@ -239,6 +239,11 @@ class Shader(traitlets.HasTraits):
         This can either be a string containing a full source of a shader,
         an absolute path to a source file or a filename of a shader
         residing in the ./shaders/ directory.
+    allow_null : bool
+        If True (default) then shader compilation errors will be caught and
+        printed without raising exception (convenient for general use and for
+        developing new shaders). If False, any compilation errors will raise
+        a RunTimeError (useful for CI testing).
 
     """
 

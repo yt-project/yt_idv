@@ -163,6 +163,8 @@ def test_curves(osmesa_fake_amr, image_store):
 
 @pytest.fixture()
 def set_very_bad_shader():
+    # this temporarily points the default vertex shader source file to a
+    # bad shader that will raise compilation errors.
     known_shaders = shader_objects.known_shaders
     good_shader = known_shaders["vertex"]["default"]["source"]
     known_shaders["vertex"]["default"]["source"] = "bad_shader.vert.glsl"
@@ -171,6 +173,8 @@ def set_very_bad_shader():
 
 
 def test_bad_shader(osmesa_empty, set_very_bad_shader):
+    # this test is meant to check that a bad shader would indeed be caught
+    # by the subsequent test_shader_programs test.
     shader_name = "box_outline"
     program = shader_objects.component_shaders[shader_name]["default"]
 
