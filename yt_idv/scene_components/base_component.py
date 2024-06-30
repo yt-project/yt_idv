@@ -228,7 +228,7 @@ class SceneComponent(traitlets.HasTraits):
 
     @traitlets.default("final_pass_fragment")
     def _final_pass_fragment_default(self):
-        return "passthrough"
+        return "display_border"
 
     @traitlets.default("base_quad")
     def _default_base_quad(self):
