@@ -59,16 +59,19 @@ class SceneComponent(traitlets.HasTraits):
 
     display_name = traitlets.Unicode(allow_none=True)
 
-    final_pass_vertex = ShaderTrait(allow_none=True).tag(shader_type="fragment")
-    final_pass_fragment = ShaderTrait(allow_none=True).tag(shader_type="vertex")
+    final_pass_vertex = ShaderTrait(allow_none=True).tag(shader_type="vertex")
+    final_pass_fragment = ShaderTrait(allow_none=True).tag(shader_type="fragment")
     _final_pass = traitlets.Instance(ShaderProgram, allow_none=True)
     _final_pass_invalid = True
 
-    # These attributes are
+    # These attributes are just for colormap application
     cmap_min = traitlets.CFloat(None, allow_none=True)
     cmap_max = traitlets.CFloat(None, allow_none=True)
     cmap_log = traitlets.Bool(True)
     scale = traitlets.CFloat(1.0)
+
+    # This attribute determines whether or not this component is "active"
+    active = traitlets.Bool(True)
 
     @traitlets.observe("display_bounds")
     def _change_display_bounds(self, change):
@@ -333,6 +336,11 @@ class SceneComponent(traitlets.HasTraits):
         if draw_boundary > 0.0:
             with self.final_pass.enable() as p3:
                 p3._set_uniform("draw_boundary", float(draw_boundary))
+                if self.active:
+                    boundary_color = np.array([0.0, 0.0, 1.0, 1.0], dtype="float32")
+                else:
+                    boundary_color = np.array([0.5, 0.5, 0.5, 1.0], dtype="float32")
+                p3._set_uniform("boundary_color", boundary_color)
                 with self.base_quad.vertex_array.bind(p3):
                     GL.glViewport(x0, y0, w, h)
                     GL.glDrawArrays(GL.GL_TRIANGLES, 0, 6)
