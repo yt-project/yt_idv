@@ -59,6 +59,11 @@ class SceneComponent(traitlets.HasTraits):
 
     display_name = traitlets.Unicode(allow_none=True)
 
+    final_pass_vertex = ShaderTrait(allow_none=True).tag(shader_type="fragment")
+    final_pass_fragment = ShaderTrait(allow_none=True).tag(shader_type="vertex")
+    _final_pass = traitlets.Instance(ShaderProgram, allow_none=True)
+    _final_pass_invalid = True
+
     # These attributes are
     cmap_min = traitlets.CFloat(None, allow_none=True)
     cmap_max = traitlets.CFloat(None, allow_none=True)
@@ -217,6 +222,14 @@ class SceneComponent(traitlets.HasTraits):
     def _colormap_fragment_default(self):
         return component_shaders[self.name][self.render_method]["second_fragment"]
 
+    @traitlets.default("final_pass_vertex")
+    def _final_pass_vertex_default(self):
+        return "passthrough"
+
+    @traitlets.default("final_pass_fragment")
+    def _final_pass_fragment_default(self):
+        return "passthrough"
+
     @traitlets.default("base_quad")
     def _default_base_quad(self):
         bq = SceneData(
@@ -253,6 +266,16 @@ class SceneComponent(traitlets.HasTraits):
             self._program2_invalid = False
         return self._program2
 
+    @property
+    def final_pass(self):
+        if self._final_pass_invalid:
+            if self._final_pass is not None:
+                self._final_pass.delete_program()
+            self._final_pass = ShaderProgram(
+                self.final_pass_vertex, self.final_pass_fragment
+            )
+        return self._final_pass
+
     def _set_iso_uniforms(self, p):
         # these could be handled better by watching traits.
         p._set_uniform("iso_num_layers", int(len(self.iso_layers)))
@@ -268,6 +291,10 @@ class SceneComponent(traitlets.HasTraits):
     def run_program(self, scene):
         # Store this info, because we need to render into a framebuffer that is the
         # right size.
+        if self.display_bounds != (0.0, 1.0, 0.0, 1.0):
+            draw_boundary = 0.002
+        else:
+            draw_boundary = 0.0
         x0, y0, w, h = GL.glGetIntegerv(GL.GL_VIEWPORT)
         GL.glViewport(0, 0, w, h)
         if not self.visible:
@@ -302,6 +329,13 @@ class SceneComponent(traitlets.HasTraits):
                             # the framebuffer
                             GL.glViewport(x0, y0, w, h)
                             GL.glDrawArrays(GL.GL_TRIANGLES, 0, 6)
+
+        if draw_boundary > 0.0:
+            with self.final_pass.enable() as p3:
+                p3._set_uniform("draw_boundary", float(draw_boundary))
+                with self.base_quad.vertex_array.bind(p3):
+                    GL.glViewport(x0, y0, w, h)
+                    GL.glDrawArrays(GL.GL_TRIANGLES, 0, 6)
 
     def draw(self, scene, program):
         raise NotImplementedError
@@ -373,12 +407,16 @@ class SceneComponent(traitlets.HasTraits):
             "fragment_shader",
             "colormap_vertex",
             "colormap_fragment",
+            "final_pass_vertex",
+            "final_pass_fragment",
         )
         for shader_name in shaders:
             s = getattr(self, shader_name, None)
             if s:
                 s.delete_shader()
-        self._program1_invalid = self._program2_invalid = True
+        self._program1_invalid = self._program2_invalid = self._final_pass_invalid = (
+            True
+        )
         return True
 
     def _render_isolayer_inputs(self, imgui) -> bool:
