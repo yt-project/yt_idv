@@ -9,6 +9,7 @@ import yt.testing
 from pytest_html import extras
 
 import yt_idv
+from yt_idv import shader_objects
 from yt_idv.scene_components.curves import CurveCollectionRendering, CurveRendering
 from yt_idv.scene_data.curve import CurveCollection, CurveData
 
@@ -151,10 +152,71 @@ def test_curves(osmesa_fake_amr, image_store):
     curve_collection.add_data()  # call add_data() after done adding curves
 
     cc_render = CurveCollectionRendering(
-        data=curve_collection, curve_rgb=(0.2, 0.2, 0.2, 1.0), line_width=4
+        data=curve_collection, curve_rgba=(0.2, 0.2, 0.2, 1.0), line_width=4
     )
     cc_render.display_name = "multiple streamlines"
     osmesa_fake_amr.scene.data_objects.append(curve_collection)
     osmesa_fake_amr.scene.components.append(cc_render)
 
     image_store(osmesa_fake_amr)
+
+
+@pytest.fixture()
+def set_very_bad_shader():
+    # this temporarily points the default vertex shader source file to a
+    # bad shader that will raise compilation errors.
+    known_shaders = shader_objects.known_shaders
+    good_shader = known_shaders["vertex"]["default"]["source"]
+    known_shaders["vertex"]["default"]["source"] = "bad_shader.vert.glsl"
+    yield known_shaders
+    known_shaders["vertex"]["default"]["source"] = good_shader
+
+
+def test_bad_shader(osmesa_empty, set_very_bad_shader):
+    # this test is meant to check that a bad shader would indeed be caught
+    # by the subsequent test_shader_programs test.
+    shader_name = "box_outline"
+    program = shader_objects.component_shaders[shader_name]["default"]
+
+    vertex_shader = shader_objects._validate_shader(
+        "vertex", program["first_vertex"], allow_null=False
+    )
+    fragment_shader = shader_objects._validate_shader(
+        "fragment", program["first_fragment"], allow_null=False
+    )
+    with pytest.raises(RuntimeError, match="shader complilation error"):
+        _ = shader_objects.ShaderProgram(vertex_shader, fragment_shader, None)
+
+
+@pytest.mark.parametrize("shader_name", list(shader_objects.component_shaders.keys()))
+def test_shader_programs(osmesa_empty, shader_name):
+    for program in shader_objects.component_shaders[shader_name].values():
+
+        vertex_shader = shader_objects._validate_shader(
+            "vertex", program["first_vertex"], allow_null=False
+        )
+        assert isinstance(vertex_shader, shader_objects.Shader)
+        fragment_shader = shader_objects._validate_shader(
+            "fragment", program["first_fragment"], allow_null=False
+        )
+        assert isinstance(fragment_shader, shader_objects.Shader)
+        geometry_shader = program.get("first_geometry", None)
+        if geometry_shader is not None:
+            geometry_shader = shader_objects._validate_shader(
+                "geometry", geometry_shader, allow_null=False
+            )
+            assert isinstance(geometry_shader, shader_objects.Shader)
+
+        _ = shader_objects.ShaderProgram(
+            vertex_shader, fragment_shader, geometry_shader
+        )
+
+        colormap_vertex = shader_objects._validate_shader(
+            "vertex", program["second_vertex"], allow_null=False
+        )
+        assert isinstance(colormap_vertex, shader_objects.Shader)
+        colormap_fragment = shader_objects._validate_shader(
+            "fragment", program["second_fragment"], allow_null=False
+        )
+        assert isinstance(colormap_fragment, shader_objects.Shader)
+        _ = shader_objects.ShaderProgram(colormap_vertex, colormap_fragment)

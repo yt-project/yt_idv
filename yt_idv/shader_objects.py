@@ -239,10 +239,16 @@ class Shader(traitlets.HasTraits):
         This can either be a string containing a full source of a shader,
         an absolute path to a source file or a filename of a shader
         residing in the ./shaders/ directory.
+    allow_null : bool
+        If True (default) then shader compilation errors will be caught and
+        printed without raising exception (convenient for general use and for
+        developing new shaders). If False, any compilation errors will raise
+        a RunTimeError (useful for CI testing).
 
     """
 
     _shader = None
+    allow_null = traitlets.Bool(True)
     source = traitlets.Any()
     shader_name = traitlets.CUnicode()
     info = traitlets.CUnicode()
@@ -252,6 +258,7 @@ class Shader(traitlets.HasTraits):
     )
     blend_equation = GLValue("func add")
     depth_test = GLValue("always")
+    _filename = traitlets.Unicode()
 
     use_separate_blend = traitlets.Bool(False)
     blend_equation_separate = traitlets.Tuple(
@@ -295,6 +302,7 @@ class Shader(traitlets.HasTraits):
             fn = os.path.join(sh_directory, fn)
             if not os.path.isfile(fn):
                 raise YTInvalidShaderType(fn)
+            self._filename = fn
             full_source.append(open(fn).read())
         return "\n\n".join(full_source)
 
@@ -320,7 +328,11 @@ class Shader(traitlets.HasTraits):
         GL.glCompileShader(shader)
         result = GL.glGetShaderiv(shader, GL.GL_COMPILE_STATUS)
         if not (result):
-            raise RuntimeError(GL.glGetShaderInfoLog(shader))
+            msg = f"shader complilation error for {self.shader_name} {self.shader_type}"
+            if self._filename is not None:
+                msg += f" in {self._filename}."
+            msg += f"\n GL.glGetShaderInfoLog: \n {GL.glGetShaderInfoLog(shader)}"
+            raise RuntimeError(msg)
         self._shader = shader
 
     def setup_blend(self):
@@ -340,10 +352,13 @@ class Shader(traitlets.HasTraits):
             try:
                 self.compile()
             except RuntimeError as exc:
-                print(exc)
-                for line_num, line in enumerate(self.shader_source.split("\n")):
-                    print(f"{line_num + 1:05}: {line}")
-                self._enable_null_shader()
+                if self.allow_null:
+                    print(exc)
+                    for line_num, line in enumerate(self.shader_source.split("\n")):
+                        print(f"{line_num + 1:05}: {line}")
+                    self._enable_null_shader()
+                else:
+                    raise exc
         return self._shader
 
     def delete_shader(self):
@@ -356,6 +371,15 @@ class Shader(traitlets.HasTraits):
         self.delete_shader()
 
 
+def _validate_shader(shader_type, value, allow_null=True):
+    shader_info = known_shaders[shader_type][value]
+    shader_info.setdefault("shader_type", shader_type)
+    shader_info["use_separate_blend"] = bool("blend_func_separate" in shader_info)
+    shader_info.setdefault("shader_name", value)
+    shader = Shader(allow_null=allow_null, **shader_info)
+    return shader
+
+
 class ShaderTrait(traitlets.TraitType):
     default_value = None
     info_text = "A shader (vertex, fragment or geometry)"
@@ -364,14 +388,7 @@ class ShaderTrait(traitlets.TraitType):
         if isinstance(value, str):
             try:
                 shader_type = self.metadata.get("shader_type", "vertex")
-                shader_info = known_shaders[shader_type][value]
-                shader_info.setdefault("shader_type", shader_type)
-                shader_info["use_separate_blend"] = bool(
-                    "blend_func_separate" in shader_info
-                )
-                shader_info.setdefault("shader_name", value)
-                shader = Shader(**shader_info)
-                return shader
+                return _validate_shader(shader_type, value)
             except KeyError:
                 self.error(obj, value)
         elif isinstance(value, Shader):
