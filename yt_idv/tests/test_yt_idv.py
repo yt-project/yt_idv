@@ -126,6 +126,10 @@ def test_annotate_text(osmesa_empty, image_store):
 
 def test_isocontour_functionality(osmesa_fake_amr, image_store):
     osmesa_fake_amr.scene.components[0].render_method = "isocontours"
+    osmesa_fake_amr.scene.components[0].iso_log = False
+    osmesa_fake_amr.scene.components[0].iso_tol_is_pct = False
+    osmesa_fake_amr.scene.components[0].iso_tolerance[0] = 1
+    osmesa_fake_amr.scene.components[0].iso_layers[0] = -29
     image_store(osmesa_fake_amr)
 
 
