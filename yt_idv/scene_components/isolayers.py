@@ -1,6 +1,8 @@
-import traitlets
 import numpy as np
+import traitlets
+
 from yt_idv.gui_support import add_popup_help
+
 
 class Isolayers(traitlets.HasTraits):
     iso_tol_is_pct = traitlets.Bool(True)  # if True, the tolerance is a fraction
@@ -16,9 +18,9 @@ class Isolayers(traitlets.HasTraits):
         # values between the two forms.
         if change["old"]:
             # if True, we were taking the log, but now are not:
-            new_tol = [10 ** iso_tol for iso_tol in self.iso_tolerance]
+            new_tol = [10**iso_tol for iso_tol in self.iso_tolerance]
             self.iso_tolerance = new_tol
-            new_iso_layers = [10 ** iso_val for iso_val in self.iso_layers]
+            new_iso_layers = [10**iso_val for iso_val in self.iso_layers]
             self.iso_layers = new_iso_layers
         else:
             # we were not taking the log but now we are, so convert to the exponent
@@ -59,7 +61,9 @@ class Isolayers(traitlets.HasTraits):
             changed = changed or _
 
             imgui.next_column()
-            _, self.iso_tol_is_pct = imgui.checkbox("set tolerance in %", self.iso_tol_is_pct)
+            _, self.iso_tol_is_pct = imgui.checkbox(
+                "set tolerance in %", self.iso_tol_is_pct
+            )
             _ = add_popup_help(imgui, "If checked, the tolerance is a percent.")
             changed = changed or _
             imgui.columns(1)
@@ -97,7 +101,6 @@ class Isolayers(traitlets.HasTraits):
             _ = add_popup_help(imgui, "The tolerance of the isocontour layer.")
             changed = changed or _
 
-
             imgui.next_column()
             _, self.iso_layers_alpha[i] = imgui.input_float(
                 f"alpha {i}",
@@ -124,7 +127,7 @@ class Isolayers(traitlets.HasTraits):
     def _iso_layer_array(self):
         iso_vals = np.asarray(self.iso_layers, dtype="float32")
         if self.iso_log:
-            iso_vals = 10 ** iso_vals
+            iso_vals = 10**iso_vals
         return iso_vals
 
     def _get_sanitized_iso_layers(self, normalize=True):
@@ -133,8 +136,7 @@ class Isolayers(traitlets.HasTraits):
         iso_vals = self._iso_layer_array
 
         tols = self._get_sanitized_iso_tol()
-        iso_min_max = [iso_vals - tols / 2.,
-                       iso_vals + tols / 2.]
+        iso_min_max = [iso_vals - tols / 2.0, iso_vals + tols / 2.0]
 
         min_max_outputs = []
         for id in range(2):
@@ -152,7 +154,7 @@ class Isolayers(traitlets.HasTraits):
         tol = np.asarray(self.iso_tolerance)
         if self.iso_log:
             # the tol value is an exponent, convert
-            tol = 10 ** tol
+            tol = 10**tol
 
         if self.iso_tol_is_pct:
             # tolerance depends on the layer value

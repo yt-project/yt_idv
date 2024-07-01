@@ -104,7 +104,6 @@ class SceneComponent(traitlets.HasTraits):
         _ = add_popup_help(imgui, "Click to reset the colorbounds of the current view.")
         changed = changed or _
 
-
         return changed
 
     @traitlets.default("display_name")
@@ -220,8 +219,6 @@ class SceneComponent(traitlets.HasTraits):
             self._program2 = ShaderProgram(self.colormap_vertex, self.colormap_fragment)
             self._program2_invalid = False
         return self._program2
-
-
 
     def run_program(self, scene):
         # Store this info, because we need to render into a framebuffer that is the
