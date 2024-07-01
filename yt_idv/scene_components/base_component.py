@@ -29,8 +29,8 @@ class SceneComponent(traitlets.HasTraits):
     priority = traitlets.CInt(0)
     visible = traitlets.Bool(True)
     use_db = traitlets.Bool(False)  # use depth buffer
-    iso_tolerance = traitlets.CFloat(-1)  # the tolerance for finding isocontours
-    iso_tol_is_pct = traitlets.Bool(False)  # if True, the tolerance is a fraction
+    iso_tolerance = traitlets.CFloat(1)  # the tolerance for finding isocontours
+    iso_tol_is_pct = traitlets.Bool(True)  # if True, the tolerance is a fraction
     iso_log = traitlets.Bool(True)  # if True, iso values are base 10 exponents
     iso_layers = traitlets.List()  # the target values for isocontours
     iso_layers_alpha = traitlets.List()  # the transparency of isocontours
@@ -154,7 +154,10 @@ class SceneComponent(traitlets.HasTraits):
         # this adds an initial isocontour entry when the render method
         # switches to isocontours and if there are no layers yet.
         if change["new"] == "isocontours" and len(self.iso_layers) == 0:
-            self.iso_layers.append(0.0)
+            val =(self.data.min_val +self.data.max_val)/2.0
+            if self.iso_log:
+                val = np.log10(val)
+            self.iso_layers.append(val)
             self.iso_layers_alpha.append(1.0)
 
     @traitlets.default("fb")
@@ -257,13 +260,11 @@ class SceneComponent(traitlets.HasTraits):
         # these could be handled better by watching traits.
         p._set_uniform("iso_num_layers", int(len(self.iso_layers)))
         isolayervals = self._get_sanitized_iso_layers()
-        p._set_uniform("iso_layers", isolayervals)
-        p._set_uniform("iso_layer_tol", self._get_sanitized_iso_tol())
+        p._set_uniform("iso_layers_min", isolayervals[0])
+        p._set_uniform("iso_layers_max", isolayervals[1])
         avals = np.zeros((32,), dtype="float32")
         avals[: len(self.iso_layers)] = np.array(self.iso_layers_alpha)
         p._set_uniform("iso_alphas", avals)
-        p._set_uniform("iso_min", float(self.data.min_val))
-        p._set_uniform("iso_max", float(self.data.max_val))
 
     def run_program(self, scene):
         # Store this info, because we need to render into a framebuffer that is the
@@ -313,12 +314,21 @@ class SceneComponent(traitlets.HasTraits):
         if self.iso_log:
             iso_vals = 10**iso_vals
 
-        if normalize:
-            iso_vals = self.data._normalize_by_min_max(iso_vals)
+        tols = self._get_sanitized_iso_tol()
+        iso_min_max = [iso_vals - tols/2.,
+                       iso_vals + tols/2.]
 
-        full_array = np.zeros(32, dtype="float32")
-        full_array[: len(self.iso_layers)] = iso_vals
-        return full_array
+        min_max_outputs = []
+        for id in range(2):
+            vals = iso_min_max[id]
+            if normalize:
+                vals = self.data._normalize_by_min_max(vals)
+
+            full_array = np.zeros(32, dtype="float32")
+            full_array[: len(self.iso_layers)] = vals.astype("float32")
+            min_max_outputs.append(full_array)
+
+        return min_max_outputs
 
     def _get_sanitized_iso_tol(self):
         # isocontour selection conditions:
@@ -353,16 +363,16 @@ class SceneComponent(traitlets.HasTraits):
             tol = 10 ** float(self.iso_tolerance)
         else:
             tol = float(self.iso_tolerance)
-        # always normalize tolerance
-        tol = tol / self.data.val_range
 
         if self.iso_tol_is_pct:
             # tolerance depends on the layer value
             tol = tol * 0.01
-            raw_layers = self._get_sanitized_iso_layers(normalize=False)
-            final_tol = raw_layers * tol
+            iso_vals = np.asarray(self.iso_layers, dtype="float32")
+            if self.iso_log:
+                iso_vals = 10 ** iso_vals
+            final_tol = iso_vals * tol
         else:
-            final_tol = np.full((32,), tol, dtype="float32")
+            final_tol = np.full((len(self.iso_layers),), tol, dtype="float32")
         return final_tol
 
     def _recompile_shader(self) -> bool:

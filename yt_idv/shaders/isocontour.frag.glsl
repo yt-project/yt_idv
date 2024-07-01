@@ -124,10 +124,12 @@ void main()
             // current_data_value = (raw block value - iso_min) / (iso_range);
             // the iso_layer values below also come in already normalized.
             for (int i = 0; i < iso_num_layers; i++) {
-                if (abs(data_value - iso_layers[i]) <= iso_layer_tol[i]) {
-                    is_layer = true;
-                    curr_color.a = iso_alphas[i];
-                    break;
+                if (data_value >= iso_layers_min[i]){
+                    if (data_value <= iso_layers_max[i]){
+                        is_layer = true;
+                        curr_color.a = iso_alphas[i];
+                        break;
+                    }
                 }
             }
             if (is_layer) {
