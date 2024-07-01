@@ -32,6 +32,8 @@ loaded in yt.  It is written to provide both scripting and interactive access.
 
 ## Examples
 
+For examples, check out the scripts in the [examples directory](https://github.com/yt-project/yt_idv/tree/main/examples).
+
 ## Credits
 
 This package was initially created as part of [yt](https://yt-project.org), with the first iteration written by
