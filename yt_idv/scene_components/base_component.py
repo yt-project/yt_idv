@@ -1,4 +1,3 @@
-import numpy as np
 import traitlets
 from OpenGL import GL
 
