@@ -7,11 +7,12 @@ from OpenGL import GL
 from yt_idv.gui_support import add_popup_help
 from yt_idv.opengl_support import TransferFunctionTexture
 from yt_idv.scene_components.base_component import SceneComponent
+from yt_idv.scene_components.isolayers import Isolayers
 from yt_idv.scene_data.block_collection import BlockCollection
 from yt_idv.shader_objects import component_shaders
 
 
-class BlockRendering(SceneComponent):
+class BlockRendering(SceneComponent, Isolayers):
     """
     A class that renders block data.  It may do this in one of several ways,
     including mesh outline.  This allows us to render a single collection of
@@ -120,6 +121,9 @@ class BlockRendering(SceneComponent):
             changed = changed or _
             _ = add_popup_help(imgui, "The normal vector of the slicing plane.")
             changed = changed or _
+        elif self.render_method == "isocontours":
+            _ = self._render_isolayer_inputs(imgui)
+            changed = changed or _
 
         return changed
 
@@ -149,3 +153,5 @@ class BlockRendering(SceneComponent):
         shader_program._set_uniform("tf_log", float(self.tf_log))
         shader_program._set_uniform("slice_normal", np.array(self.slice_normal))
         shader_program._set_uniform("slice_position", np.array(self.slice_position))
+        if self.render_method == "isocontours":
+            self._set_iso_uniforms(shader_program)
