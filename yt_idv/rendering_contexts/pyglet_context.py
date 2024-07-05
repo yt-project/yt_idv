@@ -107,6 +107,11 @@ class PygletRenderingContext(pyglet.window.Window, BaseContext):
         self.set_position(0.5, 0.5)
 
     def on_mouse_press(self, x, y, button, modifiers):
+        self._currently_clicked = True
+        self._do_update = True
+
+    def on_mouse_release(self, x, y, button, modifiers):
+        self._currently_clicked = False
         self._do_update = True
 
     def on_mouse_drag(self, x, y, dx, dy, buttons, modifiers):
