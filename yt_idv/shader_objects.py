@@ -228,6 +228,48 @@ class ShaderProgram:
         GL.glUseProgram(0)
 
 
+class ComputeShaderProgram(ShaderProgram):
+    """
+    Wrapper class that compiles and links compute shaders.
+
+    This has very little shared code with a ShaderProgram, and is designed to be
+    used for compute shaders only.
+
+    Parameters
+    ----------
+
+    compute_shader : string
+        or :class:`yt.visualization.volume_rendering.shader_objects.ComputeShader`
+        The vertex shader used in the Interactive Data Visualization pipeline.
+    """
+
+    def __init__(self, compute_shader):
+        self.link(compute_shader)
+        self._uniform_funcs = OrderedDict()
+
+    def link(self, compute_shader):
+        """
+        Links the compute shader to the program.
+
+        Parameters
+        ----------
+        compute_shader : string
+            or :class:`yt.visualization.volume_rendering.shader_objects.ComputeShader`
+            The compute shader used in the Interactive Data Visualization pipeline.
+        """
+        self.program = GL.glCreateProgram()
+        if not isinstance(compute_shader, Shader):
+            compute_shader = Shader(source=compute_shader)
+        self.compute_shader = compute_shader
+        GL.glAttachShader(self.program, self.compute_shader.shader)
+        GL.glLinkProgram(self.program)
+        result = GL.glGetProgramiv(self.program, GL.GL_LINK_STATUS)
+        if not result:
+            raise RuntimeError(GL.glGetProgramInfoLog(self.program))
+        self.compute_shader.delete_shader()
+        self.introspect()
+
+
 class Shader(traitlets.HasTraits):
     """
     Creates a shader from source
@@ -252,7 +294,9 @@ class Shader(traitlets.HasTraits):
     source = traitlets.Any()
     shader_name = traitlets.CUnicode()
     info = traitlets.CUnicode()
-    shader_type = traitlets.CaselessStrEnum(("vertex", "fragment", "geometry"))
+    shader_type = traitlets.CaselessStrEnum(
+        ("vertex", "fragment", "geometry", "compute")
+    )
     blend_func = traitlets.Tuple(
         GLValue(), GLValue(), default_value=("src alpha", "dst alpha")
     )
@@ -382,7 +426,7 @@ def _validate_shader(shader_type, value, allow_null=True):
 
 class ShaderTrait(traitlets.TraitType):
     default_value = None
-    info_text = "A shader (vertex, fragment or geometry)"
+    info_text = "A shader (vertex, fragment, geometry or compute)"
 
     def validate(self, obj, value):
         if isinstance(value, str):
