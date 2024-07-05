@@ -12,8 +12,8 @@ from yt_idv.opengl_support import (
 )
 from yt_idv.scene_data.base_data import SceneData
 from yt_idv.shader_objects import (
-    ShaderProgram,
     ComputeShaderProgram,
+    ShaderProgram,
     ShaderTrait,
     component_shaders,
     default_shader_combos,
