@@ -2,9 +2,9 @@ import numpy as np
 import traitlets
 from OpenGL import GL
 
+from yt_idv.opengl_support import Texture1D
 from yt_idv.scene_annotations.base_annotation import SceneAnnotation
 from yt_idv.scene_data.block_collection import BlockCollection
-from yt_idv.opengl_support import Texture1D
 
 
 class BlockHistogram(SceneAnnotation):
