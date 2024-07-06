@@ -167,6 +167,7 @@ class Texture(traitlets.HasTraits):
     channels = GLValue("r32f")
     min_filter = GLValue("linear")
     mag_filter = GLValue("linear")
+    image_mode = GLValue("write only")
 
     @traitlets.default("texture_name")
     def _default_texture_name(self):
@@ -179,6 +180,23 @@ class Texture(traitlets.HasTraits):
         yield
         _ = GL.glActiveTexture(TEX_TARGETS[target])
         GL.glBindTexture(self.dim_enum, 0)
+
+    @contextmanager
+    def clear(self):
+        with self.bind_as_image(0, GL.GL_WRITE_ONLY):
+            GL.glClearTexImage(self.texture_name, 0, self.channels, GL.GL_FLOAT, None)
+            yield
+
+    @contextmanager
+    def bind_as_image(self, target=0, override_mode=None):
+        _ = GL.glActiveTexture(TEX_TARGETS[target])
+        mode = override_mode or self.image_mode
+        _ = GL.glBindImageTexture(
+            0, self.texture_name, 0, False, 0, mode, self.channels
+        )
+        yield
+        _ = GL.glActiveTexture(TEX_TARGETS[target])
+        GL.glBindImageTexture(0, 0, 0, False, 0, 0, 0)
 
 
 class Texture1D(Texture):
@@ -521,66 +539,6 @@ class Texture3DIterator(traitlets.HasTraits):
             yield i
         GL.glActiveTexture(tex_target)
         GL.glBindTexture(GL.GL_TEXTURE_3D, 0)
-
-
-class ImageTexture(traitlets.HasTraits):
-    image_texture_name = traitlets.CInt(-1)
-    # This is, generally speaking, read-only.  We don't want to write it from
-    # these objects.  Instead, we will read it from a texture object that is
-    # similarly bound.
-    data = traittypes.Array(None, allow_none=True)
-    channels = GLValue("r32f")
-    min_filter = GLValue("linear")
-    mag_filter = GLValue("linear")
-    image_mode = GLValue("write only")
-
-    @traitlets.default("image_texture_name")
-    def _default_image_texture_name(self):
-        return GL.glGenTextures(1)
-
-    @contextmanager
-    def clear(self, target=0):
-        with self.bind(0, GL.GL_WRITE_ONLY):
-            GL.glClearTexImage(
-                self.image_texture_name, 0, self.channels, GL.GL_FLOAT, None
-            )
-            yield
-
-    @contextmanager
-    def bind(self, target=0, override_mode=None):
-        _ = GL.glActiveTexture(TEX_TARGETS[target])
-        mode = override_mode or self.image_mode
-        _ = GL.glBindImageTexture(
-            0, self.image_texture_name, 0, False, 0, mode, self.channels
-        )
-        yield
-        _ = GL.glActiveTexture(TEX_TARGETS[target])
-        GL.glBindImageTexture(0, 0, 0, False, 0, 0, 0)
-
-
-# These require different semantics for creating the textures, as we still need
-# to allocate storage for them on the texture unit.
-
-
-class ImageTexture1D(ImageTexture):
-    boundary_x = TextureBoundary()
-    dims = 1
-    dims_enum = GLValue("texture 1d")
-
-
-class ImageTexture2D(ImageTexture):
-    boundary_x = TextureBoundary()
-    boundary_y = TextureBoundary()
-    dims = 2
-    dims_enum = GLValue("texture 2d")
-
-
-class ImageTexture3D(ImageTexture):
-    boundary_x = TextureBoundary()
-    boundary_y = TextureBoundary()
-    boundary_z = TextureBoundary()
-    dims = 3
-    dims_enum = GLValue("texture 3d")
 
 
 def compute_box_geometry(left_edge, right_edge):
