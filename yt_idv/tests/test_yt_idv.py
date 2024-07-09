@@ -11,6 +11,7 @@ from pytest_html import extras
 import yt_idv
 from yt_idv import shader_objects
 from yt_idv.scene_components.curves import CurveCollectionRendering, CurveRendering
+from yt_idv.scene_components.isolayers import Isolayers
 from yt_idv.scene_data.curve import CurveCollection, CurveData
 
 
@@ -125,11 +126,14 @@ def test_annotate_text(osmesa_empty, image_store):
 
 
 def test_isocontour_functionality(osmesa_fake_amr, image_store):
-    osmesa_fake_amr.scene.components[0].render_method = "isocontours"
-    osmesa_fake_amr.scene.components[0].iso_log = False
-    osmesa_fake_amr.scene.components[0].iso_tol_is_pct = False
-    osmesa_fake_amr.scene.components[0].iso_tolerance[0] = 1
-    osmesa_fake_amr.scene.components[0].iso_layers[0] = -29
+    sc = osmesa_fake_amr.scene
+    iso = Isolayers(data=sc.components[0].data)
+    sc.components.append(iso)
+
+    sc.components[1].iso_log = False
+    sc.components[1].iso_tol_is_pct = False
+    sc.components[1].iso_tolerance[0] = 1
+    sc.components[1].iso_layers[0] = -29
     image_store(osmesa_fake_amr)
 
 
