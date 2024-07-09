@@ -130,10 +130,11 @@ def test_isocontour_functionality(osmesa_fake_amr, image_store):
     iso = Isolayers(data=sc.components[0].data)
     sc.components.append(iso)
 
+    sc.components[0].visible = False
     sc.components[1].iso_log = False
-    sc.components[1].iso_tol_is_pct = False
-    sc.components[1].iso_tolerance[0] = 1
-    sc.components[1].iso_layers[0] = -29
+    sc.components[1].iso_tol_is_pct = True
+    sc.components[1].iso_tolerance[0] = 2.0
+    sc.components[1].iso_layers[0] = 0.5
     image_store(osmesa_fake_amr)
 
 
