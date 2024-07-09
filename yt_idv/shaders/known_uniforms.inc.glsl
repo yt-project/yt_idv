@@ -59,6 +59,6 @@ uniform vec4 curve_rgba;
 
 // isocontour control
 uniform int iso_num_layers;
-uniform float iso_layers[32];
-uniform float iso_layer_tol[32];
+uniform float iso_layers_min[32];
+uniform float iso_layers_max[32];
 uniform float iso_alphas[32];
