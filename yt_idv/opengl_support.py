@@ -167,6 +167,7 @@ class Texture(traitlets.HasTraits):
     channels = GLValue("r32f")
     min_filter = GLValue("linear")
     mag_filter = GLValue("linear")
+    image_mode = GLValue("write only")
 
     @traitlets.default("texture_name")
     def _default_texture_name(self):
@@ -179,6 +180,23 @@ class Texture(traitlets.HasTraits):
         yield
         _ = GL.glActiveTexture(TEX_TARGETS[target])
         GL.glBindTexture(self.dim_enum, 0)
+
+    @contextmanager
+    def clear(self):
+        with self.bind_as_image(0, GL.GL_WRITE_ONLY):
+            GL.glClearTexImage(self.texture_name, 0, self.channels, GL.GL_FLOAT, None)
+            yield
+
+    @contextmanager
+    def bind_as_image(self, target=0, override_mode=None):
+        _ = GL.glActiveTexture(TEX_TARGETS[target])
+        mode = override_mode or self.image_mode
+        _ = GL.glBindImageTexture(
+            0, self.texture_name, 0, False, 0, mode, self.channels
+        )
+        yield
+        _ = GL.glActiveTexture(TEX_TARGETS[target])
+        GL.glBindImageTexture(0, 0, 0, False, 0, 0, 0)
 
 
 class Texture1D(Texture):
