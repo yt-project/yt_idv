@@ -1,6 +1,6 @@
 repos:
 -   repo: https://github.com/asottile/setup-cfg-fmt
-    rev: v2.5.0
+    rev: v2.7.0
     hooks:
     - id: setup-cfg-fmt
       args: [
@@ -18,12 +18,12 @@ repos:
     - id: check-executables-have-shebangs
     - id: check-yaml
 -   repo: https://github.com/asottile/pyupgrade
-    rev: v3.17.0
+    rev: v3.18.0
     hooks:
     - id: pyupgrade
       args: [--py37-plus]
 -   repo: https://github.com/psf/black
-    rev: 24.8.0
+    rev: 24.10.0
     hooks:
     - id: black-jupyter
 
@@ -45,7 +45,7 @@ repos:
         flake8-2020==1.6.1,
       ]
 -   repo: https://github.com/asottile/blacken-docs
-    rev: 1.18.0
+    rev: 1.19.0
     hooks:
     -   id: blacken-docs
         additional_dependencies: [black==22.6.0]
