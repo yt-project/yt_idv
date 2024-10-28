@@ -14,11 +14,6 @@ from yt_idv.scene_components.curves import CurveCollectionRendering, CurveRender
 from yt_idv.scene_data.curve import CurveCollection, CurveData
 
 
-@pytest.fixture(autouse=True)
-def pyopengl_setup(monkeypatch):
-    monkeypatch.setenv("PYOPENGL_PLATFORM", "osmesa")
-
-
 @pytest.fixture()
 def osmesa_fake_amr():
     """Return an OSMesa context that has a "fake" AMR dataset added, with "radius"
