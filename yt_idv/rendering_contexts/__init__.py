@@ -1,7 +1,5 @@
 import os
 
-import OpenGL.error
-
 
 def render_context(engine="pyglet", **kwargs):
     """
@@ -18,6 +16,13 @@ def render_context(engine="pyglet", **kwargs):
     RenderingContext
 
     """
+
+    # PYOPENGL_PLATFORM must be set before any opengl imports
+    if engine in ("osmesa", "egl"):
+        os.environ["PYOPENGL_PLATFORM"] = engine
+
+    import OpenGL.error
+
     if engine == "pyglet":
         from .pyglet_context import PygletRenderingContext
 
@@ -35,12 +40,10 @@ def render_context(engine="pyglet", **kwargs):
                 raise Exception(extramsg) from oee
             raise oee
     elif engine == "osmesa":
-        os.environ["PYOPENGL_PLATFORM"] = "osmesa"
         from .osmesa_context import OSMesaRenderingContext
 
         return OSMesaRenderingContext(**kwargs)
     elif engine == "egl":
-        os.environ["PYOPENGL_PLATFORM"] = "egl"
         from .egl_context import EGLRenderingContext
 
         return EGLRenderingContext(**kwargs)
