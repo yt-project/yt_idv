@@ -1,4 +1,4 @@
-name: Publish Python distributions to PyPI
+name: Create new release
 
 on:
   push:
@@ -6,15 +6,15 @@ on:
       - 'v*' # Push events to matching v*, i.e. v1.0, v20.15.10
 
 jobs:
-  build-and-publish:
-    name: Build and Publish
+  build_and_publish:
+    name: Build and Publish to PyPI
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
-    - name: Set up Python 3.9
+    - name: Set up Python 3.10
       uses: actions/setup-python@v5
       with:
-        python-version: 3.9
+        python-version: '3.10'
     - name: Install pypa/build
       run: >-
           python -m
@@ -28,12 +28,24 @@ jobs:
           --sdist
           --outdir dist/
           .
-#   - name: Publish distribution to Test PyPI
-#     uses: pypa/gh-action-pypi-publish@master
-#     with:
-#       password: ${{ secrets.TEST_PYPI_API_TOKEN }}
-#       repository_url: https://test.pypi.org/legacy/
     - name: Publish distribution to PyPI
       uses: pypa/gh-action-pypi-publish@release/v1
       with:
         password: ${{ secrets.PYPI_API_TOKEN }}
+
+  create_gh_release:
+    name: Create Github release
+    needs: [build_and_publish]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ncipollo/release-action@v1
+        # https://github.com/ncipollo/release-action
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          draft: true
+          tag: ${{ github.ref }}
+          prerelease: false
+          name: Release ${{ github.ref }}
