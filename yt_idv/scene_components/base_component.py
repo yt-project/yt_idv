@@ -18,7 +18,9 @@ from yt_idv.shader_objects import (
     default_shader_combos,
 )
 
-_cmaps = ["arbre", "viridis", "magma", "doom"]
+_cmaps = ["arbre", "viridis", "magma", "doom", "cividis", "plasma", "RdBu", "coolwarm"]
+_cmaps += [f"{_}_r" for _ in _cmaps]
+_cmaps.sort()
 _buffers = ["frame", "depth"]
 
 
