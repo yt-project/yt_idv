@@ -5,6 +5,7 @@ import traitlets
 from yt.data_objects.data_containers import YTDataContainer
 
 from yt_idv.opengl_support import Texture3D, VertexArray, VertexAttribute
+from yt_idv.scene_data._geometry_utils import phi_normal_planes
 from yt_idv.scene_data.base_data import SceneData
 
 
@@ -41,6 +42,7 @@ class BlockCollection(SceneData):
         # Every time we change our data source, we wipe all existing ones.
         # We now set up our vertices into our current data source.
         vert, dx, le, re = [], [], [], []
+
         self.min_val = +np.inf
         self.max_val = -np.inf
         if self.scale:
@@ -77,26 +79,59 @@ class BlockCollection(SceneData):
         LE = np.array([b.LeftEdge for i, b in self.blocks.values()]).min(axis=0)
         RE = np.array([b.RightEdge for i, b in self.blocks.values()]).max(axis=0)
         self.diagonal = np.sqrt(((RE - LE) ** 2).sum())
+
         # Now we set up our buffer
         vert = np.array(vert, dtype="f4")
-        units = self.data_source.ds.units
-        ratio = (units.code_length / units.unitary).base_value
-        dx = np.array(dx, dtype="f4") * ratio
-        le = np.array(le, dtype="f4") * ratio
-        re = np.array(re, dtype="f4") * ratio
+        dx = np.array(dx, dtype="f4")
+        le = np.array(le, dtype="f4")
+        re = np.array(re, dtype="f4")
+        if self._yt_geom_str == "cartesian":
+            units = self.data_source.ds.units
+            ratio = (units.code_length / units.unitary).base_value
+            dx = dx * ratio
+            le = le * ratio
+            re = re * ratio
+        self._set_geometry_attributes(le, re)
         self.vertex_array.attributes.append(
             VertexAttribute(name="model_vertex", data=vert)
         )
         self.vertex_array.attributes.append(VertexAttribute(name="in_dx", data=dx))
         self.vertex_array.attributes.append(
-            VertexAttribute(name="in_left_edge", data=le)
+            VertexAttribute(name="in_left_edge", data=le.astype("f4"))
         )
         self.vertex_array.attributes.append(
-            VertexAttribute(name="in_right_edge", data=re)
+            VertexAttribute(name="in_right_edge", data=re.astype("f4"))
         )
 
         # Now we set up our textures
         self._load_textures()
+
+    @property
+    def _yt_geom_str(self):
+        # note: casting to string for compatibility with new and old geometry
+        # attributes (now an enum member in latest yt),
+        # see https://github.com/yt-project/yt/pull/4244
+        return str(self.data_source.ds.geometry)
+
+    def _set_geometry_attributes(self, le, re):
+        # set any vertex_array attributes that depend on the yt geometry type
+
+        if self._yt_geom_str == "cartesian":
+            return
+        elif self._yt_geom_str == "spherical":
+            axis_id = self.data_source.ds.coordinates.axis_id
+            phi_plane_le = phi_normal_planes(le, axis_id, cast_type="f4")
+            phi_plane_re = phi_normal_planes(re, axis_id, cast_type="f4")
+            self.vertex_array.attributes.append(
+                VertexAttribute(name="phi_plane_le", data=phi_plane_le)
+            )
+            self.vertex_array.attributes.append(
+                VertexAttribute(name="phi_plane_re", data=phi_plane_re)
+            )
+        else:
+            raise NotImplementedError(
+                f"{self.name} does not implement {self._yt_geom_str} geometries."
+            )
 
     def viewpoint_iter(self, camera):
         for block in self.data_source.tiles.traverse(viewpoint=camera.position):
