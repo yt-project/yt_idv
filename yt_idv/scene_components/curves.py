@@ -12,9 +12,9 @@ class CurveRendering(SceneComponent):
     """
 
     name = "curve_rendering"
-    data = traitlets.Instance(CurveData)
+    data = traitlets.Instance(CurveData, help="The curve data.")
     line_width = traitlets.CFloat(1.0)
-    curve_rgba = traitlets.Tuple((1.0, 1.0, 1.0, 1.0), trait=traitlets.CFloat())
+    curve_rgba = traitlets.Tuple((1.0, 1.0, 1.0, 1.0)).tag(trait=traitlets.CFloat())
     priority = 10
 
     def render_gui(self, imgui, renderer, scene):

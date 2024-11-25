@@ -1,6 +1,6 @@
-name: Run tests
+name: Run min numpy tests
 
-on: [push, pull_request]
+on: [pull_request]
 
 jobs:
   build:
@@ -8,7 +8,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: [3.9, '3.10', '3.11']
+        python-version: [3.9]
 
     steps:
     - name: Set up Python ${{ matrix.python-version }}
@@ -23,7 +23,7 @@ jobs:
     - name: Upgrade pip
       run: python -m pip install --upgrade pip
     - name: Setup yt_idv
-      run: python -m pip install -e .[test]
+      run: python -m pip install -e .[test,minimal]
     - name: Run Tests
       env:
           PYOPENGL_PLATFORM: osmesa
@@ -31,5 +31,5 @@ jobs:
     - uses: actions/upload-artifact@v4
       name: Upload pytest report
       with:
-        name: pytest-report-py-${{ matrix.python-version }}
+        name: pytest-report
         path: report.html

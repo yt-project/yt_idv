@@ -7,7 +7,7 @@ from .base_offscreen import OffscreenRenderingContext
 
 
 class EGLRenderingContext(OffscreenRenderingContext):
-    """Rendering context using EGL (experimental)
+    """Offscreen rendering context using EGL (experimental)
 
     Parameters
     ----------

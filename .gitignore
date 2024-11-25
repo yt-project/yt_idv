@@ -117,3 +117,6 @@ ENV/
 
 # Screenshots
 snap_*.png
+
+# pytest outputs
+report.html

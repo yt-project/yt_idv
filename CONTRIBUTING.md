@@ -48,6 +48,10 @@ If you are proposing a feature:
 
 Ready to contribute? Here's how to set up `yt_idv` for local development.
 
+### Development environment setup
+
+To set up your local development environment:
+
 1. Fork the `yt_idv` repo on GitHub.
 
 2. Clone your fork locally
@@ -61,10 +65,20 @@ Ready to contribute? Here's how to set up `yt_idv` for local development.
    ```
    $ mkvirtualenv yt_idv
    $ cd yt_idv/
-   $ python setup.py develop
+   $ python -m pip install -e .[dev]
    ```
 
-4. Create a branch for local development
+4. (optional) Initialize pre-commit if you want to catch linting errors throughout development. When you submit a pull request, the pre-commit.ci bot will run a number of checks so it can be easier to catch errors along the way.
+
+   ```
+   $ pre-commit install
+   ```
+
+### Developing
+
+Once your environment is setup, you are ready to make changes!
+
+1. Create a branch for local development
 
    ```
    $ git checkout -b name-of-your-bugfix-or-feature
@@ -72,18 +86,9 @@ Ready to contribute? Here's how to set up `yt_idv` for local development.
 
    Now you can make your changes locally.
 
-5. When you're done making changes, check that your changes pass flake8 and the
-   tests, including testing other Python versions with tox
+2. When you're done making changes,
 
-   ```
-   $ flake8 yt_idv tests
-   $ python setup.py test or pytest
-   $ tox
-   ```
-
-   To get flake8 and tox, just pip install them into your virtualenv.
-
-6. Commit your changes and push your branch to GitHub
+3. Commit your changes and push your branch to GitHub
 
    ```
    $ git add .
@@ -91,7 +96,16 @@ Ready to contribute? Here's how to set up `yt_idv` for local development.
    $ git push origin name-of-your-bugfix-or-feature
    ```
 
-7. Submit a pull request through the GitHub website.
+4. Submit a pull request through the GitHub website.
+
+### Running and writing tests
+
+The test suite is run with `pytest` using headless `osmesa` tests, so you need
+an environment with `osmesa` available. To run the tests:
+
+    ```
+    $ pytest yt_idv
+    ```
 
 ## Pull Request Guidelines
 
@@ -113,23 +127,47 @@ To run a subset of tests
 $ pytest tests.test_yt_idv
 ```
 
-
-## Deploying
-
-A reminder for the maintainers on how to deploy.
-Make sure all your changes are committed (including an entry in HISTORY.md).
-Then run
-
-```
-$ bump2version patch # possible: major / minor / patch
-$ git push
-$ git push --tags
-```
-
-Travis will then deploy to PyPI if tests pass.
-
 ## Releasing
 
-When a new tag is pushed, a new source release will be pushed up to PyPI.  You
-don't need to do much else besides that -- the github action should take care
-of it!
+To create a release, follow these steps:
+
+1. [prep for release](#prep-for-release)
+2. [create and push a new version tag](#create-and-push-a-new-version-tag)
+3. [cleanup from release](#cleanup-from-release)
+
+### prep for release
+
+First make sure the version specified in `setup.cfg` and `yt_idv/__init__.py`
+match the upcoming release and that there is an entry in `HISTORY.md`. Push up
+any updates to the version or history and then move on to the next step.
+
+Next, double check that your local main branch matches https://github.com/yt-project/yt_idv/:
+
+```shell
+git fetch --all
+git checkout main
+git rebase upstream/main
+```
+
+### create and push a new version tag
+
+Now create and push a new version tag. For example, for version 1.2.3:
+
+```shell
+git tag v1.2.3
+git push upstream v1.2.3
+```
+
+When a new tag is pushed, a GitHub action is triggered that will:
+
+1. build a new source release and push up to PyPI
+2. create a draft release on GitHub with auto-generated release notes
+
+After the action runs, go open up the draft release (which should be visible on the
+[releases page](https://github.com/yt-project/yt_idv/releases)), edit the notes to
+match the release notes in `HISTORY.md` for this version.
+
+### cleanup from release
+
+While not strictly necessary, it helps to bump the active development version
+in `setup.cfg` and `yt_idv/__init__.py` and add a blank entry in `HISTORY.md`.

@@ -11,6 +11,24 @@ class BaseContext:
         self.height = height
 
     def add_scene(self, ds, field, no_ghost=True):
+        """
+        add a :class:`SceneGraph` to the current context for the supplied yt data.
+
+        Parameters
+        ----------
+        ds:
+            A yt Dataset or Data Object to use as a source
+        field: Union[str, Tuple[str, str]]
+            the field to render. can be either a string or a yt field tuple of
+            the form ('field_type', 'field').
+        no_ghost: bool
+            if True, skip ghost zones to improve performance.
+
+        Returns
+        -------
+        scene: :class:`SceneGraph`
+
+        """
         from ..scene_graph import SceneGraph
 
         self.scene = SceneGraph.from_ds(ds, field, no_ghost=no_ghost)

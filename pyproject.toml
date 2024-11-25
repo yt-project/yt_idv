@@ -1,17 +1,17 @@
 [build-system]
 requires = [
-  "setuptools >= 19.6",
+  "setuptools >= 61.2",
   "wheel >= 0.36.2",
-  "Cython >= 0.29.21, < 3.0",
-  "oldest-supported-numpy",
+  "Cython>=3.0.3",
+  "numpy>=2.0.0",
 ]
 
 [tool.black]
 line-length = 88
 target-version = [
-  'py36',
-  'py37',
-  'py38',
+  'py39',
+  'py310',
+  'py311',
 ]
 include = '\.pyi?$'
 exclude = '''

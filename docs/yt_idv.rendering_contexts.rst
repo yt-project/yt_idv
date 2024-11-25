@@ -12,7 +12,7 @@ These are the top-level rendering contexts available in ``yt_idv``.
    :undoc-members:
    :show-inheritance:
 
-.. autoclass:: yt_idv.rendering_contexts.egl_context.OSMesaRenderingContext
+.. autoclass:: yt_idv.rendering_contexts.osmesa_context.OSMesaRenderingContext
    :members:
    :undoc-members:
    :show-inheritance:

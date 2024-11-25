@@ -7,6 +7,10 @@ from yt_idv.scene_data.base_data import SceneData
 
 
 class CurveData(SceneData):
+    """
+    Data component for a single curve.
+    """
+
     name = "curve_data"
     data = Array()
     n_vertices = traitlets.CInt()
@@ -17,6 +21,16 @@ class CurveData(SceneData):
         return va
 
     def add_data(self, curve):
+        """
+        add curve data
+
+        Parameters
+        ----------
+        curve: ArrayLike
+            an array of shape (N, 3) specifying the position (in x, y, z) of
+            N points.
+
+        """
         # curve is a collection of ndarray of points
         assert curve.shape[0] > 1  # a curve needs at least 2 points
         assert curve.shape[1] == 3  # a curve needs at least 3 dimensions
@@ -37,11 +51,24 @@ class CurveData(SceneData):
 
 
 class CurveCollection(CurveData):
+    """Data component for a collection of curves"""
+
     name = "curve_collection"
     data = Array()
     n_vertices = traitlets.CInt()
 
     def add_curve(self, curve):
+        """
+        add a single curve to the collection
+
+        Parameters
+        ----------
+        curve: ArrayLike
+            an array of shape (N, 3) specifying the position (in x, y, z) of
+            N points.
+
+        """
+
         # curve is a collection of ndarray of points
         assert curve.shape[0] > 1  # a curve needs at least 2 points
         assert curve.shape[1] == 3  # a curve needs at least 3 dimensions
@@ -58,6 +85,9 @@ class CurveCollection(CurveData):
             self.data = data
 
     def add_data(self):
+        """
+        finalize the current collection of curves.
+        """
         self.n_vertices = self.data.shape[0]
 
         self.vertex_array.attributes.append(

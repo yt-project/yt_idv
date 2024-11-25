@@ -27,8 +27,8 @@ class BlockRendering(SceneComponent):
     tf_min = traitlets.CFloat(0.0)
     tf_max = traitlets.CFloat(1.0)
     tf_log = traitlets.Bool(True)
-    slice_position = traitlets.Tuple((0.5, 0.5, 0.5), trait=traitlets.CFloat())
-    slice_normal = traitlets.Tuple((1.0, 0.0, 0.0), trait=traitlets.CFloat())
+    slice_position = traitlets.Tuple((0.5, 0.5, 0.5)).tag(trait=traitlets.CFloat())
+    slice_normal = traitlets.Tuple((1.0, 0.0, 0.0)).tag(trait=traitlets.CFloat())
 
     priority = 10
 

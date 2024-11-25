@@ -52,7 +52,7 @@ class TrackballCamera(BaseCamera):
 
     def update_orientation(self, start_x, start_y, end_x, end_y):
         self.orientation = update_orientation(
-            self.orientation, start_x, start_y, end_x, end_y
+            self.orientation.astype("float64"), start_x, start_y, end_x, end_y
         )
 
         rotation_matrix = quaternion_to_rotation_matrix(self.orientation)
