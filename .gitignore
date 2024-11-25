@@ -10,6 +10,8 @@ __pycache__/
 
 # Cythonized files
 yt_idv/utilities.c
+yt_idv/coordinate_utilities.c
+
 
 # imgui files
 imgui.ini
