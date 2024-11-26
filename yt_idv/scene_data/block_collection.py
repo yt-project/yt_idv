@@ -119,6 +119,11 @@ class BlockCollection(SceneData):
         if self._yt_geom_str == "cartesian":
             return
         elif self._yt_geom_str == "spherical":
+            from yt_idv.coordinate_utilities  import (
+                SphericalMixedCoordBBox,
+                cartesian_bboxes,
+            )
+
             axis_id = self.data_source.ds.coordinates.axis_id
             phi_plane_le = phi_normal_planes(le, axis_id, cast_type="f4")
             phi_plane_re = phi_normal_planes(re, axis_id, cast_type="f4")
@@ -128,6 +133,50 @@ class BlockCollection(SceneData):
             self.vertex_array.attributes.append(
                 VertexAttribute(name="phi_plane_re", data=phi_plane_re)
             )
+            # cartesian bbox: very ugly, just testing...
+            print("calculating cartesian bounding boxes.")
+            widths = re - le
+            centers = (le + re) / 2.0
+            bbox_handler = SphericalMixedCoordBBox()
+            r = centers[:, axis_id['r']].astype('float64')
+            theta = centers[:, axis_id['theta']].astype('float64')
+            phi = centers[:, axis_id['phi']].astype('float64')
+            dr = widths[:, axis_id['r']].astype('float64')
+            dtheta = widths[:, axis_id['theta']].astype('float64')
+            dphi = widths[:, axis_id['phi']].astype('float64')
+            x = np.full(r.shape, np.nan, dtype="float64")
+            y = np.full(r.shape, np.nan, dtype="float64")
+            z = np.full(r.shape, np.nan, dtype="float64")
+            dx = np.full(r.shape, np.nan, dtype="float64")
+            dy = np.full(r.shape, np.nan, dtype="float64")
+            dz = np.full(r.shape, np.nan, dtype="float64")
+            cartesian_bboxes(bbox_handler, r, theta, phi, dr, dtheta, dphi, x, y, z, dx, dy, dz)
+            le_cart = np.column_stack([x - dx/2., y - dy/2., z - dz/2.])
+            re_cart = np.column_stack([x + dx / 2., y + dy / 2., z + dz / 2.])
+
+            # normalize to viewport in (0, 1)
+            domain_le = []
+            domain_re = []
+            domain_wid = []
+            print("scaling cart bounds")
+            for idim in range(3):
+                domain_le.append(le_cart[:, idim].min())
+                domain_re.append(re_cart[:, idim].max())
+                domain_wid.append(domain_re[idim] - domain_le[idim])
+                le_cart[:, idim] = (le_cart[:, idim] - domain_le[idim]) / domain_wid[idim]
+                re_cart[:, idim] = (re_cart[:, idim] - domain_le[idim]) / domain_wid[idim]
+
+            le_cart = np.asarray(le_cart)
+            re_cart = np.asarray(re_cart)
+
+
+            self.vertex_array.attributes.append(
+                VertexAttribute(name="le_cart", data=le_cart.astype('f4'))
+            )
+            self.vertex_array.attributes.append(
+                VertexAttribute(name="re_cart", data=re_cart.astype('f4'))
+            )
+
         else:
             raise NotImplementedError(
                 f"{self.name} does not implement {self._yt_geom_str} geometries."

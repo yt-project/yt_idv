@@ -6,12 +6,16 @@ layout ( triangle_strip, max_vertices = 14 ) out;
 flat in vec3 vdx[];
 flat in vec3 vleft_edge[];
 flat in vec3 vright_edge[];
+flat in vec3 vleft_edge_cart[];
+flat in vec3 vright_edge_cart[];
 flat in vec4 vphi_plane_le[];
 flat in vec4 vphi_plane_re[];
 
 flat out vec3 dx;
 flat out vec3 left_edge;
 flat out vec3 right_edge;
+flat out vec3 left_edge_cart;
+flat out vec3 right_edge_cart;
 flat out mat4 inverse_proj; // always cartesian
 flat out mat4 inverse_mvm; // always cartesian
 flat out mat4 inverse_pmvm; // always cartesian
@@ -62,7 +66,7 @@ void main() {
 
     vec4 center = gl_in[0].gl_Position;  // always cartesian
 
-    vec3 width = vright_edge[0] - vleft_edge[0];
+    vec3 width = vright_edge_cart[0] - vleft_edge_cart[0];
 
     vec4 newPos;
     vec3 current_pos;
@@ -70,8 +74,11 @@ void main() {
     for (int i = 0; i < 14; i++) {
         // walks through each vertex of the triangle strip, emit it. need to
         // emit gl_Position in cartesian, but pass native coords out in v_model
-        current_pos = vec3(vleft_edge[0] + width * arrangement[aindex[i]]);
-        newPos = vec4(transform_vec3(current_pos), 1.0); // cartesian
+
+        // hm, this seems wrong. maybe should use the cartesian bounding box
+        // nodes for building the triangle strip primitive?
+        current_pos = vec3(vleft_edge_cart[0] + width * arrangement[aindex[i]]);
+        newPos = vec4(current_pos, 1.0); // cartesian
         gl_Position = projection * modelview * newPos;  // cartesian
         left_edge = vleft_edge[0];
         right_edge = vright_edge[0];
@@ -80,9 +87,13 @@ void main() {
         inverse_mvm = vinverse_mvm[0];
         phi_plane_le = vphi_plane_le[0];
         phi_plane_re = vphi_plane_re[0];
+        left_edge_cart = vleft_edge_cart[0];
+        right_edge_cart = vright_edge_cart[0];
         dx = vdx[0];
         v_model = vec4(current_pos, 1.0);
         texture_offset = ivec3(0);
         EmitVertex();
     }
+
+    // why no endprimitive?
 }
