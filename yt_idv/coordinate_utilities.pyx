@@ -301,3 +301,42 @@ def cartesian_bboxes(MixedCoordBBox bbox_handler,
             dx[i] = dxyz_i[0]
             dy[i] = dxyz_i[1]
             dz[i] = dxyz_i[2]
+
+
+@cython.cdivision(True)
+@cython.boundscheck(False)
+@cython.wraparound(False)
+def one_cartesian_bbox(MixedCoordBBox bbox_handler,
+                      np.float64_t pos0,
+                      np.float64_t pos1,
+                      np.float64_t pos2,
+                      np.float64_t dpos0,
+                      np.float64_t dpos1,
+                      np.float64_t dpos2,
+                                      ):
+    # calculates the cartesian bounding boxes around non-cartesian
+    # volume elements
+    #
+    # bbox_handler : a MixedCoordBBox child instance
+    # pos0, pos1, pos2: native coordinates of element centers
+    # dpos0, dpos1, dpos2: element widths in native coordinates
+    # x, y, z: cartesian centers of bounding boxes, modified in place
+    # dx, dy, dz : full-widths of the cartesian bounding boxes, modified in place
+
+    cdef int i
+    cdef np.float64_t xyz_i[3]
+    cdef np.float64_t dxyz_i[3]
+
+    with nogil:
+
+        bbox_handler.get_cartesian_bbox(pos0,
+                                        pos1,
+                                        pos2,
+                                        dpos0,
+                                        dpos1,
+                                        dpos2,
+                                        xyz_i,
+                                        dxyz_i)
+
+
+    return xyz_i, dxyz_i

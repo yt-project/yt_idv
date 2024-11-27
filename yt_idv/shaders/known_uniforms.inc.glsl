@@ -71,3 +71,8 @@ uniform bool is_spherical;
 uniform int id_theta;  // azimuthal angle (0 to pi) index in the yt dataset
 uniform int id_r;  // radial index in the yt dataset
 uniform int id_phi;  // polar angle (0 to 2pi) indexi n the yt dataset
+//uniform float x0;
+//uniform float y0;
+//uniform float z0;
+uniform vec3 cart_bbox_le;
+uniform float cart_bbox_max_width;

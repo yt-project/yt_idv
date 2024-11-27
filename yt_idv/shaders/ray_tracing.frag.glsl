@@ -27,26 +27,6 @@ bool within_spherical_bounds(vec3 pos)
     return all(left) && all(right);
 }
 
-vec3 transform_vec3(vec3 v) {
-    if (is_spherical) {
-        return vec3(
-            // in yt, phi is the polar angle from (0, 2pi), theta is the azimuthal
-            // angle (0, pi). the id_ values below are uniforms that depend on the
-            // yt dataset coordinate ordering
-            v[id_r] * sin(v[id_theta]) * cos(v[id_phi]),
-            v[id_r] * sin(v[id_theta]) * sin(v[id_phi]),
-            v[id_r] * cos(v[id_theta])
-        );
-    } else {
-        return v;
-    }
-}
-
-float ota(float vin){
-    // hard coded transformation to go from viewer coords of 0,1 to
-    // -1 to 1. need to generalize this.
-    return vin * 2.0 - 1.0;
-}
 vec3 cart_to_sphere_vec3(vec3 v) {
     // transform a single point in cartesian coords to spherical
     vec3 vout = vec3(0.,0.,0.);
@@ -54,16 +34,16 @@ vec3 cart_to_sphere_vec3(vec3 v) {
     // in yt, phi is the polar angle from (0, 2pi), theta is the azimuthal
     // angle (0, pi). the id_ values below are uniforms that depend on the
     // yt dataset coordinate ordering
-    float x = ota(v[0]);
-    float y = ota(v[1]);
-    float z = ota(v[2]);
+    float x = v[0] * cart_bbox_max_width + cart_bbox_le[0];
+    float y = v[1] * cart_bbox_max_width + cart_bbox_le[1];
+    float z = v[2] * cart_bbox_max_width + cart_bbox_le[2];
     vout[id_r] = x * x + y * y + z * z;
     vout[id_r] = sqrt(vout[id_r]);
     vout[id_theta] = acos(z / vout[id_r]);
     float phi = atan(y, x);
     // atan2 returns -pi to pi, adjust to (0, 2pi)
     if (phi < 0 ){
-        phi = phi + 2.0 * 3.141592653589793;
+        phi = phi + 2.0 * PI;
     }
     vout[id_phi] = phi;
 

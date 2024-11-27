@@ -1,5 +1,6 @@
 import contextlib
 
+import numpy as np
 import traitlets
 from OpenGL import GL
 from yt.data_objects.static_output import Dataset
@@ -258,10 +259,15 @@ class SceneGraph(traitlets.HasTraits):
             data_source = ds.all_data()
         else:
             ds, data_source = ds.ds, ds
-        center = ds.domain_center
-        pos = center + 1.5 * ds.domain_width.in_units("unitary")
-        near_plane = 3.0 * ds.index.get_smallest_dx().min().in_units("unitary").d
-        near_plane = max(near_plane, 1e-5)
+
+        if str(ds.geometry) == "cartesian":
+            center = ds.domain_center
+            pos = center + 1.5 * ds.domain_width.in_units("unitary")
+            near_plane = 3.0 * ds.index.get_smallest_dx().min().in_units("unitary").d
+            near_plane = max(near_plane, 1e-5)
+        else:
+            center, pos, near_plane = _get_camera_for_geometry(data_source, ds)
+            print(f"got geom specific settings: {center, pos, near_plane}")
 
         c = TrackballCamera(position=pos, focus=center, near_plane=near_plane)
         c.update_orientation(0, 0, 0, 0)
@@ -270,3 +276,24 @@ class SceneGraph(traitlets.HasTraits):
         if field is not None:
             scene.add_volume(data_source, field, no_ghost=no_ghost)
         return scene
+
+
+def _get_camera_for_geometry(data_source, ds):
+
+    if str(ds.geometry) == "spherical":
+        # always return the in-screen coordinate focus here. The shader
+        # will handle transforming to the expected full cartesian and
+        # spherical coordinates
+        center = np.array([0.5, 0.5, 0.5])
+        wid = np.array([1.0, 1.0, 1.0])
+
+        pos = center + 1.5 * wid
+
+        dx_aprox = wid[0] / np.max(ds.domain_dimensions)
+        near_plane = 3.0 * dx_aprox
+        near_plane = max(near_plane, 1e-5)
+        return center, pos, near_plane
+    else:
+        raise NotImplementedError(
+            "Only cartesian and spherical geometries are supported at present."
+        )
