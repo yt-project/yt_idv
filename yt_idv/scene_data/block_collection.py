@@ -78,6 +78,7 @@ class BlockCollection(SceneData):
 
         LE = np.array([b.LeftEdge for i, b in self.blocks.values()]).min(axis=0)
         RE = np.array([b.RightEdge for i, b in self.blocks.values()]).max(axis=0)
+        # TODO: this needs to depend on geometry type as well
         self.diagonal = np.sqrt(((RE - LE) ** 2).sum())
 
         # Now we set up our buffer
@@ -154,7 +155,7 @@ class BlockCollection(SceneData):
             le_cart = np.column_stack([x - dx/2., y - dy/2., z - dz/2.])
             re_cart = np.column_stack([x + dx / 2., y + dy / 2., z + dz / 2.])
 
-            # normalize to viewport in (0, 1)
+            # normalize to viewport in (0, 1) ???
             domain_le = []
             domain_re = []
             domain_wid = []

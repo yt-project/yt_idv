@@ -43,16 +43,17 @@ vec3 transform_vec3(vec3 v) {
 }
 
 float ota(float vin){
+    // hard coded transformation to go from viewer coords of 0,1 to
+    // -1 to 1. need to generalize this.
     return vin * 2.0 - 1.0;
 }
 vec3 cart_to_sphere_vec3(vec3 v) {
     // transform a single point in cartesian coords to spherical
     vec3 vout = vec3(0.,0.,0.);
 
-//    0, 1 to -1 to 1 (hard code
-// in yt, phi is the polar angle from (0, 2pi), theta is the azimuthal
-// angle (0, pi). the id_ values below are uniforms that depend on the
-// yt dataset coordinate ordering
+    // in yt, phi is the polar angle from (0, 2pi), theta is the azimuthal
+    // angle (0, pi). the id_ values below are uniforms that depend on the
+    // yt dataset coordinate ordering
     float x = ota(v[0]);
     float y = ota(v[1]);
     float z = ota(v[2]);
@@ -101,7 +102,7 @@ void main()
 
     // Five samples
     vec3 dx_cart = right_edge_cart - left_edge_cart;
-    vec3 step_size = dx_cart/ 20.; //sample_factor;
+    vec3 step_size = dx_cart/ sample_factor;
     vec3 dir = -normalize(camera_pos.xyz - ray_position);
     dir = max(abs(dir), 0.0001) * sign(dir);
     vec4 curr_color = vec4(0.0);

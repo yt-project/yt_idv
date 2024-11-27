@@ -26,25 +26,6 @@ flat out vec4 vphi_plane_re;
 flat out vec3 vleft_edge_cart;
 flat out vec3 vright_edge_cart;
 
-//vec3 transform_vec3(vec3 v) {
-//    if (is_spherical) {
-//        // in yt, phi is the polar angle from (0, 2pi), theta is the azimuthal
-//        // angle (0, pi). the id_ values below are uniforms that depend on the
-//        // yt dataset coordinate ordering
-//        return vec3(
-//            v[id_r] * sin(v[id_theta]) * cos(v[id_phi]),
-//            v[id_r] * sin(v[id_theta]) * sin(v[id_phi]),
-//            v[id_r] * cos(v[id_theta])
-//        );
-//    } else {
-//        return v;
-//    }
-//}
-//
-//vec4 transform_vec4(vec4 v) {
-////    vec3 v3 = transform_vec3(vec3(v));
-//    return vec4(v3[0], v3[1], v3[2], v[3]);
-//}
 
 void main()
 {
@@ -58,7 +39,7 @@ void main()
     vinverse_pmvm = inverse(projection * modelview);
     gl_Position = projection * modelview * vv_model; //transform_vec4(model_vertex);
 
-    // spherical
+    // native coordinates
     vdx = vec3(in_dx);
     vleft_edge = vec3(in_left_edge);
     vright_edge = vec3(in_right_edge);

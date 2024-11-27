@@ -47,20 +47,6 @@ uniform vec3 arrangement[8] = vec3[](
 
 uniform int aindex[14] = int[](6, 7, 4, 5, 1, 7, 3, 6, 2, 4, 0, 1, 2, 3);
 
-vec3 transform_vec3(vec3 v) {
-    if (is_spherical) {
-        // in yt, phi is the polar angle from (0, 2pi), theta is the azimuthal
-        // angle (0, pi). the id_ values below are uniforms that depend on the
-        // yt dataset coordinate ordering
-        return vec3(
-            v[id_r] * sin(v[id_theta]) * cos(v[id_phi]),
-            v[id_r] * sin(v[id_theta]) * sin(v[id_phi]),
-            v[id_r] * cos(v[id_theta])
-        );
-    } else {
-        return v;
-    }
-}
 
 void main() {
 
