@@ -267,7 +267,6 @@ class SceneGraph(traitlets.HasTraits):
             near_plane = max(near_plane, 1e-5)
         else:
             center, pos, near_plane = _get_camera_for_geometry(data_source, ds)
-            print(f"got geom specific settings: {center, pos, near_plane}")
 
         c = TrackballCamera(position=pos, focus=center, near_plane=near_plane)
         c.update_orientation(0, 0, 0, 0)
