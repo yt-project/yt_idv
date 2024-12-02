@@ -76,21 +76,21 @@ class BlockCollection(SceneData):
         if hasattr(self.max_val, "in_units"):
             self.max_val = self.max_val.d
 
-        LE = np.array([b.LeftEdge for i, b in self.blocks.values()]).min(axis=0)
-        RE = np.array([b.RightEdge for i, b in self.blocks.values()]).max(axis=0)
-        self.diagonal = np.sqrt(((RE - LE) ** 2).sum())
-
         # Now we set up our buffer
         vert = np.array(vert, dtype="f4")
         dx = np.array(dx, dtype="f4")
-        le = np.array(le, dtype="f4")
-        re = np.array(re, dtype="f4")
+        le = np.array(le)
+        re = np.array(re)
         if self._yt_geom_str == "cartesian":
             units = self.data_source.ds.units
             ratio = (units.code_length / units.unitary).base_value
             dx = dx * ratio
             le = le * ratio
             re = re * ratio
+            LE = np.array([b.LeftEdge for i, b in self.blocks.values()]).min(axis=0)
+            RE = np.array([b.RightEdge for i, b in self.blocks.values()]).max(axis=0)
+            self.diagonal = np.sqrt(((RE - LE) ** 2).sum())
+
         self._set_geometry_attributes(le, re)
         self.vertex_array.attributes.append(
             VertexAttribute(name="model_vertex", data=vert)
@@ -133,8 +133,8 @@ class BlockCollection(SceneData):
             self.vertex_array.attributes.append(
                 VertexAttribute(name="phi_plane_re", data=phi_plane_re)
             )
-            # cartesian bbox: very ugly, just testing...
-            print("calculating cartesian bounding boxes.")
+            # cartesian bbox calcualtions
+            # TODO: clean this up by rewriting the cython a bit...
             widths = re - le
             centers = (le + re) / 2.0
             bbox_handler = SphericalMixedCoordBBox()
@@ -156,7 +156,7 @@ class BlockCollection(SceneData):
             le_cart = np.column_stack([x - dx / 2.0, y - dy / 2.0, z - dz / 2.0])
             re_cart = np.column_stack([x + dx / 2.0, y + dy / 2.0, z + dz / 2.0])
 
-            # normalize to viewport in (0, 1), preserving ratio of the bounding box
+            # cartesian le, re, width of whole domain
             domain_le = []
             domain_re = []
             domain_wid = []
@@ -165,6 +165,7 @@ class BlockCollection(SceneData):
                 domain_re.append(re_cart[:, idim].max())
                 domain_wid.append(domain_re[idim] - domain_le[idim])
 
+            # normalize to viewport in (0, 1), preserving ratio of the bounding box
             max_wid = np.max(domain_wid)
             for idim in range(3):
                 le_cart[:, idim] = (le_cart[:, idim] - domain_le[idim]) / max_wid
@@ -172,6 +173,10 @@ class BlockCollection(SceneData):
 
             le_cart = np.asarray(le_cart)
             re_cart = np.asarray(re_cart)
+
+            # these will get passed down as uniforms to go from screen coords of
+            # 0,1 to cartesian coords of domain_le to domain_re from which full
+            # spherical coords can be calculated.
             self.cart_bbox_max_width = max_wid
             self.cart_bbox_le = np.array(domain_le).astype("f4")
 
@@ -182,6 +187,9 @@ class BlockCollection(SceneData):
                 VertexAttribute(name="re_cart", data=re_cart.astype("f4"))
             )
 
+            # does not seem that diagonal is used anywhere, but recalculating to
+            # be safe...
+            self.diagonal = np.sqrt(((re_cart - le_cart) ** 2).sum())
         else:
             raise NotImplementedError(
                 f"{self.name} does not implement {self._yt_geom_str} geometries."

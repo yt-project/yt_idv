@@ -14,9 +14,9 @@ in vec3 le_cart;
 in vec3 re_cart;
 
 flat out vec4 vv_model;
-flat out mat4 vinverse_proj;  // always cartesian
-flat out mat4 vinverse_mvm;  // always cartesian
-flat out mat4 vinverse_pmvm; // always cartesian
+flat out mat4 vinverse_proj;
+flat out mat4 vinverse_mvm;
+flat out mat4 vinverse_pmvm;
 flat out vec3 vdx;
 flat out vec3 vleft_edge;
 flat out vec3 vright_edge;
@@ -29,15 +29,14 @@ flat out vec3 vright_edge_cart;
 
 void main()
 {
-    // camera uniforms:
-    // projection, modelview
+    // camera uniforms: projection, modelview
     vv_model = model_vertex;
     vinverse_proj = inverse(projection);
 
     // inverse model-view-matrix
     vinverse_mvm = inverse(modelview);
     vinverse_pmvm = inverse(projection * modelview);
-    gl_Position = projection * modelview * vv_model; //transform_vec4(model_vertex);
+    gl_Position = projection * modelview * model_vertex;
 
     // native coordinates
     vdx = vec3(in_dx);

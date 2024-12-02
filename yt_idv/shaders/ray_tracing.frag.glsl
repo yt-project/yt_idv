@@ -2,25 +2,17 @@ in vec4 v_model;
 flat in vec3 dx;
 flat in vec3 left_edge;
 flat in vec3 right_edge;
+flat in mat4 inverse_proj;
+flat in mat4 inverse_mvm;
+flat in mat4 inverse_pmvm;
 flat in vec3 left_edge_cart;
 flat in vec3 right_edge_cart;
-flat in mat4 inverse_proj;  // always cartesian
-flat in mat4 inverse_mvm; // always cartesian
-flat in mat4 inverse_pmvm; // always cartesian
+flat in vec4 phi_plane_le;
+flat in vec4 phi_plane_re;
 flat in ivec3 texture_offset;
 out vec4 output_color;
 
-flat in vec4 phi_plane_le;
-flat in vec4 phi_plane_re;
-
 bool within_bb(vec3 pos)
-{
-    bvec3 left =  greaterThanEqual(pos, left_edge_cart);
-    bvec3 right = lessThanEqual(pos, right_edge_cart);
-    return all(left) && all(right);
-}
-
-bool within_bb_sp(vec3 pos)
 {
     bvec3 left =  greaterThanEqual(pos, left_edge);
     bvec3 right = lessThanEqual(pos, right_edge);
@@ -61,17 +53,17 @@ bool sample_texture(vec3 tex_curr_pos, inout vec4 curr_color, float tdelta,
                     float t, vec3 dir);
 vec4 cleanup_phase(in vec4 curr_color, in vec3 dir, in float t0, in float t1);
 
+// This main() function will call a function called sample_texture at every
+// step along the ray.  sample_texture must be of the form
+//   void (vec3 tex_curr_pos, inout vec4 curr_color, float tdelta, float t,
+//         vec3 direction);
 void main()
 {
-    // Draws the block outline
-    // output_color = vec4(1.0);
-    // return;
 
     // Obtain screen coordinates
     // https://www.opengl.org/wiki/Compute_eye_space_from_window_space#From_gl_FragCoord
-
     vec3 ray_position = v_model.xyz;
-    vec3 ray_position_sp = cart_to_sphere_vec3(ray_position);
+    vec3 ray_position_native;
 
     output_color = vec4(0.);
 
@@ -92,7 +84,7 @@ void main()
     } else {
         tl = (left_edge - camera_pos)*idir;
         tr = (right_edge - camera_pos)*idir;
-        dx_cart = right_edge - left_edge;
+        dx_cart = dx;
     }
     vec3 step_size = dx_cart/ sample_factor;
 
@@ -109,7 +101,7 @@ void main()
     temp_t = min(tmax.xx, tmax.yz);
     float t1 = min(temp_t.x, temp_t.y);
     t0 = max(t0, 0.0);
-    // if (t1 <= t0) discard;
+    if (t1 <= t0) discard;
 
     // Some more discussion of this here:
     //  http://prideout.net/blog/?p=64
@@ -131,10 +123,10 @@ void main()
     vec3 tex_curr_pos = vec3(0.0);
     vec3 tex_min = vec3(0.0 + 1. * dx/2.0);
     vec3 tex_max = vec3(1.0 - 1. * dx/2.0);
-    bool within_el = true;
 
     bool sampled;
     bool ever_sampled = false;
+    bool within_el = true;
 
     vec4 v_clip_coord;
     float f_ndc_depth;
@@ -146,20 +138,17 @@ void main()
 
         // texture position
         if (is_spherical) {
-            ray_position_sp = cart_to_sphere_vec3(ray_position);
-            within_el = within_bb_sp(ray_position_sp);
+            ray_position_native = cart_to_sphere_vec3(ray_position);
+            within_el = within_bb(ray_position_native);
         } else {
-            ray_position_sp = ray_position;
-            within_el = true;
+            ray_position_native = ray_position;
         }
 
         if (within_el) {
-            tex_curr_pos = (ray_position_sp - left_edge) / range;  // Scale from 0 .. 1
+            tex_curr_pos = (ray_position_native - left_edge) / range;  // Scale from 0 .. 1
             // But, we actually need it to be 0 + normalized dx/2 to 1 - normalized dx/2
             tex_curr_pos = (tex_curr_pos * (1.0 - ndx)) + ndx/2.0;
             sampled = sample_texture(tex_curr_pos, curr_color, tdelta, t, dir);
-            // sampled = true;
-            // curr_color = vec4(1., 0., 0., 1.);
         }
 
         if (sampled) {

@@ -1,8 +1,6 @@
 layout ( points ) in;
 layout ( triangle_strip, max_vertices = 14 ) out;
 
-// note: all in/out variables below are always in native coordinates (e.g.,
-// spherical or cartesian) except when noted.
 flat in vec3 vdx[];
 flat in vec3 vleft_edge[];
 flat in vec3 vright_edge[];
@@ -16,14 +14,14 @@ flat out vec3 left_edge;
 flat out vec3 right_edge;
 flat out vec3 left_edge_cart;
 flat out vec3 right_edge_cart;
-flat out mat4 inverse_proj; // always cartesian
-flat out mat4 inverse_mvm; // always cartesian
-flat out mat4 inverse_pmvm; // always cartesian
+flat out mat4 inverse_proj;
+flat out mat4 inverse_mvm;
+flat out mat4 inverse_pmvm;
 out vec4 v_model;
 
-flat in mat4 vinverse_proj[];  // always cartesian
-flat in mat4 vinverse_mvm[]; // always cartesian
-flat in mat4 vinverse_pmvm[]; // always cartesian
+flat in mat4 vinverse_proj[];
+flat in mat4 vinverse_mvm[];
+flat in mat4 vinverse_pmvm[];
 flat in vec4 vv_model[];
 
 flat out ivec3 texture_offset;
@@ -50,10 +48,10 @@ uniform int aindex[14] = int[](6, 7, 4, 5, 1, 7, 3, 6, 2, 4, 0, 1, 2, 3);
 
 void main() {
 
-    vec4 center = gl_in[0].gl_Position;  // always cartesian
+    vec4 center = gl_in[0].gl_Position;
+    vec3 width, le;
+    vec4 newPos;
 
-    vec3 width;
-    vec3 le;
     if (is_spherical){
         width = vright_edge_cart[0] - vleft_edge_cart[0];
         le = vleft_edge_cart[0];
@@ -62,18 +60,13 @@ void main() {
         le = vleft_edge[0];
     }
 
-    vec4 newPos;
-    vec3 current_pos;
-
     for (int i = 0; i < 14; i++) {
         // walks through each vertex of the triangle strip, emit it. need to
-        // emit gl_Position in cartesian, but pass native coords out in v_model
+        // emit gl_Position in cartesian, pass along other attributes in native
+        // coordinates
 
-        // hm, this seems wrong. maybe should use the cartesian bounding box
-        // nodes for building the triangle strip primitive?
-        current_pos = vec3(le + width * arrangement[aindex[i]]);
-        newPos = vec4(current_pos, 1.0); // cartesian
-        gl_Position = projection * modelview * newPos;  // cartesian
+        newPos = vec4(le + width * arrangement[aindex[i]], 1.0);
+        gl_Position = projection * modelview * newPos;
         left_edge = vleft_edge[0];
         right_edge = vright_edge[0];
         inverse_pmvm = vinverse_pmvm[0];
@@ -84,10 +77,9 @@ void main() {
         left_edge_cart = vleft_edge_cart[0];
         right_edge_cart = vright_edge_cart[0];
         dx = vdx[0];
-        v_model = vec4(current_pos, 1.0);
+        v_model = newPos;
         texture_offset = ivec3(0);
-        EmitVertgex();
+        EmitVertex();
     }
 
-    // why no endprimitive?
 }
