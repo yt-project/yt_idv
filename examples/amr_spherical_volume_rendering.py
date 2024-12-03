@@ -16,6 +16,7 @@ bbox_options = {
     "north_shell": np.array([[0.8, 1.0], [0.0, 2 * np.pi], [0, 0.5 * np.pi]]),
     "south_hemi": np.array([[0.1, 1.0], [0.0, 2 * np.pi], [0.5 * np.pi, np.pi]]),
     "ew_hemi": np.array([[0.1, 1.0], [0.0, np.pi], [0.0, np.pi]]),
+    "quadrant_shell": np.array([[0.6, 1.0], [0.0, np.pi / 2], [0.0, np.pi / 2]]),
 }
 sz = (256, 256, 256)
 fake_data = {"density": np.random.random(sz)}
