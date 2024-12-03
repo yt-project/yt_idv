@@ -5,7 +5,6 @@ import traitlets
 from yt.data_objects.data_containers import YTDataContainer
 
 from yt_idv.opengl_support import Texture3D, VertexArray, VertexAttribute
-from yt_idv.scene_data._geometry_utils import phi_normal_planes
 from yt_idv.scene_data.base_data import SceneData
 
 
@@ -125,14 +124,6 @@ class BlockCollection(SceneData):
             )
 
             axis_id = self.data_source.ds.coordinates.axis_id
-            phi_plane_le = phi_normal_planes(le, axis_id, cast_type="f4")
-            phi_plane_re = phi_normal_planes(re, axis_id, cast_type="f4")
-            self.vertex_array.attributes.append(
-                VertexAttribute(name="phi_plane_le", data=phi_plane_le)
-            )
-            self.vertex_array.attributes.append(
-                VertexAttribute(name="phi_plane_re", data=phi_plane_re)
-            )
             # cartesian bbox calcualtions
             # TODO: clean this up by rewriting the cython a bit...
             widths = re - le

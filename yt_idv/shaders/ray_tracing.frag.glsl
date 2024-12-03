@@ -7,8 +7,6 @@ flat in mat4 inverse_mvm;
 flat in mat4 inverse_pmvm;
 flat in vec3 left_edge_cart;
 flat in vec3 right_edge_cart;
-flat in vec4 phi_plane_le;
-flat in vec4 phi_plane_re;
 flat in ivec3 texture_offset;
 out vec4 output_color;
 
