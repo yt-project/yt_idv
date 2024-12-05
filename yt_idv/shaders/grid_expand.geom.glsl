@@ -4,10 +4,14 @@ layout ( triangle_strip, max_vertices = 14 ) out;
 flat in vec3 vdx[];
 flat in vec3 vleft_edge[];
 flat in vec3 vright_edge[];
+flat in vec3 vleft_edge_cart[];
+flat in vec3 vright_edge_cart[];
 
 flat out vec3 dx;
 flat out vec3 left_edge;
 flat out vec3 right_edge;
+flat out vec3 left_edge_cart;
+flat out vec3 right_edge_cart;
 flat out mat4 inverse_proj;
 flat out mat4 inverse_mvm;
 flat out mat4 inverse_pmvm;
@@ -36,22 +40,35 @@ uniform vec3 arrangement[8] = vec3[](
 
 uniform int aindex[14] = int[](6, 7, 4, 5, 1, 7, 3, 6, 2, 4, 0, 1, 2, 3);
 
+
 void main() {
 
     vec4 center = gl_in[0].gl_Position;
-
-    vec3 width = vright_edge[0] - vleft_edge[0];
-
+    vec3 width, le;
     vec4 newPos;
 
+    if (is_spherical){
+        width = vright_edge_cart[0] - vleft_edge_cart[0];
+        le = vleft_edge_cart[0];
+    } else {
+        width = vright_edge[0] - vleft_edge[0];
+        le = vleft_edge[0];
+    }
+
     for (int i = 0; i < 14; i++) {
-        newPos = vec4(vleft_edge[0] + width * arrangement[aindex[i]], 1.0);
+        // walks through each vertex of the triangle strip, emit it. need to
+        // emit gl_Position in cartesian, pass along other attributes in native
+        // coordinates
+
+        newPos = vec4(le + width * arrangement[aindex[i]], 1.0);
         gl_Position = projection * modelview * newPos;
         left_edge = vleft_edge[0];
         right_edge = vright_edge[0];
         inverse_pmvm = vinverse_pmvm[0];
         inverse_proj = vinverse_proj[0];
         inverse_mvm = vinverse_mvm[0];
+        left_edge_cart = vleft_edge_cart[0];
+        right_edge_cart = vright_edge_cart[0];
         dx = vdx[0];
         v_model = newPos;
         texture_offset = ivec3(0);
