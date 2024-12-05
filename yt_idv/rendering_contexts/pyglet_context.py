@@ -129,7 +129,7 @@ class PygletRenderingContext(pyglet.window.Window, BaseContext):
 
         camera = self.scene.camera  # current camera
         dpos = (
-            0.1
+            camera.scroll_delta
             * (camera.position - camera.focus)
             / np.linalg.norm(camera.position - camera.focus)
         )

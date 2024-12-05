@@ -1,3 +1,4 @@
+import math
 import imgui
 import matplotlib.pyplot as plt
 import numpy as np
@@ -72,6 +73,12 @@ class SimpleGUI:
         if not imgui.tree_node("Camera"):
             return
         changed = False
+        _, scroll_delta = imgui.slider_float(
+            "Log Scroll Delta", math.log10(scene.camera.scroll_delta), -3.0, 0.0
+        )
+        if _:
+            scene.camera.scroll_delta = 10**scroll_delta
+            changed = True
         with scene.camera.hold_trait_notifications():
             for attr in ("position", "up", "focus"):
                 arr = getattr(scene.camera, attr)
