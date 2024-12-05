@@ -143,10 +143,10 @@ cdef void _reduce_2_bboxes(np.float64_t[3] xyz_0,
     cdef int ndim = 3
 
     for idim in range(ndim):
-        le_i = min(xyz_0[idim] - dxyz_0[idim]/2.,
-                   xyz_1[idim] - dxyz_1[idim]/2.)
-        re_i = max(xyz_0[idim] + dxyz_0[idim]/2.,
-                   xyz_1[idim] + dxyz_1[idim]/2.)
+        le_i = fmin(xyz_0[idim] - dxyz_0[idim]/2.,
+                    xyz_1[idim] - dxyz_1[idim]/2.)
+        re_i = fmax(xyz_0[idim] + dxyz_0[idim]/2.,
+                    xyz_1[idim] + dxyz_1[idim]/2.)
         xyz[idim] = (le_i + re_i)/2.
         dxyz[idim] = re_i - le_i
 
