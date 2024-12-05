@@ -81,6 +81,9 @@ class BlockCollection(SceneData):
         le = np.array(le)
         re = np.array(re)
         if self._yt_geom_str == "cartesian":
+            # Note: the block LeftEdge and RightEdge arrays are plain np arrays in
+            # units of code_length, so need to convert to unitary units (in range 0,1)
+            # after the fact:
             units = self.data_source.ds.units
             ratio = (units.code_length / units.unitary).base_value
             dx = dx * ratio
