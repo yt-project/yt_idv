@@ -130,10 +130,31 @@ def spherical_to_cartesian(np.ndarray r,
         return x, y, z
 
 
+cdef void _reduce_2_bboxes(np.float64_t[3] xyz_0,
+                           np.float64_t[3] dxyz_0,
+                           np.float64_t[3] xyz_1,
+                           np.float64_t[3] dxyz_1,
+                           np.float64_t[3] xyz,
+                           np.float64_t[3] dxyz) noexcept nogil:
+
+    # find the effective bounding box given 2 others
+    cdef np.float64_t le_i, re_i
+    cdef int idim
+    cdef int ndim = 3
+
+    for idim in range(ndim):
+        le_i = min(xyz_0[idim] - dxyz_0[idim]/2.,
+                   xyz_1[idim] - dxyz_1[idim]/2.)
+        re_i = max(xyz_0[idim] + dxyz_0[idim]/2.,
+                   xyz_1[idim] + dxyz_1[idim]/2.)
+        xyz[idim] = (le_i + re_i)/2.
+        dxyz[idim] = re_i - le_i
+
+
 cdef class MixedCoordBBox:
     # abstract class for calculating cartesian bounding boxes
     # from non-cartesian grid elements.
-    cdef void get_cartesian_bbox(self,
+    cdef int get_cartesian_bbox(self,
                                 np.float64_t pos0,
                                 np.float64_t pos1,
                                 np.float64_t pos2,
@@ -148,65 +169,99 @@ cdef class MixedCoordBBox:
 
 cdef class SphericalMixedCoordBBox(MixedCoordBBox):
     # Cartesian bounding boxes of spherical grid elements
-    cdef void get_cartesian_bbox(self,
+    cdef int get_cartesian_bbox(self,
                         np.float64_t pos0,  # r
                         np.float64_t pos1,  # theta
                         np.float64_t pos2,  # phi
                         np.float64_t dpos0, # r
                         np.float64_t dpos1, # theta
                         np.float64_t dpos2, # phi
-                        np.float64_t xyz_i[3],
-                        np.float64_t dxyz_i[3]
+                        np.float64_t[3] xyz_i,
+                        np.float64_t[3] dxyz_i,
                         ) noexcept nogil:
+        """
+        Calculate the cartesian bounding box for a single spherical volume element.
+
+        Parameters
+        ----------
+        pos0: float
+            radius value at element center
+        pos1: float
+            co-latitude angle value at element center, in range (0, pi) (theta in yt)
+        pos2: float
+            azimuthal angle value at element center, in range (0, 2pi) (phi in yt)
+        dpos0: float
+            radial width of element
+        dpos1: float
+            co-latitude angular width of element
+        pos2: float
+            azimuthal anglular width of element
+        xyz_i:
+            3-element array to store the center of the resulting bounding box
+        dxyz_i:
+            3-element array to store the width of the resulting bounding box
+
+        Returns
+        -------
+        int
+            error code: 0 for success, 1 if something went wrong...
+
+        Note: this function is recursive! If either angular width is above a cutoff (of
+        0.2 radians or about 11 degrees), the element will be recursively divided.
+        """
 
         cdef np.float64_t max_angle = 0.2  # about 11 degrees, if smaller, will subsample
         cdef np.float64_t dpos2_2, dpos1_2  # half-widths
-        cdef np.float64_t pos2_2, pos1_2 # centers of half elements
-        cdef np.float64_t xyz_i2_0[3], dxyz_i2_0[3]
-        cdef np.float64_t xyz_i2_1[3], dxyz_i2_1[3]
-        cdef np.float64_t le_i[3], re_i[3]
-        cdef int i
-        cdef int ndim = 3
+        cdef np.float64_t pos2_2, pos1_2  # centers of half elements
+        cdef np.float64_t[3] xyz_0, dxyz_0  # additional 1st sample point if needed
+        cdef np.float64_t[3] xyz_1, dxyz_1  # additional 2nd sample point if needed
 
         if dpos1 < max_angle and dpos2 < max_angle:
             self._get_cartesian_bbox(
-                            np.float64_t pos0,
-                            np.float64_t pos1,
-                            np.float64_t pos2,
-                            np.float64_t dpos0,
-                            np.float64_t dpos1,
-                            np.float64_t dpos2,
-                            np.float64_t xyz_i,
-                            np.float64_t dxyz_i
+                            pos0, pos1,pos2,
+                            dpos0, dpos1, dpos2,
+                            xyz_i, dxyz_i
                             )
-        elif dpos1 >= max_angle and dpos2 < max_angle:
+        elif dpos1 >= max_angle:
             # split into two, recursively get bbox, then get min/max of
             # the bboxes
 
             # first sample
             dpos1_2 = dpos1 / 2.0
-            pos1_2 = pos2 - dpos1_2 / 2.
+            pos1_2 = pos1 - dpos1_2 / 2.
             self.get_cartesian_bbox(
-                pos0, pos1_2, pos2, dpos0, dpos1_2, dpos2, xyz_i2_0, dxyz_i2_0
+                pos0, pos1_2, pos2, dpos0, dpos1_2, dpos2, xyz_0, dxyz_0
             )
 
             # second sample
-            pos1_2 = pos2 + dpos1_2 / 2.
+            pos1_2 = pos1 + dpos1_2 / 2.
             self.get_cartesian_bbox(
-                pos0, pos1_2, pos2, dpos0, dpos1_2, dpos2, xyz_i2_1, dxyz_i2_1
+                pos0, pos1_2, pos2, dpos0, dpos1_2, dpos2, xyz_1, dxyz_1
             )
-            for idim in range(ndim):
-                le_i[idim] = min(xyz_i2_0[idim] - dxyz_i2_0[idim]/2.,
-                                 xyz_i2_1[idim] - dxyz_i2_1[idim]/2.)
-                re_i[idim] = max(xyz_i2_0[idim] + dxyz_i2_0[idim]/2.,
-                                 xyz_i2_1[idim] + dxyz_i2_1[idim]/2.)
-                xyz_i[idim] = (le_i[idim] + re_i[idim])/2.
-                dxyz_i[idim] = re_i[idim] - le_i[idim]
 
-        elif dpos1 < max_angle and dpos2 >= max_angle:
-            pass
+            _reduce_2_bboxes(xyz_0, dxyz_0, xyz_1, dxyz_1, xyz_i, dxyz_i)
+
+        elif dpos2 >= max_angle:
+            # first sample
+            dpos2_2 = dpos2 / 2.0
+            pos2_2 = pos2 - dpos2_2 / 2.
+            self.get_cartesian_bbox(
+                pos0, pos1, pos2_2, dpos0, dpos1, dpos2_2, xyz_0, dxyz_0
+            )
+
+            # second sample
+            pos2_2 = pos2 + dpos2_2 / 2.
+            self.get_cartesian_bbox(
+                pos0, pos1, pos2_2, dpos0, dpos1, dpos2_2, xyz_1, dxyz_1
+            )
+
+            _reduce_2_bboxes(xyz_0, dxyz_0, xyz_1, dxyz_1, xyz_i, dxyz_i)
         else:
-            # they are both over the limit!
+            # this should be unreachable. Do not need to check for the case where
+            # both dpos2 and dpos1 > max angle because of the recursive call!
+            return 1
+        return 0
+
 
     cdef void _get_cartesian_bbox(self,
                         np.float64_t pos0,
@@ -215,8 +270,8 @@ cdef class SphericalMixedCoordBBox(MixedCoordBBox):
                         np.float64_t dpos0,
                         np.float64_t dpos1,
                         np.float64_t dpos2,
-                        np.float64_t xyz_i[3],
-                        np.float64_t dxyz_i[3]
+                        np.float64_t[3] xyz_i,
+                        np.float64_t[3] dxyz_i
                         ) noexcept nogil:
 
         cdef np.float64_t r_i, theta_i, phi_i, dr_i, dtheta_i, dphi_i
@@ -338,22 +393,24 @@ def cartesian_bboxes(MixedCoordBBox bbox_handler,
     # x, y, z: cartesian centers of bounding boxes, modified in place
     # dx, dy, dz : full-widths of the cartesian bounding boxes, modified in place
 
-    cdef int i, n_pos
-    cdef np.float64_t xyz_i[3]
-    cdef np.float64_t dxyz_i[3]
+    cdef int i, n_pos, i_result
+    cdef np.float64_t[3] xyz_i
+    cdef np.float64_t[3] dxyz_i
+    cdef int failure = 0
 
     n_pos = pos0.size
     with nogil:
         for i in range(n_pos):
 
-            bbox_handler.get_cartesian_bbox(pos0[i],
-                                            pos1[i],
-                                            pos2[i],
-                                            dpos0[i],
-                                            dpos1[i],
-                                            dpos2[i],
-                                            xyz_i,
-                                            dxyz_i)
+            i_result = bbox_handler.get_cartesian_bbox(pos0[i],
+                                                    pos1[i],
+                                                    pos2[i],
+                                                    dpos0[i],
+                                                    dpos1[i],
+                                                    dpos2[i],
+                                                    xyz_i,
+                                                    dxyz_i)
+            failure += i_result
 
             x[i] = xyz_i[0]
             y[i] = xyz_i[1]
@@ -361,3 +418,6 @@ def cartesian_bboxes(MixedCoordBBox bbox_handler,
             dx[i] = dxyz_i[0]
             dy[i] = dxyz_i[1]
             dz[i] = dxyz_i[2]
+
+    if failure > 0:
+        raise RuntimeError("Unexpected error in get_cartesian_bbox.")

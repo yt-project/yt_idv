@@ -37,6 +37,9 @@ if __name__ == "__main__":
         "\nIf a single string is provided, a field type of gas is assumed."
     )
     parser.add_argument("-f", "--field", default="index,phi", help=msg)
+    parser.add_argument(
+        "-np", "--nprocs", default=64, help="number of grids to decompose domain to"
+    )
 
     args = parser.parse_args()
 
@@ -59,11 +62,13 @@ if __name__ == "__main__":
         )
     bbox = bbox_options[args.domain]
 
+    nprocs = int(args.nprocs)
+
     ds = yt.load_uniform_grid(
         fake_data,
         sz,
         bbox=bbox,
-        nprocs=128,
+        nprocs=nprocs,
         geometry="spherical",
         axis_order=("r", "phi", "theta"),
         length_unit=1,
