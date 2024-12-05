@@ -22,7 +22,7 @@ from .opengl_support import GLValue, num_to_const
 
 _NULL_SOURCES = {
     "geometry": r"""
-#version 330 core
+#version 430 core
 layout ( points ) in;
 layout ( points ) out;
 
@@ -32,7 +32,7 @@ void main() {
 }
     """,
     "vertex": r"""
-#version 330 core
+#version 430 core
 
 // Input vertex data, different for all executions of this shader.
 in vec3 vertexPosition_modelspace;
@@ -48,7 +48,7 @@ void main()
 
 """,
     "fragment": r"""
-#version 330 core
+#version 430 core
 
 out vec4 color;
 

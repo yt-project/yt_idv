@@ -1,11 +1,13 @@
+layout(local_size_x = 1, local_size_y = 1, local_size_z = 1) in;
 layout(binding = 0) uniform sampler3D texData;
 layout(binding = 1) uniform sampler3D bitmapData;
+layout(r32i, binding = 2) uniform iimage1D uHistogram;
 
 void main() {
       // Get thread identifiers within the work group
-  uint gidX = gl_WorkGroupCoord.x;
-  uint gidY = gl_WorkGroupCoord.y;
-  uint gidZ = gl_WorkGroupCoord.z;
+  uint gidX = gl_WorkGroupID.x;
+  uint gidY = gl_WorkGroupID.y;
+  uint gidZ = gl_WorkGroupID.z;
   ivec3 dims = textureSize(texData, 0);
   uint N = dims.x;
   uint NxM = dims.x * dims.y;
@@ -28,15 +30,14 @@ void main() {
   vec4 texValue = texture(texData, vec3(x, y, z));
 
   // Normalize the value to the range [0, 1] based on min and max
-  float normalizedValue = (texValue.r - minVal) / (maxVal - minVal);
+  float normalizedValue = (texValue.r - min_val) / (max_val - min_val);
 
   // Clamp the normalized value to [0, 1]
   normalizedValue = clamp(normalizedValue, 0.0, 1.0);
 
   // Calculate the bin index based on the number of bins
-  int binIndex = int(normalizedValue * (numBins - 1));
+  int binIndex = int(normalizedValue * (bins - 1));
 
-  // Use atomicAdd to safely increment the count in the corresponding bin
-  atomicAdd(imageLoad(uHistogram, binIndex), 1);
+  imageAtomicAdd(uHistogram, binIndex, 1);
 
 }

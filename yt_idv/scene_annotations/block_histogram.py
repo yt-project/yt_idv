@@ -20,9 +20,14 @@ class BlockHistogram(SceneAnnotation):
     min_val = traitlets.CFloat(0.0)
     max_val = traitlets.CFloat(1.0)
 
+    _recompute = True
+
     @traitlets.default("output_data")
     def _default_output_data(self):
         return Texture1D(data=np.zeros(self.bins, dtype="f4"))
+
+    def _set_uniforms(self, scene, shader_program):
+        pass
 
     def _set_compute_uniforms(self, scene, shader_program):
         shader_program._set_uniform("min_val", self.min_val)
@@ -36,14 +41,14 @@ class BlockHistogram(SceneAnnotation):
             # We now need to bind our textures.  We don't care about positions.
             with tex.bind(target=0):
                 with bitmap_tex.bind(target=1):
-                    with self.output_data.bind_as_image(0):
+                    with self.output_data.bind_as_image(2):
                         GL.glUseProgram(program.program)
                         self._set_compute_uniforms(scene, program)
-                    # This will need to be carefully chosen based on our
-                    # architecture, I guess.  That aspect of running compute
-                    # shaders, CUDA, etc, is one of my absolute least favorite
-                    # parts.
-                    GL.glDispatchCompute(self.bins, 1, 1)
+                        # This will need to be carefully chosen based on our
+                        # architecture, I guess.  That aspect of running compute
+                        # shaders, CUDA, etc, is one of my absolute least favorite
+                        # parts.
+                        GL.glDispatchCompute(self.bins, 1, 1)
 
     def draw(self, scene, program):
         # This will probably need to have somewhere to draw the darn thing.  So
