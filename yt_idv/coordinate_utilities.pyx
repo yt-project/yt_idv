@@ -149,6 +149,66 @@ cdef class MixedCoordBBox:
 cdef class SphericalMixedCoordBBox(MixedCoordBBox):
     # Cartesian bounding boxes of spherical grid elements
     cdef void get_cartesian_bbox(self,
+                        np.float64_t pos0,  # r
+                        np.float64_t pos1,  # theta
+                        np.float64_t pos2,  # phi
+                        np.float64_t dpos0, # r
+                        np.float64_t dpos1, # theta
+                        np.float64_t dpos2, # phi
+                        np.float64_t xyz_i[3],
+                        np.float64_t dxyz_i[3]
+                        ) noexcept nogil:
+
+        cdef np.float64_t max_angle = 0.2  # about 11 degrees, if smaller, will subsample
+        cdef np.float64_t dpos2_2, dpos1_2  # half-widths
+        cdef np.float64_t pos2_2, pos1_2 # centers of half elements
+        cdef np.float64_t xyz_i2_0[3], dxyz_i2_0[3]
+        cdef np.float64_t xyz_i2_1[3], dxyz_i2_1[3]
+        cdef np.float64_t le_i[3], re_i[3]
+        cdef int i
+        cdef int ndim = 3
+
+        if dpos1 < max_angle and dpos2 < max_angle:
+            self._get_cartesian_bbox(
+                            np.float64_t pos0,
+                            np.float64_t pos1,
+                            np.float64_t pos2,
+                            np.float64_t dpos0,
+                            np.float64_t dpos1,
+                            np.float64_t dpos2,
+                            np.float64_t xyz_i,
+                            np.float64_t dxyz_i
+                            )
+        elif dpos1 >= max_angle and dpos2 < max_angle:
+            # split into two, recursively get bbox, then get min/max of
+            # the bboxes
+
+            # first sample
+            dpos1_2 = dpos1 / 2.0
+            pos1_2 = pos2 - dpos1_2 / 2.
+            self.get_cartesian_bbox(
+                pos0, pos1_2, pos2, dpos0, dpos1_2, dpos2, xyz_i2_0, dxyz_i2_0
+            )
+
+            # second sample
+            pos1_2 = pos2 + dpos1_2 / 2.
+            self.get_cartesian_bbox(
+                pos0, pos1_2, pos2, dpos0, dpos1_2, dpos2, xyz_i2_1, dxyz_i2_1
+            )
+            for idim in range(ndim):
+                le_i[idim] = min(xyz_i2_0[idim] - dxyz_i2_0[idim]/2.,
+                                 xyz_i2_1[idim] - dxyz_i2_1[idim]/2.)
+                re_i[idim] = max(xyz_i2_0[idim] + dxyz_i2_0[idim]/2.,
+                                 xyz_i2_1[idim] + dxyz_i2_1[idim]/2.)
+                xyz_i[idim] = (le_i[idim] + re_i[idim])/2.
+                dxyz_i[idim] = re_i[idim] - le_i[idim]
+
+        elif dpos1 < max_angle and dpos2 >= max_angle:
+            pass
+        else:
+            # they are both over the limit!
+
+    cdef void _get_cartesian_bbox(self,
                         np.float64_t pos0,
                         np.float64_t pos1,
                         np.float64_t pos2,
