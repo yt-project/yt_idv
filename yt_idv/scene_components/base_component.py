@@ -2,6 +2,7 @@ import numpy as np
 import traitlets
 from OpenGL import GL
 
+from yt_idv._cmyt_utilities import cmyt_names
 from yt_idv.constants import FULLSCREEN_QUAD
 from yt_idv.gui_support import add_popup_help
 from yt_idv.opengl_support import (
@@ -19,7 +20,11 @@ from yt_idv.shader_objects import (
     default_shader_combos,
 )
 
-_cmaps = ["arbre", "viridis", "magma", "doom"]
+_cmaps = ["arbre", "viridis", "magma", "doom", "cividis", "plasma", "RdBu", "coolwarm"]
+_cmaps += [f"{_}_r" for _ in _cmaps]
+# add in all the cmyt colormaps too! this will include the reversed maps too.
+_cmaps += cmyt_names
+_cmaps.sort(key=lambda v: v.lower())
 _buffers = ["frame", "depth"]
 
 

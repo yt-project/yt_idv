@@ -77,13 +77,18 @@ class BlockCollection(SceneData):
         LE = np.array([b.LeftEdge for i, b in self.blocks.values()]).min(axis=0)
         RE = np.array([b.RightEdge for i, b in self.blocks.values()]).max(axis=0)
         self.diagonal = np.sqrt(((RE - LE) ** 2).sum())
-        # Now we set up our buffer
-        vert = np.array(vert, dtype="f4")
+
+        # Note: the block LeftEdge and RightEdge arrays are plain np arrays in
+        # units of code_length, so need to convert to unitary units (in range 0,1)
+        # after the fact:
         units = self.data_source.ds.units
         ratio = (units.code_length / units.unitary).base_value
         dx = np.array(dx, dtype="f4") * ratio
         le = np.array(le, dtype="f4") * ratio
         re = np.array(re, dtype="f4") * ratio
+
+        # Now we set up our buffer
+        vert = np.array(vert, dtype="f4")
         self.vertex_array.attributes.append(
             VertexAttribute(name="model_vertex", data=vert)
         )
