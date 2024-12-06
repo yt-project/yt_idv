@@ -2,10 +2,14 @@ import contextlib
 
 import numpy as np
 import traitlets
-import traittypes
 from OpenGL import GL
 
-from yt_idv.traitlets_support import YTPositionTrait, ndarray_ro, ndarray_shape
+from yt_idv.traitlets_support import (
+    ArrayTrait,
+    YTPositionTrait,
+    ndarray_ro,
+    ndarray_shape,
+)
 
 
 class BaseCamera(traitlets.HasTraits):
@@ -35,9 +39,7 @@ class BaseCamera(traitlets.HasTraits):
     # operations won't trigger our observation.
     position = YTPositionTrait([0.0, 0.0, 1.0])
     focus = YTPositionTrait([0.0, 0.0, 0.0])
-    up = traittypes.Array(np.array([0.0, 0.0, 1.0])).valid(
-        ndarray_shape(3), ndarray_ro()
-    )
+    up = ArrayTrait(np.array([0.0, 0.0, 1.0])).valid(ndarray_shape(3), ndarray_ro())
     fov = traitlets.Float(45.0)
     near_plane = traitlets.Float(0.001)
     far_plane = traitlets.Float(20.0)
@@ -45,14 +47,11 @@ class BaseCamera(traitlets.HasTraits):
         1.0
     )  # This was 8.0/6.0 for a long time. I don't know why.
 
-    projection_matrix = traittypes.Array(np.zeros((4, 4))).valid(
+    projection_matrix = ArrayTrait(np.zeros((4, 4))).valid(
         ndarray_shape(4, 4), ndarray_ro()
     )
-    view_matrix = traittypes.Array(np.zeros((4, 4))).valid(
-        ndarray_shape(4, 4), ndarray_ro()
-    )
-    orientation = traittypes.Array(np.zeros(4)).valid(ndarray_shape(4), ndarray_ro())
-
+    view_matrix = ArrayTrait(np.zeros((4, 4))).valid(ndarray_shape(4, 4), ndarray_ro())
+    orientation = ArrayTrait(np.zeros(4)).valid(ndarray_shape(4), ndarray_ro())
     held = traitlets.Bool(False)
 
     @contextlib.contextmanager
