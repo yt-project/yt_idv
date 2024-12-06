@@ -62,6 +62,11 @@ class BlockRendering(SceneComponent):
             gp = GridPositions(grid_list=grids)
             scene.data_objects.append(gp)
             scene.components.append(GridOutlines(data=gp))
+        if imgui.button("Add Isocontours"):
+            from .isolayers import Isolayers
+
+            iso = Isolayers(data=self.data)
+            scene.components.append(iso)
         if self.render_method == "transfer_function":
             # Now for the transfer function stuff
             imgui.image_button(
