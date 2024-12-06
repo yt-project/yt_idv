@@ -124,6 +124,7 @@ class ShaderProgram:
         # First get all of the uniforms
         self.uniforms = {}
         self.attributes = {}
+        self.inputs = {}
 
         if not bool(GL.glGetProgramInterfaceiv):
             return
@@ -136,17 +137,43 @@ class ShaderProgram:
             gl_type = num_to_const[gl_type]
             self.uniforms[name.decode("utf-8")] = (size, gl_type)
 
-        n_attrib = GL.glGetProgramInterfaceiv(
-            self.program, GL.GL_PROGRAM_INPUT, GL.GL_ACTIVE_RESOURCES
-        )
+        n_attrib = ctypes.pointer(ctypes.c_int(0))
+        GL.glGetProgramiv(self.program, GL.GL_ACTIVE_ATTRIBUTES, n_attrib)
         length = ctypes.pointer(ctypes.c_int())
         size = ctypes.pointer(ctypes.c_int())
         gl_type = ctypes.pointer(ctypes.c_int())
         name = ctypes.create_string_buffer(256)
-        for i in range(n_attrib):
+        for i in range(n_attrib[0]):
             GL.glGetActiveAttrib(self.program, i, 256, length, size, gl_type, name)
             gl_const = num_to_const[gl_type[0]]
             self.attributes[name[: length[0]].decode("utf-8")] = (size[0], gl_const)
+
+        # We're going to use `n_inputs` here as well.
+        n_inputs = GL.glGetProgramInterfaceiv(
+            self.program, GL.GL_PROGRAM_INPUT, GL.GL_ACTIVE_RESOURCES
+        )
+        props = (ctypes.c_int * 2)(GL.GL_TYPE, GL.GL_ARRAY_SIZE)
+        pprops = ctypes.pointer(props)
+        params = (ctypes.c_int * 2)(0, 0)
+        pparams = ctypes.pointer(params)
+        size = ctypes.pointer(ctypes.c_int())
+        gl_type = ctypes.pointer(ctypes.c_int())
+        name = ctypes.create_string_buffer(256)
+        for i in range(n_inputs):
+            length[0] = 2
+            GL.glGetProgramResourceiv(
+                self.program, GL.GL_PROGRAM_INPUT, i, 2, pprops, 1, size, pparams
+            )
+            length[0] = 0
+            GL.glGetProgramResourceName(
+                self.program, GL.GL_PROGRAM_INPUT, i, 256, length, name
+            )
+            gl_const = num_to_const[params[0]]
+            input_name = name[: length[0]].decode("utf-8")
+            if input_name in self.attributes:
+                # Ignore these ...
+                continue
+            self.inputs[input_name] = (params[1], gl_const)
 
     def delete_program(self):
         if self.program is not None:
@@ -268,6 +295,12 @@ class ComputeShaderProgram(ShaderProgram):
             raise RuntimeError(GL.glGetProgramInfoLog(self.program))
         self.compute_shader.delete_shader()
         self.introspect()
+
+    @contextlib.contextmanager
+    def enable(self):
+        GL.glUseProgram(self.program)
+        yield self
+        GL.glUseProgram(0)
 
 
 class Shader(traitlets.HasTraits):
