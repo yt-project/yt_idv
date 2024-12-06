@@ -93,12 +93,20 @@ TEX_CHANNELS = {
         4: (GL.GL_UNSIGNED_BYTE, GL.GL_RGBA8, GL.GL_RGBA),
     },
     "uint32": {
-        1: (GL.GL_UNSIGNED_INT, GL.GL_R32UI, GL.GL_RED),
+        1: (GL.GL_UNSIGNED_INT, GL.GL_R32UI, GL.GL_RED_INTEGER),
         2: (GL.GL_UNSIGNED_INT, GL.GL_RG32UI, GL.GL_RG),
         3: (GL.GL_UNSIGNED_INT, GL.GL_RGB32UI, GL.GL_RGB),
         4: (GL.GL_UNSIGNED_INT, GL.GL_RGBA32UI, GL.GL_RGBA),
     },
+    "int32": {
+        1: (GL.GL_INT, GL.GL_R32I, GL.GL_RED_INTEGER),
+        2: (GL.GL_INT, GL.GL_RG32I, GL.GL_RG),
+        3: (GL.GL_INT, GL.GL_RGB32I, GL.GL_RGB),
+        4: (GL.GL_INT, GL.GL_RGBA32I, GL.GL_RGBA),
+    },
 }
+
+SKIP_MIPMAP = [GL.GL_R32UI, GL.GL_R16UI, GL.GL_R8UI, GL.GL_R32I, GL.GL_R16I, GL.GL_R8I]
 
 
 def coerce_uniform_type(val, gl_type):
@@ -193,11 +201,22 @@ class Texture(traitlets.HasTraits):
         _ = GL.glActiveTexture(TEX_TARGETS[target])
         mode = override_mode or self.image_mode
         _ = GL.glBindImageTexture(
-            0, self.texture_name, 0, False, 0, mode, self.channels
+            target, self.texture_name, 0, False, 0, mode, self.channels
         )
         yield
         _ = GL.glActiveTexture(TEX_TARGETS[target])
         GL.glBindImageTexture(0, 0, 0, False, 0, mode, self.channels)
+
+    def read_as_image(self):
+        if len(self.data.shape) == 2:
+            channels = self.data.shape[-1]
+        else:
+            channels = 1
+        gl_type, _, type2 = TEX_CHANNELS[self.data.dtype.name][channels]
+        with self.bind():
+            data = np.zeros(self.data.shape, dtype=self.data.dtype)
+            GL.glGetTexImage(self.dim_enum, 0, type2, gl_type, data)
+        return data
 
 
 class Texture1D(Texture):
@@ -217,7 +236,7 @@ class Texture1D(Texture):
             gl_type, type1, type2 = TEX_CHANNELS[data.dtype.name][channels]
             GL.glPixelStorei(GL.GL_UNPACK_ALIGNMENT, 1)
             if not isinstance(change["old"], np.ndarray):
-                GL.glTexStorage1D(GL.GL_TEXTURE_1D, 6, type1, dx)
+                GL.glTexStorage1D(GL.GL_TEXTURE_1D, 1, type1, dx)
             GL.glTexSubImage1D(GL.GL_TEXTURE_1D, 0, 0, dx, type2, gl_type, data)
             GL.glTexParameterf(GL.GL_TEXTURE_1D, GL.GL_TEXTURE_WRAP_S, self.boundary_x)
             GL.glTexParameteri(
@@ -226,7 +245,8 @@ class Texture1D(Texture):
             GL.glTexParameteri(
                 GL.GL_TEXTURE_1D, GL.GL_TEXTURE_MAG_FILTER, self.mag_filter
             )
-            GL.glGenerateMipmap(GL.GL_TEXTURE_1D)
+            if type1 not in SKIP_MIPMAP:
+                GL.glGenerateMipmap(GL.GL_TEXTURE_1D)
 
 
 class ColormapTexture(Texture1D):
@@ -286,7 +306,8 @@ class Texture2D(Texture):
             GL.glTexParameteri(
                 GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MAG_FILTER, self.mag_filter
             )
-            GL.glGenerateMipmap(GL.GL_TEXTURE_2D)
+            if type1 not in SKIP_MIPMAP:
+                GL.glGenerateMipmap(GL.GL_TEXTURE_2D)
 
 
 class TransferFunctionTexture(Texture2D):
@@ -347,7 +368,8 @@ class Texture3D(Texture):
             GL.glTexParameteri(
                 GL.GL_TEXTURE_3D, GL.GL_TEXTURE_MAG_FILTER, self.mag_filter
             )
-            GL.glGenerateMipmap(GL.GL_TEXTURE_3D)
+            if type1 not in SKIP_MIPMAP:
+                GL.glGenerateMipmap(GL.GL_TEXTURE_3D)
 
 
 class VertexAttribute(traitlets.HasTraits):

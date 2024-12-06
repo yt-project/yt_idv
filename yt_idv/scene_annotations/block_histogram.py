@@ -24,7 +24,7 @@ class BlockHistogram(SceneAnnotation):
 
     @traitlets.default("output_data")
     def _default_output_data(self):
-        return Texture1D(data=np.zeros(self.bins, dtype="u4"), channels="r32i")
+        return Texture1D(data=np.zeros(self.bins, dtype="u4"), channels="r32ui")
 
     def _set_uniforms(self, scene, shader_program):
         pass
@@ -38,11 +38,13 @@ class BlockHistogram(SceneAnnotation):
         # We need a place to dump our stuff.
         self.visible = False
         self.output_data.clear()
-        for _tex_ind, tex, bitmap_tex in self.data.viewpoint_iter(scene.camera):
-            # We now need to bind our textures.  We don't care about positions.
-            with tex.bind(target=0):
-                with bitmap_tex.bind(target=1):
-                    with self.output_data.bind_as_image(2):
+        total = 0
+        with self.output_data.bind_as_image(2):
+            for _tex_ind, tex, bitmap_tex in self.data.viewpoint_iter(scene.camera):
+                # We now need to bind our textures.  We don't care about positions.
+                total += bitmap_tex.data.size
+                with tex.bind(target=0):
+                    with bitmap_tex.bind(target=1):
                         GL.glUseProgram(program.program)
                         self._set_compute_uniforms(scene, program)
                         # This will need to be carefully chosen based on our
@@ -50,6 +52,10 @@ class BlockHistogram(SceneAnnotation):
                         # shaders, CUDA, etc, is one of my absolute least favorite
                         # parts.
                         GL.glDispatchCompute(self.bins, 1, 1)
+        # arr = self.output_data.read_as_image()
+        # print(
+        # f"histogram: {arr=} => {arr.sum()=} with {total=} for a ratio of {arr.sum()/total}"
+        # )
 
     def draw(self, scene, program):
         # This will probably need to have somewhere to draw the darn thing.  So
