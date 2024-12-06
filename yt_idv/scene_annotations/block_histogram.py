@@ -51,11 +51,12 @@ class BlockHistogram(SceneAnnotation):
                         # architecture, I guess.  That aspect of running compute
                         # shaders, CUDA, etc, is one of my absolute least favorite
                         # parts.
-                        GL.glDispatchCompute(self.bins, 1, 1)
-        # arr = self.output_data.read_as_image()
-        # print(
-        # f"histogram: {arr=} => {arr.sum()=} with {total=} for a ratio of {arr.sum()/total}"
-        # )
+                        GL.glDispatchCompute(
+                            bitmap_tex.data.shape[0],
+                            bitmap_tex.data.shape[1],
+                            bitmap_tex.data.shape[2],
+                        )
+                        GL.glMemoryBarrier(GL.GL_SHADER_IMAGE_ACCESS_BARRIER_BIT)
 
     def draw(self, scene, program):
         # This will probably need to have somewhere to draw the darn thing.  So
