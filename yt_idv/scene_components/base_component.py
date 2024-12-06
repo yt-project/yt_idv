@@ -147,6 +147,14 @@ class SceneComponent(traitlets.HasTraits):
     def _default_render_method(self):
         return default_shader_combos[self.name]
 
+    @traitlets.default("_program1_pp_defs")
+    def _default_program1_pp_defs(self):
+        return PreprocessorDefinitionState()
+
+    @traitlets.default("_program2_pp_defs")
+    def _default_program2_pp_defs(self):
+        return PreprocessorDefinitionState()
+
     @traitlets.observe("render_method")
     def _change_render_method(self, change):
         new_combo = component_shaders[self.name][change["new"]]
