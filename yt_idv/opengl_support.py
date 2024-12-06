@@ -197,7 +197,7 @@ class Texture(traitlets.HasTraits):
         )
         yield
         _ = GL.glActiveTexture(TEX_TARGETS[target])
-        GL.glBindImageTexture(0, 0, 0, False, 0, 0, 0)
+        GL.glBindImageTexture(0, 0, 0, False, 0, mode, self.channels)
 
 
 class Texture1D(Texture):

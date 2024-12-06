@@ -24,7 +24,7 @@ class BlockHistogram(SceneAnnotation):
 
     @traitlets.default("output_data")
     def _default_output_data(self):
-        return Texture1D(data=np.zeros(self.bins, dtype="f4"))
+        return Texture1D(data=np.zeros(self.bins, dtype="u4"), channels="r32i")
 
     def _set_uniforms(self, scene, shader_program):
         pass
@@ -36,6 +36,7 @@ class BlockHistogram(SceneAnnotation):
 
     def compute(self, scene, program):
         # We need a place to dump our stuff.
+        self.visible = False
         self.output_data.clear()
         for _tex_ind, tex, bitmap_tex in self.data.viewpoint_iter(scene.camera):
             # We now need to bind our textures.  We don't care about positions.
