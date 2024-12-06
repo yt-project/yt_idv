@@ -13,6 +13,7 @@ from yt_idv.opengl_support import (
 )
 from yt_idv.scene_data.base_data import SceneData
 from yt_idv.shader_objects import (
+    ComputeShaderProgram,
     ShaderProgram,
     ShaderTrait,
     component_shaders,
@@ -49,6 +50,7 @@ class SceneComponent(traitlets.HasTraits):
     clear_region = traitlets.Bool(False)
 
     render_method = traitlets.Unicode(allow_none=True)
+    compute_shader = ShaderTrait(allow_none=True).tag(shader_type="compute")
     fragment_shader = ShaderTrait(allow_none=True).tag(shader_type="fragment")
     geometry_shader = ShaderTrait(allow_none=True).tag(shader_type="geometry")
     vertex_shader = ShaderTrait(allow_none=True).tag(shader_type="vertex")
@@ -56,11 +58,14 @@ class SceneComponent(traitlets.HasTraits):
     colormap_fragment = ShaderTrait(allow_none=True).tag(shader_type="fragment")
     colormap_vertex = ShaderTrait(allow_none=True).tag(shader_type="vertex")
     colormap = traitlets.Instance(ColormapTexture)
+    _compute_program = traitlets.Instance(ShaderProgram, allow_none=True)
     _program1 = traitlets.Instance(ShaderProgram, allow_none=True)
     _program2 = traitlets.Instance(ShaderProgram, allow_none=True)
     _program1_invalid = True
     _program2_invalid = True
     _cmap_bounds_invalid = True
+    _recompute = False
+    _compute_program_invalid = True
 
     display_name = traitlets.Unicode(allow_none=True)
 
@@ -166,6 +171,10 @@ class SceneComponent(traitlets.HasTraits):
     def _fb_default(self):
         return Framebuffer()
 
+    @traitlets.observe("compute_shader")
+    def _change_compute(self, change):
+        self._compute_program_invalid = True
+
     @traitlets.observe("fragment_shader")
     def _change_fragment(self, change):
         # Even if old/new are the same
@@ -201,6 +210,10 @@ class SceneComponent(traitlets.HasTraits):
         cm.colormap_name = "arbre"
         return cm
 
+    @traitlets.default("compute_shader")
+    def _compute_shader_default(self):
+        return component_shaders[self.name][self.render_method]["compute"]
+
     @traitlets.default("vertex_shader")
     def _vertex_shader_default(self):
         return component_shaders[self.name][self.render_method]["first_vertex"]
@@ -233,6 +246,16 @@ class SceneComponent(traitlets.HasTraits):
             VertexAttribute(name="vertexPosition_modelspace", data=fq)
         )
         return bq
+
+    @property
+    def compute_program(self):
+        if self._compute_program_invalid:
+            if self._compute_program is not None:
+                self._compute_program.delete_program()
+            self._compute_program = ComputeShaderProgram(self.compute_shader)
+            self._compute_program_invalid = False
+            self._recompute = True
+        return self._compute_program
 
     @property
     def program1(self):
@@ -270,9 +293,20 @@ class SceneComponent(traitlets.HasTraits):
         p._set_uniform("iso_min", float(self.data.min_val))
         p._set_uniform("iso_max", float(self.data.max_val))
 
+    def compute(self, scene, program):
+        pass
+
+    def _set_compute_uniforms(self, scene, program):
+        pass
+
     def run_program(self, scene):
         # Store this info, because we need to render into a framebuffer that is the
         # right size.
+        if self._recompute:
+            with self.compute_program.enable() as p:
+                self._set_compute_uniforms(scene, p)
+                self.compute(scene, p)
+            self._recompute = False
         x0, y0, w, h = GL.glGetIntegerv(GL.GL_VIEWPORT)
         GL.glViewport(0, 0, w, h)
         if not self.visible:

@@ -22,7 +22,7 @@ from .opengl_support import GLValue, num_to_const
 
 _NULL_SOURCES = {
     "geometry": r"""
-#version 330 core
+#version 430 core
 layout ( points ) in;
 layout ( points ) out;
 
@@ -32,7 +32,7 @@ void main() {
 }
     """,
     "vertex": r"""
-#version 330 core
+#version 430 core
 
 // Input vertex data, different for all executions of this shader.
 in vec3 vertexPosition_modelspace;
@@ -48,7 +48,7 @@ void main()
 
 """,
     "fragment": r"""
-#version 330 core
+#version 430 core
 
 out vec4 color;
 
@@ -124,6 +124,7 @@ class ShaderProgram:
         # First get all of the uniforms
         self.uniforms = {}
         self.attributes = {}
+        self.inputs = {}
 
         if not bool(GL.glGetProgramInterfaceiv):
             return
@@ -136,17 +137,43 @@ class ShaderProgram:
             gl_type = num_to_const[gl_type]
             self.uniforms[name.decode("utf-8")] = (size, gl_type)
 
-        n_attrib = GL.glGetProgramInterfaceiv(
-            self.program, GL.GL_PROGRAM_INPUT, GL.GL_ACTIVE_RESOURCES
-        )
+        n_attrib = ctypes.pointer(ctypes.c_int(0))
+        GL.glGetProgramiv(self.program, GL.GL_ACTIVE_ATTRIBUTES, n_attrib)
         length = ctypes.pointer(ctypes.c_int())
         size = ctypes.pointer(ctypes.c_int())
         gl_type = ctypes.pointer(ctypes.c_int())
         name = ctypes.create_string_buffer(256)
-        for i in range(n_attrib):
+        for i in range(n_attrib[0]):
             GL.glGetActiveAttrib(self.program, i, 256, length, size, gl_type, name)
             gl_const = num_to_const[gl_type[0]]
             self.attributes[name[: length[0]].decode("utf-8")] = (size[0], gl_const)
+
+        # We're going to use `n_inputs` here as well.
+        n_inputs = GL.glGetProgramInterfaceiv(
+            self.program, GL.GL_PROGRAM_INPUT, GL.GL_ACTIVE_RESOURCES
+        )
+        props = (ctypes.c_int * 2)(GL.GL_TYPE, GL.GL_ARRAY_SIZE)
+        pprops = ctypes.pointer(props)
+        params = (ctypes.c_int * 2)(0, 0)
+        pparams = ctypes.pointer(params)
+        size = ctypes.pointer(ctypes.c_int())
+        gl_type = ctypes.pointer(ctypes.c_int())
+        name = ctypes.create_string_buffer(256)
+        for i in range(n_inputs):
+            length[0] = 2
+            GL.glGetProgramResourceiv(
+                self.program, GL.GL_PROGRAM_INPUT, i, 2, pprops, 1, size, pparams
+            )
+            length[0] = 0
+            GL.glGetProgramResourceName(
+                self.program, GL.GL_PROGRAM_INPUT, i, 256, length, name
+            )
+            gl_const = num_to_const[params[0]]
+            input_name = name[: length[0]].decode("utf-8")
+            if input_name in self.attributes:
+                # Ignore these ...
+                continue
+            self.inputs[input_name] = (params[1], gl_const)
 
     def delete_program(self):
         if self.program is not None:
@@ -228,6 +255,54 @@ class ShaderProgram:
         GL.glUseProgram(0)
 
 
+class ComputeShaderProgram(ShaderProgram):
+    """
+    Wrapper class that compiles and links compute shaders.
+
+    This has very little shared code with a ShaderProgram, and is designed to be
+    used for compute shaders only.
+
+    Parameters
+    ----------
+
+    compute_shader : string
+        or :class:`yt.visualization.volume_rendering.shader_objects.ComputeShader`
+        The vertex shader used in the Interactive Data Visualization pipeline.
+    """
+
+    def __init__(self, compute_shader):
+        self.link(compute_shader)
+        self._uniform_funcs = OrderedDict()
+
+    def link(self, compute_shader):
+        """
+        Links the compute shader to the program.
+
+        Parameters
+        ----------
+        compute_shader : string
+            or :class:`yt.visualization.volume_rendering.shader_objects.ComputeShader`
+            The compute shader used in the Interactive Data Visualization pipeline.
+        """
+        self.program = GL.glCreateProgram()
+        if not isinstance(compute_shader, Shader):
+            compute_shader = Shader(source=compute_shader)
+        self.compute_shader = compute_shader
+        GL.glAttachShader(self.program, self.compute_shader.shader)
+        GL.glLinkProgram(self.program)
+        result = GL.glGetProgramiv(self.program, GL.GL_LINK_STATUS)
+        if not result:
+            raise RuntimeError(GL.glGetProgramInfoLog(self.program))
+        self.compute_shader.delete_shader()
+        self.introspect()
+
+    @contextlib.contextmanager
+    def enable(self):
+        GL.glUseProgram(self.program)
+        yield self
+        GL.glUseProgram(0)
+
+
 class Shader(traitlets.HasTraits):
     """
     Creates a shader from source
@@ -252,7 +327,9 @@ class Shader(traitlets.HasTraits):
     source = traitlets.Any()
     shader_name = traitlets.CUnicode()
     info = traitlets.CUnicode()
-    shader_type = traitlets.CaselessStrEnum(("vertex", "fragment", "geometry"))
+    shader_type = traitlets.CaselessStrEnum(
+        ("vertex", "fragment", "geometry", "compute")
+    )
     blend_func = traitlets.Tuple(
         GLValue(), GLValue(), default_value=("src alpha", "dst alpha")
     )
@@ -382,7 +459,7 @@ def _validate_shader(shader_type, value, allow_null=True):
 
 class ShaderTrait(traitlets.TraitType):
     default_value = None
-    info_text = "A shader (vertex, fragment or geometry)"
+    info_text = "A shader (vertex, fragment, geometry or compute)"
 
     def validate(self, obj, value):
         if isinstance(value, str):

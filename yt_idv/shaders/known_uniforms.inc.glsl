@@ -62,3 +62,8 @@ uniform int iso_num_layers;
 uniform float iso_layers[32];
 uniform float iso_layer_tol[32];
 uniform float iso_alphas[32];
+
+// compute shader for histograms
+uniform int bins;
+uniform float min_val;
+uniform float max_val;
