@@ -62,6 +62,11 @@ def test_snapshots(osmesa_fake_amr, image_store):
     image_store(osmesa_fake_amr)
 
 
+def test_depth_buffer_toggle(osmesa_fake_amr, image_store):
+    osmesa_fake_amr.scene.components[0].use_db = True
+    image_store(osmesa_fake_amr)
+
+
 def test_slice(osmesa_fake_amr, image_store):
     osmesa_fake_amr.scene.components[0].render_method = "slice"
     osmesa_fake_amr.scene.components[0].slice_position = (0.5, 0.5, 0.5)
