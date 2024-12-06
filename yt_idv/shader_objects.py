@@ -407,14 +407,14 @@ class Shader(traitlets.HasTraits):
         self.delete_shader()
 
 
-def _instantiate_shader_from_str(shader_type, value, preprocessor_defs=None):
+def _validate_shader(shader_type, value, allow_null=True, preprocessor_defs=None):
     shader_info = known_shaders[shader_type][value]
     shader_info.setdefault("shader_type", shader_type)
     shader_info["use_separate_blend"] = bool("blend_func_separate" in shader_info)
     shader_info.setdefault("shader_name", value)
     if preprocessor_defs is not None:
         shader_info["preprocessor_defs"] = preprocessor_defs
-    return Shader(**shader_info)
+    return Shader(allow_null=allow_null, **shader_info)
 
 
 class ShaderTrait(traitlets.TraitType):
@@ -430,7 +430,7 @@ class ShaderTrait(traitlets.TraitType):
                     value = value[0]
                 else:
                     preprocessor_defs = None
-                return _instantiate_shader_from_str(
+                return _validate_shader(
                     shader_type, value, preprocessor_defs=preprocessor_defs
                 )
             except KeyError:
