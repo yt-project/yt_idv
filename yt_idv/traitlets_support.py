@@ -56,7 +56,8 @@ class FontTrait(traitlets.TraitType):
 
 class ArrayTrait(traitlets.TraitType):
 
-    # a replacement for the un-maintained traittypes.Array
+    # a replacement for the un-maintained traittypes.Array, loosely
+    # based off of the implementation at https://github.com/jupyter-widgets/traittypes
     info_text = "A numpy array"
 
     def __init__(self, default_value=None, **kwargs):
