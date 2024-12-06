@@ -1,9 +1,9 @@
 import numpy as np
 import traitlets
-from traittypes import Array
 
 from yt_idv.opengl_support import VertexArray, VertexAttribute
 from yt_idv.scene_data.base_data import SceneData
+from yt_idv.traitlets_support import ArrayTrait
 
 
 class CurveData(SceneData):
@@ -12,7 +12,7 @@ class CurveData(SceneData):
     """
 
     name = "curve_data"
-    data = Array()
+    data = ArrayTrait()
     n_vertices = traitlets.CInt()
 
     @traitlets.default("vertex_array")
@@ -54,7 +54,7 @@ class CurveCollection(CurveData):
     """Data component for a collection of curves"""
 
     name = "curve_collection"
-    data = Array()
+    data = ArrayTrait()
     n_vertices = traitlets.CInt()
 
     def add_curve(self, curve):
