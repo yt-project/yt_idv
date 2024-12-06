@@ -159,21 +159,26 @@ class SceneComponent(traitlets.HasTraits):
     def _change_render_method(self, change):
         new_combo = component_shaders[self.name][change["new"]]
         with self.hold_trait_notifications():
-            self.vertex_shader = new_combo[
-                "first_vertex"
-            ], self._program1_pp_defs.get_shader_defs("vertex")
-            self.fragment_shader = new_combo[
-                "first_fragment"
-            ], self._program1_pp_defs.get_shader_defs("fragment")
-            self.geometry_shader = new_combo.get(
-                "first_geometry", None
-            ), self._program1_pp_defs.get_shader_defs("geometry")
-            self.colormap_vertex = new_combo[
-                "second_vertex"
-            ], self._program2_pp_defs.get_shader_defs("vertex")
-            self.colormap_fragment = new_combo[
-                "second_fragment"
-            ], self._program2_pp_defs.get_shader_defs("fragment")
+            self.vertex_shader = (
+                new_combo["first_vertex"],
+                self._program1_pp_defs["vertex"],
+            )
+            self.fragment_shader = (
+                new_combo["first_fragment"],
+                self._program1_pp_defs["fragment"],
+            )
+            self.geometry_shader = (
+                new_combo.get("first_geometry", None),
+                self._program1_pp_defs["geometry"],
+            )
+            self.colormap_vertex = (
+                new_combo["second_vertex"],
+                self._program2_pp_defs["vertex"],
+            )
+            self.colormap_fragment = (
+                new_combo["second_fragment"],
+                self._program2_pp_defs["fragment"],
+            )
 
     @traitlets.observe("render_method")
     def _add_initial_isolayer(self, change):
@@ -218,9 +223,6 @@ class SceneComponent(traitlets.HasTraits):
 
         # update the preprocessor state: USE_DB only present in the second
         # program, only update that one.
-        if self._program2_pp_defs is None:
-            self._program2_pp_defs = PreprocessorDefinitionState()
-
         if changed["new"]:
             self._program2_pp_defs.add_definition("fragment", ("USE_DB", ""))
         else:
@@ -228,7 +230,7 @@ class SceneComponent(traitlets.HasTraits):
 
         # update the colormap fragment with current render method
         current_combo = component_shaders[self.name][self.render_method]
-        pp_defs = self._program2_pp_defs.get_shader_defs("fragment")
+        pp_defs = self._program2_pp_defs["fragment"]
         self.colormap_fragment = current_combo["second_fragment"], pp_defs
         self._recompile_shader()
 

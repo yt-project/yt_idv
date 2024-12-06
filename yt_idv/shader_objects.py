@@ -7,7 +7,7 @@ import contextlib
 import ctypes
 import os
 from collections import OrderedDict
-from typing import Optional, Tuple
+from typing import List, Optional, Tuple
 
 import traitlets
 import yaml
@@ -441,12 +441,15 @@ class ShaderTrait(traitlets.TraitType):
 
 
 class PreprocessorDefinitionState:
+
+    _valid_shader_types = ("vertex", "geometry", "fragment")
+
     def __init__(self):
         self.vertex = {}
         self.geometry = {}
         self.fragment = {}
 
-    def get_dict(self, shader_type: str) -> dict:
+    def _get_dict(self, shader_type: str) -> dict:
         """return the dict of definitions for specifed shader_type"""
         return getattr(self, shader_type)
 
@@ -454,15 +457,28 @@ class PreprocessorDefinitionState:
         """add a definition for specified shader_type, will overwrite
         existing definitions.
         """
-        self.get_dict(shader_type)[value[0]] = value[1]
+        self._validate_shader_type(shader_type)
+        self._get_dict(shader_type)[value[0]] = value[1]
 
     def clear_definition(self, shader_type: str, value: Tuple[str, str]):
         """remove the definition of value for specified shader_type"""
-        self.get_dict(shader_type).pop(value[0])
+        self._validate_shader_type(shader_type)
+        self._get_dict(shader_type).pop(value[0])
 
-    def get_shader_defs(self, shader_type: str) -> Tuple[str, str]:
+    def get_shader_defs(self, shader_type: str) -> List[Tuple[str, str]]:
         """return the preprocessor definition list for specified shader_type"""
-        return list(self.get_dict(shader_type).items())
+        self._validate_shader_type(shader_type)
+        return list(self._get_dict(shader_type).items())
+
+    def _validate_shader_type(self, shader_type: str):
+        if shader_type not in self._valid_shader_types:
+            raise ValueError(
+                f"shader_type must be one of {self._valid_shader_types}, "
+                f"but found {shader_type}"
+            )
+
+    def __getitem__(self, item: str) -> List[Tuple[str, str]]:
+        return self.get_shader_defs(item)
 
     def reset(self, shader_type: Optional[str] = None):
         if shader_type is None:
@@ -470,6 +486,7 @@ class PreprocessorDefinitionState:
             self.geometry = {}
             self.fragment = {}
         else:
+            self._validate_shader_type(shader_type)
             setattr(self, shader_type, {})
 
 
