@@ -70,7 +70,14 @@ class ArrayTrait(traitlets.TraitType):
         return self
 
     def validate(self, obj, value):
+        if self.allow_none and value is None:
+            return value
+
+        if self.allow_none is False and value is None:
+            self.error(obj, value)
+
         if not isinstance(value, np.ndarray):
+            # try to coerce whatever it is
             value = np.asarray(value)
 
         for validator in self.validators:
