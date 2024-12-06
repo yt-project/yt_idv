@@ -226,7 +226,7 @@ class SceneComponent(traitlets.HasTraits):
         else:
             self._program2_pp_defs.clear_definition("fragment", ("USE_DB", ""))
 
-        # update the colormap_fragmet with current render method
+        # update the colormap fragment with current render method
         current_combo = component_shaders[self.name][self.render_method]
         pp_defs = self._program2_pp_defs.get_shader_defs("fragment")
         self.colormap_fragment = current_combo["second_fragment"], pp_defs
