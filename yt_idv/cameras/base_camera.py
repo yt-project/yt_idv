@@ -38,6 +38,7 @@ class BaseCamera(traitlets.HasTraits):
     up = traittypes.Array(np.array([0.0, 0.0, 1.0])).valid(
         ndarray_shape(3), ndarray_ro()
     )
+    scroll_delta = traitlets.Float(0.1)
     fov = traitlets.Float(45.0)
     near_plane = traitlets.Float(0.001)
     far_plane = traitlets.Float(20.0)

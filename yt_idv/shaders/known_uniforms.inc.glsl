@@ -51,9 +51,6 @@ uniform sampler3D ds_tex[6];
 // ray tracing control
 uniform float sample_factor;
 
-// depth buffer control
-uniform bool use_db;
-
 // curve drawing control
 uniform vec4 curve_rgba;
 
@@ -73,3 +70,8 @@ uniform int id_r;  // radial index in the yt dataset
 uniform int id_phi;  // polar angle (0 to 2pi) indexi n the yt dataset
 uniform vec3 cart_bbox_le;
 uniform float cart_bbox_max_width;
+
+// draw outline control
+uniform float draw_boundary;
+uniform vec4 boundary_color;
+

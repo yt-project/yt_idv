@@ -8,12 +8,12 @@ shader_definitions:
         - one
       blend_equation: func add
     constant_rgba:
-        info: A constant, specified RGBa value applied
-        source: constant_rgba.frag.glsl
-        blend_func:
-            - one
-            - one
-        blend_equation: func add
+      info: A constant, specified RGBa value applied
+      source: constant_rgba.frag.glsl
+      blend_func:
+        - one
+        - one
+      blend_equation: func add
     apply_colormap:
       info:
         A second pass fragment shader used to apply a colormap to the result of
@@ -43,8 +43,8 @@ shader_definitions:
       info: A first pass fragment shader that renders isocontour layers.
       source: isocontour.frag.glsl
       blend_func:
-      - src alpha
-      - one minus src alpha
+        - src alpha
+        - one minus src alpha
       blend_equation: func add
     max_intensity:
       info:
@@ -75,6 +75,13 @@ shader_definitions:
         A first pass fragment shader that performs no operation. Used for debug
         puproses. It's distinct from NoOpFragmentShader, because of the number of uniforms
       source: passthrough.frag.glsl
+      blend_func:
+        - src alpha
+        - dst alpha
+      blend_equation: func add
+    display_border:
+      info: Draws a border around the display area
+      source: display_border.frag.glsl
       blend_func:
         - src alpha
         - dst alpha
@@ -130,15 +137,15 @@ shader_definitions:
       info: Use field values as input
       source: field_value.frag.glsl
       blend_func:
-      - one
-      - one
+        - one
+        - one
     slice_sample:
       info: Slice through a block collection
       source: slice_sample.frag.glsl
       depth_test: less
       blend_func:
-      - one
-      - zero
+        - one
+        - zero
       blend_equation: func add
   vertex:
     default:
@@ -177,21 +184,21 @@ shader_definitions:
       source: particle_expand.geom.glsl
 component_shaders:
   curve_rendering:
-      default_value: default
-      default:
-          description: Default
-          first_vertex: mesh
-          first_fragment: constant_rgba
-          second_vertex: passthrough
-          second_fragment: passthrough
+    default_value: default
+    default:
+      description: Default
+      first_vertex: mesh
+      first_fragment: constant_rgba
+      second_vertex: passthrough
+      second_fragment: passthrough
   multi_curve_rendering:
-      default_value: default
-      default:
-          description: Default
-          first_vertex: mesh
-          first_fragment: constant_rgba
-          second_vertex: passthrough
-          second_fragment: passthrough
+    default_value: default
+    default:
+      description: Default
+      first_vertex: mesh
+      first_fragment: constant_rgba
+      second_vertex: passthrough
+      second_fragment: passthrough
   block_rendering:
     default_value: max_intensity
     max_intensity:

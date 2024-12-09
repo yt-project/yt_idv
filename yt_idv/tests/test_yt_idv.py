@@ -6,7 +6,7 @@ import numpy as np
 import pytest
 import yt
 import yt.testing
-from pytest_html import extras
+from pytest_html import extras as html_extras
 
 import yt_idv
 from yt_idv import shader_objects
@@ -39,13 +39,13 @@ def osmesa_empty():
 
 
 @pytest.fixture()
-def image_store(request, extra, tmpdir):
+def image_store(request, extras, tmpdir):
     def _snap_image(rc):
         image = rc.run()
         img = yt.write_bitmap(image, None)
         content = base64.b64encode(img).decode("ascii")
-        extra.append(extras.png(content))
-        extra.append(extras.html("<br clear='all'/>"))
+        extras.append(html_extras.png(content))
+        extras.append(html_extras.html("<br clear='all'/>"))
 
     return _snap_image
 
@@ -59,6 +59,11 @@ def test_snapshots(osmesa_fake_amr, image_store):
     osmesa_fake_amr.scene.components[0].render_method = "transfer_function"
     image_store(osmesa_fake_amr)
     osmesa_fake_amr.scene.components[0]._recompile_shader()
+    image_store(osmesa_fake_amr)
+
+
+def test_depth_buffer_toggle(osmesa_fake_amr, image_store):
+    osmesa_fake_amr.scene.components[0].use_db = True
     image_store(osmesa_fake_amr)
 
 
