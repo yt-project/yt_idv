@@ -17,6 +17,7 @@ class BlockCollection(SceneData):
     scale = traitlets.Bool(False)
     blocks_by_grid = traitlets.Instance(defaultdict, (list,))
     grids_by_block = traitlets.Dict(default_value=())
+    _yt_geom_str = traitlets.Unicode('cartesian')
 
     @traitlets.default("vertex_array")
     def _default_vertex_array(self):
@@ -38,6 +39,13 @@ class BlockCollection(SceneData):
             Should we speed things up by skipping ghost zone generation?
         """
         self.data_source.tiles.set_fields([field], [False], no_ghost=no_ghost)
+
+        self._yt_geom_str = str(self.data_source.ds.geometry)
+        # note: casting to string for compatibility with new and old geometry
+        # attributes (now an enum member in latest yt),
+        # see https://github.com/yt-project/yt/pull/4244
+        
+    
         # Every time we change our data source, we wipe all existing ones.
         # We now set up our vertices into our current data source.
         vert, dx, le, re = [], [], [], []
@@ -106,14 +114,7 @@ class BlockCollection(SceneData):
         )
 
         # Now we set up our textures
-        self._load_textures()
-
-    @property
-    def _yt_geom_str(self):
-        # note: casting to string for compatibility with new and old geometry
-        # attributes (now an enum member in latest yt),
-        # see https://github.com/yt-project/yt/pull/4244
-        return str(self.data_source.ds.geometry)
+        self._load_textures()    
 
     def _set_geometry_attributes(self, le, re):
         # set any vertex_array attributes that depend on the yt geometry type

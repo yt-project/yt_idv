@@ -17,6 +17,7 @@ bool within_bb(vec3 pos)
     return all(left) && all(right);
 }
 
+#ifdef SPHERICAL_GEOM
 vec3 cart_to_sphere_vec3(vec3 v) {
     // transform a single point in cartesian coords to spherical
     vec3 vout = vec3(0.,0.,0.);
@@ -40,6 +41,7 @@ vec3 cart_to_sphere_vec3(vec3 v) {
     return vout;
 
 }
+#endif
 
 vec3 get_offset_texture_position(sampler3D tex, vec3 tex_curr_pos)
 {
@@ -75,15 +77,15 @@ void main()
 
     vec3 idir = 1.0/dir;
     vec3 tl, tr, dx_cart;
-    if (is_spherical) {
-        tl = (left_edge_cart - camera_pos)*idir;
-        tr = (right_edge_cart - camera_pos)*idir;
-        dx_cart = right_edge_cart - left_edge_cart;
-    } else {
-        tl = (left_edge - camera_pos)*idir;
-        tr = (right_edge - camera_pos)*idir;
-        dx_cart = dx;
-    }
+    #ifdef SPHERICAL_GEOM
+    tl = (left_edge_cart - camera_pos)*idir;
+    tr = (right_edge_cart - camera_pos)*idir;
+    dx_cart = right_edge_cart - left_edge_cart;
+    #else
+    tl = (left_edge - camera_pos)*idir;
+    tr = (right_edge - camera_pos)*idir;
+    dx_cart = dx;
+    #endif
     vec3 step_size = dx_cart/ sample_factor;
 
     vec3 tmin, tmax;
@@ -135,12 +137,12 @@ void main()
     while(t <= t1) {
 
         // texture position
-        if (is_spherical) {
-            ray_position_native = cart_to_sphere_vec3(ray_position);
-            within_el = within_bb(ray_position_native);
-        } else {
-            ray_position_native = ray_position;
-        }
+        #ifdef SPHERICAL_GEOM        
+        ray_position_native = cart_to_sphere_vec3(ray_position);
+        within_el = within_bb(ray_position_native);
+        #else
+        ray_position_native = ray_position;
+        #endif
 
         if (within_el) {
             tex_curr_pos = (ray_position_native - left_edge) / range;  // Scale from 0 .. 1

@@ -4,14 +4,18 @@ layout ( triangle_strip, max_vertices = 14 ) out;
 flat in vec3 vdx[];
 flat in vec3 vleft_edge[];
 flat in vec3 vright_edge[];
+
+#ifdef SPHERICAL_GEOM
 flat in vec3 vleft_edge_cart[];
 flat in vec3 vright_edge_cart[];
+flat out vec3 left_edge_cart;
+flat out vec3 right_edge_cart;
+#endif
 
 flat out vec3 dx;
 flat out vec3 left_edge;
 flat out vec3 right_edge;
-flat out vec3 left_edge_cart;
-flat out vec3 right_edge_cart;
+
 flat out mat4 inverse_proj;
 flat out mat4 inverse_mvm;
 flat out mat4 inverse_pmvm;
@@ -47,13 +51,13 @@ void main() {
     vec3 width, le;
     vec4 newPos;
 
-    if (is_spherical){
-        width = vright_edge_cart[0] - vleft_edge_cart[0];
-        le = vleft_edge_cart[0];
-    } else {
-        width = vright_edge[0] - vleft_edge[0];
-        le = vleft_edge[0];
-    }
+    #ifdef SPHERICAL_GEOM
+    width = vright_edge_cart[0] - vleft_edge_cart[0];
+    le = vleft_edge_cart[0];
+    #else
+    width = vright_edge[0] - vleft_edge[0];
+    le = vleft_edge[0];
+    #endif
 
     for (int i = 0; i < 14; i++) {
         // walks through each vertex of the triangle strip, emit it. need to
@@ -67,8 +71,12 @@ void main() {
         inverse_pmvm = vinverse_pmvm[0];
         inverse_proj = vinverse_proj[0];
         inverse_mvm = vinverse_mvm[0];
+
+        #ifdef SPHERICAL_GEOM
         left_edge_cart = vleft_edge_cart[0];
         right_edge_cart = vright_edge_cart[0];
+        #endif
+        
         dx = vdx[0];
         v_model = newPos;
         texture_offset = ivec3(0);

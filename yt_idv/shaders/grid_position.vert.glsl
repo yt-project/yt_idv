@@ -6,9 +6,7 @@ in vec3 in_dx;
 in vec3 in_left_edge;
 in vec3 in_right_edge;
 
-// pre-computed cartesian le, re
-in vec3 le_cart;
-in vec3 re_cart;
+
 
 flat out vec4 vv_model;
 flat out mat4 vinverse_proj;
@@ -18,8 +16,14 @@ flat out vec3 vdx;
 flat out vec3 vleft_edge;
 flat out vec3 vright_edge;
 
+#ifdef SPHERICAL_GEOM
+// pre-computed cartesian le, re
+in vec3 le_cart;
+in vec3 re_cart;
+
 flat out vec3 vleft_edge_cart;
 flat out vec3 vright_edge_cart;
+#endif
 
 
 void main()
@@ -38,7 +42,9 @@ void main()
     vleft_edge = vec3(in_left_edge);
     vright_edge = vec3(in_right_edge);
 
+    #ifdef SPHERICAL_GEOM
     // cartesian bounding boxes
     vleft_edge_cart = vec3(le_cart);
     vright_edge_cart = vec3(re_cart);
+    #endif
 }
