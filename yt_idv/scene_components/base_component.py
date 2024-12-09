@@ -13,6 +13,7 @@ from yt_idv.opengl_support import (
 )
 from yt_idv.scene_data.base_data import SceneData
 from yt_idv.shader_objects import (
+    PreprocessorDefinitionState,
     ShaderProgram,
     ShaderTrait,
     component_shaders,
@@ -58,6 +59,8 @@ class SceneComponent(traitlets.HasTraits):
     colormap = traitlets.Instance(ColormapTexture)
     _program1 = traitlets.Instance(ShaderProgram, allow_none=True)
     _program2 = traitlets.Instance(ShaderProgram, allow_none=True)
+    _program1_pp_defs = traitlets.Instance(PreprocessorDefinitionState, allow_none=True)
+    _program2_pp_defs = traitlets.Instance(PreprocessorDefinitionState, allow_none=True)
     _program1_invalid = True
     _program2_invalid = True
     _cmap_bounds_invalid = True
@@ -144,15 +147,38 @@ class SceneComponent(traitlets.HasTraits):
     def _default_render_method(self):
         return default_shader_combos[self.name]
 
+    @traitlets.default("_program1_pp_defs")
+    def _default_program1_pp_defs(self):
+        return PreprocessorDefinitionState()
+
+    @traitlets.default("_program2_pp_defs")
+    def _default_program2_pp_defs(self):
+        return PreprocessorDefinitionState()
+
     @traitlets.observe("render_method")
     def _change_render_method(self, change):
         new_combo = component_shaders[self.name][change["new"]]
         with self.hold_trait_notifications():
-            self.vertex_shader = new_combo["first_vertex"]
-            self.fragment_shader = new_combo["first_fragment"]
-            self.geometry_shader = new_combo.get("first_geometry", None)
-            self.colormap_vertex = new_combo["second_vertex"]
-            self.colormap_fragment = new_combo["second_fragment"]
+            self.vertex_shader = (
+                new_combo["first_vertex"],
+                self._program1_pp_defs["vertex"],
+            )
+            self.fragment_shader = (
+                new_combo["first_fragment"],
+                self._program1_pp_defs["fragment"],
+            )
+            self.geometry_shader = (
+                new_combo.get("first_geometry", None),
+                self._program1_pp_defs["geometry"],
+            )
+            self.colormap_vertex = (
+                new_combo["second_vertex"],
+                self._program2_pp_defs["vertex"],
+            )
+            self.colormap_fragment = (
+                new_combo["second_fragment"],
+                self._program2_pp_defs["fragment"],
+            )
 
     @traitlets.observe("render_method")
     def _add_initial_isolayer(self, change):
@@ -191,9 +217,22 @@ class SceneComponent(traitlets.HasTraits):
         self._program2_invalid = True
 
     @traitlets.observe("use_db")
-    def _initialize_db(self, changed):
-        # invaldiate the colormap when the depth buffer selection changes
+    def _toggle_depth_buffer(self, changed):
+        # invalidate the colormap when the depth buffer selection changes
         self._cmap_bounds_invalid = True
+
+        # update the preprocessor state: USE_DB only present in the second
+        # program, only update that one.
+        if changed["new"]:
+            self._program2_pp_defs.add_definition("fragment", ("USE_DB", ""))
+        else:
+            self._program2_pp_defs.clear_definition("fragment", ("USE_DB", ""))
+
+        # update the colormap fragment with current render method
+        current_combo = component_shaders[self.name][self.render_method]
+        pp_defs = self._program2_pp_defs["fragment"]
+        self.colormap_fragment = current_combo["second_fragment"], pp_defs
+        self._recompile_shader()
 
     @traitlets.default("colormap")
     def _default_colormap(self):
@@ -241,7 +280,9 @@ class SceneComponent(traitlets.HasTraits):
                 self._program1.delete_program()
             self._fragment_shader_default()
             self._program1 = ShaderProgram(
-                self.vertex_shader, self.fragment_shader, self.geometry_shader
+                self.vertex_shader,
+                self.fragment_shader,
+                self.geometry_shader,
             )
             self._program1_invalid = False
         return self._program1
@@ -254,7 +295,10 @@ class SceneComponent(traitlets.HasTraits):
             # The vertex shader will always be the same.
             # The fragment shader will change based on whether we are
             # colormapping or not.
-            self._program2 = ShaderProgram(self.colormap_vertex, self.colormap_fragment)
+            self._program2 = ShaderProgram(
+                self.colormap_vertex,
+                self.colormap_fragment,
+            )
             self._program2_invalid = False
         return self._program2
 
@@ -296,7 +340,6 @@ class SceneComponent(traitlets.HasTraits):
                         p2._set_uniform("cmap", 0)
                         p2._set_uniform("fb_tex", 1)
                         p2._set_uniform("db_tex", 2)
-                        p2._set_uniform("use_db", self.use_db)
                         # Note that we use cmap_min/cmap_max, not
                         # self.cmap_min/self.cmap_max.
                         p2._set_uniform("cmap_min", self.cmap_min)
