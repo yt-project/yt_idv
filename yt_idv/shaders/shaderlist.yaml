@@ -4,138 +4,153 @@ shader_definitions:
       info: A constant value applied
       source: constant.frag.glsl
       blend_func:
-      - one
-      - one
+        - one
+        - one
       blend_equation: func add
     constant_rgba:
-        info: A constant, specified RGBa value applied
-        source: constant_rgba.frag.glsl
-        blend_func:
-            - one
-            - one
-        blend_equation: func add
+      info: A constant, specified RGBa value applied
+      source: constant_rgba.frag.glsl
+      blend_func:
+        - one
+        - one
+      blend_equation: func add
     apply_colormap:
-      info: A second pass fragment shader used to apply a colormap to the result of
+      info:
+        A second pass fragment shader used to apply a colormap to the result of
         the first pass rendering
       source: apply_colormap.frag.glsl
       blend_func:
-      - src alpha
-      - dst alpha
+        - src alpha
+        - dst alpha
       blend_equation: func add
     expand_1d:
       info: This expands a 1D texture along the y dimension
       source: expand_1d.frag.glsl
       blend_func:
-      - one
-      - zero
+        - one
+        - zero
       blend_equation: func add
     draw_blocks:
-      info: A first pass fragment shader that performs ray casting using transfer function.
+      info:
+        A first pass fragment shader that performs ray casting using transfer function.
         See :ref:`volume-rendering-method` for more details.
       source: block_outline.frag.glsl
       blend_func:
-      - src alpha
-      - one minus src alpha
+        - src alpha
+        - one minus src alpha
       blend_equation: func add
     isocontour:
       info: A first pass fragment shader that renders isocontour layers.
       source: isocontour.frag.glsl
       blend_func:
-      - src alpha
-      - one minus src alpha
+        - src alpha
+        - one minus src alpha
       blend_equation: func add
     max_intensity:
-      info: A first pass fragment shader that computes Maximum Intensity Projection
+      info:
+        A first pass fragment shader that computes Maximum Intensity Projection
         of the data. See :ref:`projection-types` for more information.
       source:
-      - ray_tracing.frag.glsl
-      - max_intensity.frag.glsl
+        - ray_tracing.frag.glsl
+        - max_intensity.frag.glsl
       blend_func:
-      - one
-      - one
+        - one
+        - one
       blend_equation: max
     mesh:
       info: A vertex shader used for unstructured mesh rendering.
       source: mesh.frag.glsl
       depth_test: less
       blend_func:
-      - one
-      - zero
+        - one
+        - zero
       blend_equation: func add
     noop:
-      info: A second pass fragment shader that performs no operation.  Usually used
+      info:
+        A second pass fragment shader that performs no operation.  Usually used
         if the first pass already took care of applying proper color to the data
       source: noop.frag.glsl
     passthrough:
-      info: A first pass fragment shader that performs no operation. Used for debug
+      info:
+        A first pass fragment shader that performs no operation. Used for debug
         puproses. It's distinct from NoOpFragmentShader, because of the number of uniforms
       source: passthrough.frag.glsl
       blend_func:
-      - src alpha
-      - dst alpha
+        - src alpha
+        - dst alpha
+      blend_equation: func add
+    display_border:
+      info: Draws a border around the display area
+      source: display_border.frag.glsl
+      blend_func:
+        - src alpha
+        - dst alpha
       blend_equation: func add
     draw_lines:
       info: A line drawing fragment shader
       source: draw_lines.frag.glsl
       blend_func:
-      - one
-      - zero
+        - one
+        - zero
       blend_equation: func add
     projection:
-      info: A first pass fragment shader that performs unweighted integration of the
+      info:
+        A first pass fragment shader that performs unweighted integration of the
         data along the line of sight. See :ref:`projection-types` for more information.
       source:
-      - ray_tracing.frag.glsl
-      - projection.frag.glsl
+        - ray_tracing.frag.glsl
+        - projection.frag.glsl
       blend_func:
-      - one
-      - one
+        - one
+        - one
       blend_equation: func add
     text_overlay:
       info: A simple text overlay shader
       source: textoverlay.frag.glsl
       blend_func:
-      - src alpha
-      - one minus src alpha
+        - src alpha
+        - one minus src alpha
       blend_equation: func add
     transfer_function:
-      info: A first pass fragment shader that performs ray casting using transfer function.
+      info:
+        A first pass fragment shader that performs ray casting using transfer function.
         See :ref:`volume-rendering-method` for more details.
       source:
-      - ray_tracing.frag.glsl
-      - transfer_function.frag.glsl
+        - ray_tracing.frag.glsl
+        - transfer_function.frag.glsl
       blend_func_separate:
-      - one minus dst alpha
-      - one
-      - one minus dst alpha
-      - one
+        - one minus dst alpha
+        - one
+        - one minus dst alpha
+        - one
       blend_equation_separate:
-      - func add
-      - func add
+        - func add
+        - func add
     sph_kernel:
       info: Sample pre-integrated SPH kernel
       source: sph_kernel.frag.glsl
       blend_func:
-      - one
-      - one
+        - one
+        - one
       blend_equation: func add
     field_value:
       info: Use field values as input
       source: field_value.frag.glsl
       blend_func:
-      - one
-      - one
+        - one
+        - one
     slice_sample:
       info: Slice through a block collection
       source: slice_sample.frag.glsl
       depth_test: less
       blend_func:
-      - one
-      - zero
+        - one
+        - zero
       blend_equation: func add
   vertex:
     default:
-      info: A first pass vertex shader that tranlates the location of vertices from
+      info:
+        A first pass vertex shader that tranlates the location of vertices from
         the world coordinates to the viewing plane coordinates
       source: default.vert.glsl
     mesh:
@@ -169,21 +184,21 @@ shader_definitions:
       source: particle_expand.geom.glsl
 component_shaders:
   curve_rendering:
-      default_value: default
-      default:
-          description: Default
-          first_vertex: mesh
-          first_fragment: constant_rgba
-          second_vertex: passthrough
-          second_fragment: passthrough
+    default_value: default
+    default:
+      description: Default
+      first_vertex: mesh
+      first_fragment: constant_rgba
+      second_vertex: passthrough
+      second_fragment: passthrough
   multi_curve_rendering:
-      default_value: default
-      default:
-          description: Default
-          first_vertex: mesh
-          first_fragment: constant_rgba
-          second_vertex: passthrough
-          second_fragment: passthrough
+    default_value: default
+    default:
+      description: Default
+      first_vertex: mesh
+      first_fragment: constant_rgba
+      second_vertex: passthrough
+      second_fragment: passthrough
   block_rendering:
     default_value: max_intensity
     max_intensity:
