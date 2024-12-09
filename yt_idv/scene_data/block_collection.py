@@ -17,7 +17,7 @@ class BlockCollection(SceneData):
     scale = traitlets.Bool(False)
     blocks_by_grid = traitlets.Instance(defaultdict, (list,))
     grids_by_block = traitlets.Dict(default_value=())
-    _yt_geom_str = traitlets.Unicode('cartesian')
+    _yt_geom_str = traitlets.Unicode("cartesian")
 
     @traitlets.default("vertex_array")
     def _default_vertex_array(self):
@@ -44,8 +44,7 @@ class BlockCollection(SceneData):
         # note: casting to string for compatibility with new and old geometry
         # attributes (now an enum member in latest yt),
         # see https://github.com/yt-project/yt/pull/4244
-        
-    
+
         # Every time we change our data source, we wipe all existing ones.
         # We now set up our vertices into our current data source.
         vert, dx, le, re = [], [], [], []
@@ -114,7 +113,7 @@ class BlockCollection(SceneData):
         )
 
         # Now we set up our textures
-        self._load_textures()    
+        self._load_textures()
 
     def _set_geometry_attributes(self, le, re):
         # set any vertex_array attributes that depend on the yt geometry type

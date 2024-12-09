@@ -137,7 +137,7 @@ void main()
     while(t <= t1) {
 
         // texture position
-        #ifdef SPHERICAL_GEOM        
+        #ifdef SPHERICAL_GEOM
         ray_position_native = cart_to_sphere_vec3(ray_position);
         within_el = within_bb(ray_position_native);
         #else

@@ -76,7 +76,7 @@ void main() {
         left_edge_cart = vleft_edge_cart[0];
         right_edge_cart = vright_edge_cart[0];
         #endif
-        
+
         dx = vdx[0];
         v_model = newPos;
         texture_offset = ivec3(0);

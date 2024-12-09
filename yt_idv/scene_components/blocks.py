@@ -138,7 +138,7 @@ class BlockRendering(SceneComponent):
                     with bitmap_tex.bind(target=1):
                         GL.glDrawArrays(GL.GL_POINTS, tex_ind * each, each)
 
-    def _set_uniforms(self, scene, shader_program):        
+    def _set_uniforms(self, scene, shader_program):
         if self.data._yt_geom_str == "spherical":
             axis_id = self.data.data_source.ds.coordinates.axis_id
             shader_program._set_uniform("id_theta", axis_id["theta"])

@@ -73,4 +73,3 @@ uniform float cart_bbox_max_width;
 // draw outline control
 uniform float draw_boundary;
 uniform vec4 boundary_color;
-

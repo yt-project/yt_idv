@@ -64,7 +64,7 @@ class SceneComponent(traitlets.HasTraits):
     _program1_invalid = True
     _program2_invalid = True
     _cmap_bounds_invalid = True
-    _data_geometry = traitlets.Unicode(default_value='cartesian')
+    _data_geometry = traitlets.Unicode(default_value="cartesian")
 
     display_name = traitlets.Unicode(allow_none=True)
 
@@ -83,29 +83,32 @@ class SceneComponent(traitlets.HasTraits):
     active = traitlets.Bool(True)
 
     @traitlets.observe("_data_geometry")
-    def _update_geometry_pp_directives(self, change): 
-        if change['new'] == 'spherical' and change['old'] == 'cartesian':   
-            # this should only happen once on initial data load, so only handling the 
-            # change from the default value. 
-            current_shader = component_shaders[self.name][self.render_method]   
-            with self.hold_trait_notifications():                 
-                for shd in ('vertex', 'geometry', 'fragment'):
-                    # update the preprocessor directive state for this shader                    
-                    self._program1_pp_defs.add_definition(shd, ("SPHERICAL_GEOM", ""))                    
-                    pp_defs = self._program1_pp_defs[shd]                    
+    def _update_geometry_pp_directives(self, change):
+        if change["new"] == "spherical" and change["old"] == "cartesian":
+            # this should only happen once on initial data load, so only handling the
+            # change from the default value.
+            current_shader = component_shaders[self.name][self.render_method]
+            with self.hold_trait_notifications():
+                for shd in ("vertex", "geometry", "fragment"):
+                    # update the preprocessor directive state for this shader
+                    self._program1_pp_defs.add_definition(shd, ("SPHERICAL_GEOM", ""))
+                    pp_defs = self._program1_pp_defs[shd]
 
-                    # update shader attributes of self             
-                    new_shader_tuple = (current_shader[f"first_{shd}"], pp_defs)                    
+                    # update shader attributes of self
+                    new_shader_tuple = (current_shader[f"first_{shd}"], pp_defs)
                     setattr(self, f"{shd}_shader", new_shader_tuple)
 
                     # all of the above shader attribute changes will trigger further
-                    # traitlet changes that cause _recompile_shader to run                    
-                            
-        self._data_geometry = change['new']        
+                    # traitlet changes that cause _recompile_shader to run
+
+        self._data_geometry = change["new"]
 
     @traitlets.observe("data")
     def _update_geometry(self, change):
-        if hasattr(change["new"], '_yt_geom_str') and change["new"]._yt_geom_str == 'spherical': 
+        if (
+            hasattr(change["new"], "_yt_geom_str")
+            and change["new"]._yt_geom_str == "spherical"
+        ):
             self._data_geometry = change["new"]._yt_geom_str
 
     @traitlets.observe("display_bounds")
