@@ -123,32 +123,26 @@ class BlockCollection(SceneData):
         elif self._yt_geom_str == "spherical":
             from yt_idv.coordinate_utilities import (
                 SphericalMixedCoordBBox,
-                cartesian_bboxes,
+                cartesian_bboxes_edges,
             )
 
             axis_id = self.data_source.ds.coordinates.axis_id
-            # cartesian bbox calcualtions
-            # TODO: clean this up by rewriting the cython a bit...
-            widths = re - le
-            centers = (le + re) / 2.0
+            # cartesian bbox calculations
             bbox_handler = SphericalMixedCoordBBox()
-            r = centers[:, axis_id["r"]].astype("float64")
-            theta = centers[:, axis_id["theta"]].astype("float64")
-            phi = centers[:, axis_id["phi"]].astype("float64")
-            dr = widths[:, axis_id["r"]].astype("float64")
-            dtheta = widths[:, axis_id["theta"]].astype("float64")
-            dphi = widths[:, axis_id["phi"]].astype("float64")
-            x = np.full(r.shape, np.nan, dtype="float64")
-            y = np.full(r.shape, np.nan, dtype="float64")
-            z = np.full(r.shape, np.nan, dtype="float64")
-            dx = np.full(r.shape, np.nan, dtype="float64")
-            dy = np.full(r.shape, np.nan, dtype="float64")
-            dz = np.full(r.shape, np.nan, dtype="float64")
-            cartesian_bboxes(
-                bbox_handler, r, theta, phi, dr, dtheta, dphi, x, y, z, dx, dy, dz
+
+            r_le = le[:, axis_id["r"]].astype("float64")
+            r_re = re[:, axis_id["r"]].astype("float64")
+            theta_le = le[:, axis_id["theta"]].astype("float64")
+            theta_re = re[:, axis_id["theta"]].astype("float64")
+            phi_le = le[:, axis_id["phi"]].astype("float64")
+            phi_re = re[:, axis_id["phi"]].astype("float64")
+
+            xyz_le, xyz_re = cartesian_bboxes_edges(
+                bbox_handler, r_le, theta_le, phi_le, r_re, theta_re, phi_re
             )
-            le_cart = np.column_stack([x - dx / 2.0, y - dy / 2.0, z - dz / 2.0])
-            re_cart = np.column_stack([x + dx / 2.0, y + dy / 2.0, z + dz / 2.0])
+
+            le_cart = np.column_stack(xyz_le)
+            re_cart = np.column_stack(xyz_re)
 
             # cartesian le, re, width of whole domain
             domain_le = []

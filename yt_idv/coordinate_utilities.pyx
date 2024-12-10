@@ -377,28 +377,43 @@ def cartesian_bboxes(MixedCoordBBox bbox_handler,
                       np.float64_t[:] dpos0,
                       np.float64_t[:] dpos1,
                       np.float64_t[:] dpos2,
-                      np.float64_t[:] x,
-                      np.float64_t[:] y,
-                      np.float64_t[:] z,
-                      np.float64_t[:] dx,
-                      np.float64_t[:] dy,
-                      np.float64_t[:] dz,
                                       ):
-    # calculates the cartesian bounding boxes around non-cartesian
-    # volume elements
-    #
-    # bbox_handler : a MixedCoordBBox child instance
-    # pos0, pos1, pos2: native coordinates of element centers
-    # dpos0, dpos1, dpos2: element widths in native coordinates
-    # x, y, z: cartesian centers of bounding boxes, modified in place
-    # dx, dy, dz : full-widths of the cartesian bounding boxes, modified in place
+    """
+    Calculate the cartesian bounding boxes around non-cartesian volume elements
+
+    Parameters
+    ----------
+    bbox_handler
+        a MixedCoordBBox child instance
+    pos0, pos1, pos2
+        native coordinates of element centers
+    dpos0, dpos1, dpos2
+        element widths in native coordinates
+
+    Returns
+    -------
+    x_y_z
+        a 3-element tuples containing the cartesian bounding box centers
+    dx_y_z
+        a 3-element tuples containing the cartesian bounding box widths
+
+    """
 
     cdef int i, n_pos, i_result
     cdef np.float64_t[3] xyz_i
     cdef np.float64_t[3] dxyz_i
     cdef int failure = 0
+    cdef np.float64_t[:] x, y, z  # bbox centers
+    cdef np.float64_t[:] dx, dy, dz  # bbox full widths
 
     n_pos = pos0.size
+    x = np.empty_like(pos0)
+    y = np.empty_like(pos0)
+    z = np.empty_like(pos0)
+    dx = np.empty_like(pos0)
+    dy = np.empty_like(pos0)
+    dz = np.empty_like(pos0)
+
     with nogil:
         for i in range(n_pos):
 
@@ -421,3 +436,91 @@ def cartesian_bboxes(MixedCoordBBox bbox_handler,
 
     if failure > 0:
         raise RuntimeError("Unexpected error in get_cartesian_bbox.")
+
+    x_y_z = (np.asarray(x), np.asarray(y), np.asarray(z))
+    dx_y_z = (np.asarray(dx), np.asarray(dy), np.asarray(dz))
+    return x_y_z, dx_y_z
+
+
+@cython.cdivision(True)
+@cython.boundscheck(False)
+@cython.wraparound(False)
+def cartesian_bboxes_edges(MixedCoordBBox bbox_handler,
+                            np.float64_t[:] le0,
+                            np.float64_t[:] le1,
+                            np.float64_t[:] le2,
+                            np.float64_t[:] re0,
+                            np.float64_t[:] re1,
+                            np.float64_t[:] re2,
+                                      ):
+    """
+    Calculate the cartesian bounding boxes around non-cartesian volume elements
+
+    Same as cartesian_bboxes, but supplying and returning element left/right edges.
+
+    Parameters
+    ----------
+    bbox_handler
+        a MixedCoordBBox child instance
+    le0, le1, le2
+        native coordinates of element left edges
+    re0, re1, re2
+        native coordinates of element right edges
+
+    Returns
+    -------
+    xyz_le
+        a 3-element tuples containing the cartesian bounding box left edges
+    xyz_re
+        a 3-element tuples containing the cartesian bounding box right edges
+
+    """
+    cdef int i, n_pos, i_result
+    cdef np.float64_t[3] xyz_i
+    cdef np.float64_t[3] dxyz_i
+    cdef np.float64_t pos0, pos1, pos2, dpos0, dpos1, dpos2
+    cdef int failure = 0
+    cdef np.float64_t[:] x_le, y_le, z_le  # bbox left edges
+    cdef np.float64_t[:] x_re, y_re, z_re  # bbox right edges
+
+    n_pos = le0.size
+    x_le = np.empty_like(le0)
+    y_le = np.empty_like(le0)
+    z_le = np.empty_like(le0)
+    x_re = np.empty_like(le0)
+    y_re = np.empty_like(le0)
+    z_re = np.empty_like(le0)
+
+    with nogil:
+        for i in range(n_pos):
+            pos0 = (le0[i] + re0[i]) / 2.
+            pos1 = (le1[i] + re1[i]) / 2.
+            pos2 = (le2[i] + re2[i]) / 2.
+            dpos0 = re0[i] - le0[i]
+            dpos1 = re1[i] - le1[i]
+            dpos2 = re2[i] - le2[i]
+            i_result = bbox_handler.get_cartesian_bbox(pos0,
+                                                    pos1,
+                                                    pos2,
+                                                    dpos0,
+                                                    dpos1,
+                                                    dpos2,
+                                                    xyz_i,
+                                                    dxyz_i)
+            failure += i_result
+
+            x_le[i] = xyz_i[0] - dxyz_i[0] / 2.
+            x_re[i] = xyz_i[0] + dxyz_i[0] / 2.
+            y_le[i] = xyz_i[1] - dxyz_i[1] / 2.
+            y_re[i] = xyz_i[1] + dxyz_i[1] / 2.
+            z_le[i] = xyz_i[2] - dxyz_i[2] / 2.
+            z_re[i] = xyz_i[2] + dxyz_i[2] / 2.
+
+
+    if failure > 0:
+        raise RuntimeError("Unexpected error in get_cartesian_bbox.")
+
+    xyz_le = (np.asarray(x_le), np.asarray(y_le), np.asarray(z_le))
+    xyz_re = (np.asarray(x_re), np.asarray(y_re), np.asarray(z_re))
+
+    return xyz_le, xyz_re
