@@ -11,7 +11,7 @@ def osmesa_fake_spherical():
     as the field.
     """
 
-    sz = (10, 10, 10)
+    sz = (32, 32, 32)
     fake_data = {"density": np.random.random(sz)}
 
     bbox = np.array([[0.1, 1.0], [0.0, 2 * np.pi], [0, np.pi]])
@@ -26,7 +26,8 @@ def osmesa_fake_spherical():
     )
     dd = ds.all_data()
     rc = yt_idv.render_context("osmesa", width=1024, height=1024)
-    rc.add_scene(dd, "density", no_ghost=True)
+    rc.add_scene(dd, ("index", "phi"), no_ghost=True)
+    rc.scene.components[0].sample_factor = 20.0
     yield rc
     rc.osmesa.OSMesaDestroyContext(rc.context)
 
