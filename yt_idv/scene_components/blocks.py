@@ -83,6 +83,15 @@ class BlockRendering(SceneComponent):
             imgui.image_button(
                 self.transfer_function.texture_name, 256, 32, frame_padding=0
             )
+            _, value = imgui.input_float(
+                "Scale Output",
+                self.color_scale,
+                format="%0.2f",
+                flags=imgui.INPUT_TEXT_ENTER_RETURNS_TRUE,
+            )
+            if _:
+                self.color_scale = value
+                changed = True
             imgui.text("Right click and drag to change")
             update = False
             data = self.transfer_function.data.astype("f4") / 255
