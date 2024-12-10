@@ -129,29 +129,22 @@ class BlockCollection(SceneData):
             axis_id = self.data_source.ds.coordinates.axis_id
             # cartesian bbox calculations
             bbox_handler = SphericalMixedCoordBBox()
-
-            r_le = le[:, axis_id["r"]].astype("float64")
-            r_re = re[:, axis_id["r"]].astype("float64")
-            theta_le = le[:, axis_id["theta"]].astype("float64")
-            theta_re = re[:, axis_id["theta"]].astype("float64")
-            phi_le = le[:, axis_id["phi"]].astype("float64")
-            phi_re = re[:, axis_id["phi"]].astype("float64")
-
-            xyz_le, xyz_re = cartesian_bboxes_edges(
-                bbox_handler, r_le, theta_le, phi_le, r_re, theta_re, phi_re
+            le_cart, re_cart = cartesian_bboxes_edges(
+                bbox_handler,
+                le[:, axis_id["r"]],
+                le[:, axis_id["theta"]],
+                le[:, axis_id["phi"]],
+                re[:, axis_id["r"]],
+                re[:, axis_id["theta"]],
+                re[:, axis_id["phi"]],
             )
-
-            le_cart = np.column_stack(xyz_le)
-            re_cart = np.column_stack(xyz_re)
+            le_cart = np.column_stack(le_cart)
+            re_cart = np.column_stack(re_cart)
 
             # cartesian le, re, width of whole domain
-            domain_le = []
-            domain_re = []
-            domain_wid = []
-            for idim in range(3):
-                domain_le.append(le_cart[:, idim].min())
-                domain_re.append(re_cart[:, idim].max())
-                domain_wid.append(domain_re[idim] - domain_le[idim])
+            domain_le = le_cart.min(axis=0)
+            domain_re = re_cart.max(axis=0)
+            domain_wid = domain_re - domain_le
 
             # normalize to viewport in (0, 1), preserving ratio of the bounding box
             max_wid = np.max(domain_wid)
@@ -166,7 +159,7 @@ class BlockCollection(SceneData):
             # 0,1 to cartesian coords of domain_le to domain_re from which full
             # spherical coords can be calculated.
             self.cart_bbox_max_width = max_wid
-            self.cart_bbox_le = np.array(domain_le).astype("f4")
+            self.cart_bbox_le = domain_le.astype("f4")
 
             self.vertex_array.attributes.append(
                 VertexAttribute(name="le_cart", data=le_cart.astype("f4"))
