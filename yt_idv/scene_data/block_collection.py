@@ -17,6 +17,7 @@ class BlockCollection(SceneData):
     scale = traitlets.Bool(False)
     blocks_by_grid = traitlets.Instance(defaultdict, (list,))
     grids_by_block = traitlets.Dict(default_value=())
+    _yt_geom_str = traitlets.Unicode("cartesian")
 
     @traitlets.default("vertex_array")
     def _default_vertex_array(self):
@@ -38,12 +39,19 @@ class BlockCollection(SceneData):
             Should we speed things up by skipping ghost zone generation?
         """
         self.data_source.tiles.set_fields([field], [False], no_ghost=no_ghost)
+
+        self._yt_geom_str = str(self.data_source.ds.geometry)
+        # note: casting to string for compatibility with new and old geometry
+        # attributes (now an enum member in latest yt),
+        # see https://github.com/yt-project/yt/pull/4244
+
         # Every time we change our data source, we wipe all existing ones.
         # We now set up our vertices into our current data source.
         vert, dx, le, re = [], [], [], []
+
         self.min_val = +np.inf
         self.max_val = -np.inf
-        if self.scale:
+        if self.scale and self._yt_geom_str == "cartesian":
             left_min = np.ones(3, "f8") * np.inf
             right_max = np.ones(3, "f8") * -np.inf
             for block in self.data_source.tiles.traverse():
@@ -74,34 +82,99 @@ class BlockCollection(SceneData):
         if hasattr(self.max_val, "in_units"):
             self.max_val = self.max_val.d
 
-        LE = np.array([b.LeftEdge for i, b in self.blocks.values()]).min(axis=0)
-        RE = np.array([b.RightEdge for i, b in self.blocks.values()]).max(axis=0)
-        self.diagonal = np.sqrt(((RE - LE) ** 2).sum())
-
-        # Note: the block LeftEdge and RightEdge arrays are plain np arrays in
-        # units of code_length, so need to convert to unitary units (in range 0,1)
-        # after the fact:
-        units = self.data_source.ds.units
-        ratio = (units.code_length / units.unitary).base_value
-        dx = np.array(dx, dtype="f4") * ratio
-        le = np.array(le, dtype="f4") * ratio
-        re = np.array(re, dtype="f4") * ratio
-
         # Now we set up our buffer
         vert = np.array(vert, dtype="f4")
+        dx = np.array(dx, dtype="f4")
+        le = np.array(le)
+        re = np.array(re)
+        if self._yt_geom_str == "cartesian":
+            # Note: the block LeftEdge and RightEdge arrays are plain np arrays in
+            # units of code_length, so need to convert to unitary units (in range 0,1)
+            # after the fact:
+            units = self.data_source.ds.units
+            ratio = (units.code_length / units.unitary).base_value
+            dx = dx * ratio
+            le = le * ratio
+            re = re * ratio
+            LE = np.array([b.LeftEdge for i, b in self.blocks.values()]).min(axis=0)
+            RE = np.array([b.RightEdge for i, b in self.blocks.values()]).max(axis=0)
+            self.diagonal = np.sqrt(((RE - LE) ** 2).sum())
+
+        self._set_geometry_attributes(le, re)
         self.vertex_array.attributes.append(
             VertexAttribute(name="model_vertex", data=vert)
         )
         self.vertex_array.attributes.append(VertexAttribute(name="in_dx", data=dx))
         self.vertex_array.attributes.append(
-            VertexAttribute(name="in_left_edge", data=le)
+            VertexAttribute(name="in_left_edge", data=le.astype("f4"))
         )
         self.vertex_array.attributes.append(
-            VertexAttribute(name="in_right_edge", data=re)
+            VertexAttribute(name="in_right_edge", data=re.astype("f4"))
         )
 
         # Now we set up our textures
         self._load_textures()
+
+    def _set_geometry_attributes(self, le, re):
+        # set any vertex_array attributes that depend on the yt geometry type
+
+        if self._yt_geom_str == "cartesian":
+            return
+        elif self._yt_geom_str == "spherical":
+            from yt_idv.coordinate_utilities import (
+                SphericalMixedCoordBBox,
+                cartesian_bboxes_edges,
+            )
+
+            axis_id = self.data_source.ds.coordinates.axis_id
+            # cartesian bbox calculations
+            bbox_handler = SphericalMixedCoordBBox()
+            le_cart, re_cart = cartesian_bboxes_edges(
+                bbox_handler,
+                le[:, axis_id["r"]],
+                le[:, axis_id["theta"]],
+                le[:, axis_id["phi"]],
+                re[:, axis_id["r"]],
+                re[:, axis_id["theta"]],
+                re[:, axis_id["phi"]],
+            )
+            le_cart = np.column_stack(le_cart)
+            re_cart = np.column_stack(re_cart)
+
+            # cartesian le, re, width of whole domain
+            domain_le = le_cart.min(axis=0)
+            domain_re = re_cart.max(axis=0)
+            domain_wid = domain_re - domain_le
+
+            # normalize to viewport in (0, 1), preserving ratio of the bounding box
+            max_wid = np.max(domain_wid)
+            for idim in range(3):
+                le_cart[:, idim] = (le_cart[:, idim] - domain_le[idim]) / max_wid
+                re_cart[:, idim] = (re_cart[:, idim] - domain_le[idim]) / max_wid
+
+            le_cart = np.asarray(le_cart)
+            re_cart = np.asarray(re_cart)
+
+            # these will get passed down as uniforms to go from screen coords of
+            # 0,1 to cartesian coords of domain_le to domain_re from which full
+            # spherical coords can be calculated.
+            self.cart_bbox_max_width = max_wid
+            self.cart_bbox_le = domain_le.astype("f4")
+
+            self.vertex_array.attributes.append(
+                VertexAttribute(name="le_cart", data=le_cart.astype("f4"))
+            )
+            self.vertex_array.attributes.append(
+                VertexAttribute(name="re_cart", data=re_cart.astype("f4"))
+            )
+
+            # does not seem that diagonal is used anywhere, but recalculating to
+            # be safe...
+            self.diagonal = np.sqrt(((re_cart - le_cart) ** 2).sum())
+        else:
+            raise NotImplementedError(
+                f"{self.name} does not implement {self._yt_geom_str} geometries."
+            )
 
     def viewpoint_iter(self, camera):
         for block in self.data_source.tiles.traverse(viewpoint=camera.position):
