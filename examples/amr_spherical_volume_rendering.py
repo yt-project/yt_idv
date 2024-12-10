@@ -18,8 +18,6 @@ bbox_options = {
     "ew_hemi": np.array([[0.1, 1.0], [0.0, np.pi], [0.0, np.pi]]),
     "quadrant_shell": np.array([[0.6, 1.0], [0.0, np.pi / 2], [0.0, np.pi / 2]]),
 }
-sz = (256, 256, 256)
-fake_data = {"density": np.random.random(sz)}
 
 if __name__ == "__main__":
 
@@ -40,8 +38,14 @@ if __name__ == "__main__":
     parser.add_argument(
         "-np", "--nprocs", default=64, help="number of grids to decompose domain to"
     )
+    parser.add_argument(
+        "-sz", "--size", default=256, help="dimensions, will be (size, size size)"
+    )
 
     args = parser.parse_args()
+
+    sz = (int(args.size),) * 3
+    fake_data = {"density": np.random.random(sz)}
 
     field = str(args.field).split(",")
     if len(field) == 1:
@@ -117,5 +121,7 @@ if __name__ == "__main__":
     rc = yt_idv.render_context(height=800, width=800, gui=True)
     sg = rc.add_scene(ds, field, no_ghost=True)
     rc.scene.components[0].sample_factor = 20.0
+    rc.scene.components[0].cmap_log = False
+    rc.scene.components[0]._reset_cmap_bounds()
 
     rc.run()
