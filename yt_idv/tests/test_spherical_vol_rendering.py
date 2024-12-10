@@ -1,5 +1,3 @@
-import os
-
 import numpy as np
 import pytest
 import yt
@@ -33,12 +31,5 @@ def osmesa_fake_spherical():
     rc.osmesa.OSMesaDestroyContext(rc.context)
 
 
-def test_spherical(osmesa_fake_spherical, tmp_path):
-    # just checking that it runs here
-    image = osmesa_fake_spherical.run()
-
-    outdir = tmp_path / "snapshots"
-    outdir.mkdir()
-    fn = str(outdir / "testout.png")
-    _ = yt.write_bitmap(image, fn)
-    assert os.path.exists(fn)
+def test_spherical(osmesa_fake_spherical, image_store):
+    image_store(osmesa_fake_spherical)
