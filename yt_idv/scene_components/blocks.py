@@ -104,6 +104,14 @@ class BlockRendering(SceneComponent):
                     elif renderer.io.key_ctrl:
                         yv1 = yv2 = 0.0
                     data[xb1:xb2, 0, i] = np.mgrid[yv1 : yv2 : (xb2 - xb1) * 1j]
+            if imgui.button("Gaussians"):
+                data = np.zeros((256, 1, 4), dtype="f4")
+                v = np.arange(256)
+                for center in [0.25, 0.5, 0.75]:
+                    data[:, 0, :] += np.exp(-(((v - center * 256) / 20.0) ** 2))[
+                        :, None
+                    ]
+                update = True
             if update:
                 self.transfer_function.data = (data * 255).astype("u1")
 
