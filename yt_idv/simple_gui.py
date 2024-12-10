@@ -1,3 +1,5 @@
+import math
+
 import imgui
 import matplotlib.pyplot as plt
 import numpy as np
@@ -72,6 +74,14 @@ class SimpleGUI:
         if not imgui.tree_node("Camera"):
             return
         changed = False
+        with imgui.begin_group():
+            imgui.text("Log of Scroll Delta")
+            _, scroll_delta = imgui.slider_float(
+                "value", math.log10(scene.camera.scroll_delta), -3.0, 0.0
+            )
+        if _:
+            scene.camera.scroll_delta = 10**scroll_delta
+            changed = True
         with scene.camera.hold_trait_notifications():
             for attr in ("position", "up", "focus"):
                 arr = getattr(scene.camera, attr)
@@ -101,9 +111,28 @@ class SimpleGUI:
                 scene.camera.position = np.array([0.499, 0.499, 0.499])
                 scene.camera.focus = np.array([0.5, 0.5, 0.5])
                 changed = True
+            imgui.same_line()
             if imgui.button("Outside"):
                 scene.camera.position = np.array([1.5, 1.5, 1.5])
                 scene.camera.focus = np.array([0.5, 0.5, 0.5])
+                changed = True
+            imgui.same_line()
+            if imgui.button("X Up"):
+                scene.camera.position = np.array([0.5, 1.5, 0.5])
+                scene.camera.focus = np.array([0.5, 0.5, 0.5])
+                scene.camera.up = np.array([1.0, 0.0, 0.0])
+                changed = True
+            imgui.same_line()
+            if imgui.button("Y Up"):
+                scene.camera.position = np.array([0.5, 0.5, 1.5])
+                scene.camera.focus = np.array([0.5, 0.5, 0.5])
+                scene.camera.up = np.array([0.0, 1.0, 0.0])
+                changed = True
+            imgui.same_line()
+            if imgui.button("Z Up"):
+                scene.camera.position = np.array([1.5, 0.5, 0.5])
+                scene.camera.focus = np.array([0.5, 0.5, 0.5])
+                scene.camera.up = np.array([0.0, 0.0, 1.0])
                 changed = True
         if changed:
             scene.camera._update_matrices()

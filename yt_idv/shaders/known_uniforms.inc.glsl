@@ -51,9 +51,6 @@ uniform sampler3D ds_tex[6];
 // ray tracing control
 uniform float sample_factor;
 
-// depth buffer control
-uniform bool use_db;
-
 // curve drawing control
 uniform vec4 curve_rgba;
 
@@ -62,3 +59,7 @@ uniform int iso_num_layers;
 uniform float iso_layers[32];
 uniform float iso_layer_tol[32];
 uniform float iso_alphas[32];
+
+// draw outline control
+uniform float draw_boundary;
+uniform vec4 boundary_color;

@@ -13,6 +13,7 @@ from yt_idv.opengl_support import (
 )
 from yt_idv.scene_data.base_data import SceneData
 from yt_idv.shader_objects import (
+    PreprocessorDefinitionState,
     ShaderProgram,
     ShaderTrait,
     component_shaders,
@@ -58,17 +59,27 @@ class SceneComponent(traitlets.HasTraits):
     colormap = traitlets.Instance(ColormapTexture)
     _program1 = traitlets.Instance(ShaderProgram, allow_none=True)
     _program2 = traitlets.Instance(ShaderProgram, allow_none=True)
+    _program1_pp_defs = traitlets.Instance(PreprocessorDefinitionState, allow_none=True)
+    _program2_pp_defs = traitlets.Instance(PreprocessorDefinitionState, allow_none=True)
     _program1_invalid = True
     _program2_invalid = True
     _cmap_bounds_invalid = True
 
     display_name = traitlets.Unicode(allow_none=True)
 
-    # These attributes are
+    final_pass_vertex = ShaderTrait(allow_none=True).tag(shader_type="vertex")
+    final_pass_fragment = ShaderTrait(allow_none=True).tag(shader_type="fragment")
+    _final_pass = traitlets.Instance(ShaderProgram, allow_none=True)
+    _final_pass_invalid = True
+
+    # These attributes are just for colormap application
     cmap_min = traitlets.CFloat(None, allow_none=True)
     cmap_max = traitlets.CFloat(None, allow_none=True)
     cmap_log = traitlets.Bool(True)
     scale = traitlets.CFloat(1.0)
+
+    # This attribute determines whether or not this component is "active"
+    active = traitlets.Bool(True)
 
     @traitlets.observe("display_bounds")
     def _change_display_bounds(self, change):
@@ -144,15 +155,38 @@ class SceneComponent(traitlets.HasTraits):
     def _default_render_method(self):
         return default_shader_combos[self.name]
 
+    @traitlets.default("_program1_pp_defs")
+    def _default_program1_pp_defs(self):
+        return PreprocessorDefinitionState()
+
+    @traitlets.default("_program2_pp_defs")
+    def _default_program2_pp_defs(self):
+        return PreprocessorDefinitionState()
+
     @traitlets.observe("render_method")
     def _change_render_method(self, change):
         new_combo = component_shaders[self.name][change["new"]]
         with self.hold_trait_notifications():
-            self.vertex_shader = new_combo["first_vertex"]
-            self.fragment_shader = new_combo["first_fragment"]
-            self.geometry_shader = new_combo.get("first_geometry", None)
-            self.colormap_vertex = new_combo["second_vertex"]
-            self.colormap_fragment = new_combo["second_fragment"]
+            self.vertex_shader = (
+                new_combo["first_vertex"],
+                self._program1_pp_defs["vertex"],
+            )
+            self.fragment_shader = (
+                new_combo["first_fragment"],
+                self._program1_pp_defs["fragment"],
+            )
+            self.geometry_shader = (
+                new_combo.get("first_geometry", None),
+                self._program1_pp_defs["geometry"],
+            )
+            self.colormap_vertex = (
+                new_combo["second_vertex"],
+                self._program2_pp_defs["vertex"],
+            )
+            self.colormap_fragment = (
+                new_combo["second_fragment"],
+                self._program2_pp_defs["fragment"],
+            )
 
     @traitlets.observe("render_method")
     def _add_initial_isolayer(self, change):
@@ -191,9 +225,22 @@ class SceneComponent(traitlets.HasTraits):
         self._program2_invalid = True
 
     @traitlets.observe("use_db")
-    def _initialize_db(self, changed):
-        # invaldiate the colormap when the depth buffer selection changes
+    def _toggle_depth_buffer(self, changed):
+        # invalidate the colormap when the depth buffer selection changes
         self._cmap_bounds_invalid = True
+
+        # update the preprocessor state: USE_DB only present in the second
+        # program, only update that one.
+        if changed["new"]:
+            self._program2_pp_defs.add_definition("fragment", ("USE_DB", ""))
+        else:
+            self._program2_pp_defs.clear_definition("fragment", ("USE_DB", ""))
+
+        # update the colormap fragment with current render method
+        current_combo = component_shaders[self.name][self.render_method]
+        pp_defs = self._program2_pp_defs["fragment"]
+        self.colormap_fragment = current_combo["second_fragment"], pp_defs
+        self._recompile_shader()
 
     @traitlets.default("colormap")
     def _default_colormap(self):
@@ -222,6 +269,14 @@ class SceneComponent(traitlets.HasTraits):
     def _colormap_fragment_default(self):
         return component_shaders[self.name][self.render_method]["second_fragment"]
 
+    @traitlets.default("final_pass_vertex")
+    def _final_pass_vertex_default(self):
+        return "passthrough"
+
+    @traitlets.default("final_pass_fragment")
+    def _final_pass_fragment_default(self):
+        return "display_border"
+
     @traitlets.default("base_quad")
     def _default_base_quad(self):
         bq = SceneData(
@@ -241,7 +296,9 @@ class SceneComponent(traitlets.HasTraits):
                 self._program1.delete_program()
             self._fragment_shader_default()
             self._program1 = ShaderProgram(
-                self.vertex_shader, self.fragment_shader, self.geometry_shader
+                self.vertex_shader,
+                self.fragment_shader,
+                self.geometry_shader,
             )
             self._program1_invalid = False
         return self._program1
@@ -254,9 +311,22 @@ class SceneComponent(traitlets.HasTraits):
             # The vertex shader will always be the same.
             # The fragment shader will change based on whether we are
             # colormapping or not.
-            self._program2 = ShaderProgram(self.colormap_vertex, self.colormap_fragment)
+            self._program2 = ShaderProgram(
+                self.colormap_vertex,
+                self.colormap_fragment,
+            )
             self._program2_invalid = False
         return self._program2
+
+    @property
+    def final_pass(self):
+        if self._final_pass_invalid:
+            if self._final_pass is not None:
+                self._final_pass.delete_program()
+            self._final_pass = ShaderProgram(
+                self.final_pass_vertex, self.final_pass_fragment
+            )
+        return self._final_pass
 
     def _set_iso_uniforms(self, p):
         # these could be handled better by watching traits.
@@ -273,6 +343,10 @@ class SceneComponent(traitlets.HasTraits):
     def run_program(self, scene):
         # Store this info, because we need to render into a framebuffer that is the
         # right size.
+        if self.display_bounds != (0.0, 1.0, 0.0, 1.0):
+            draw_boundary = 0.002
+        else:
+            draw_boundary = 0.0
         x0, y0, w, h = GL.glGetIntegerv(GL.GL_VIEWPORT)
         GL.glViewport(0, 0, w, h)
         if not self.visible:
@@ -296,7 +370,6 @@ class SceneComponent(traitlets.HasTraits):
                         p2._set_uniform("cmap", 0)
                         p2._set_uniform("fb_tex", 1)
                         p2._set_uniform("db_tex", 2)
-                        p2._set_uniform("use_db", self.use_db)
                         # Note that we use cmap_min/cmap_max, not
                         # self.cmap_min/self.cmap_max.
                         p2._set_uniform("cmap_min", self.cmap_min)
@@ -307,6 +380,18 @@ class SceneComponent(traitlets.HasTraits):
                             # the framebuffer
                             GL.glViewport(x0, y0, w, h)
                             GL.glDrawArrays(GL.GL_TRIANGLES, 0, 6)
+
+        if draw_boundary > 0.0:
+            with self.final_pass.enable() as p3:
+                p3._set_uniform("draw_boundary", float(draw_boundary))
+                if self.active:
+                    boundary_color = np.array([0.0, 0.0, 1.0, 1.0], dtype="float32")
+                else:
+                    boundary_color = np.array([0.5, 0.5, 0.5, 1.0], dtype="float32")
+                p3._set_uniform("boundary_color", boundary_color)
+                with self.base_quad.vertex_array.bind(p3):
+                    GL.glViewport(x0, y0, w, h)
+                    GL.glDrawArrays(GL.GL_TRIANGLES, 0, 6)
 
     def draw(self, scene, program):
         raise NotImplementedError
@@ -378,12 +463,16 @@ class SceneComponent(traitlets.HasTraits):
             "fragment_shader",
             "colormap_vertex",
             "colormap_fragment",
+            "final_pass_vertex",
+            "final_pass_fragment",
         )
         for shader_name in shaders:
             s = getattr(self, shader_name, None)
             if s:
                 s.delete_shader()
-        self._program1_invalid = self._program2_invalid = True
+        self._program1_invalid = self._program2_invalid = self._final_pass_invalid = (
+            True
+        )
         return True
 
     def _render_isolayer_inputs(self, imgui) -> bool:

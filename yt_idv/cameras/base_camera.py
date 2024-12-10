@@ -39,7 +39,9 @@ class BaseCamera(traitlets.HasTraits):
     # operations won't trigger our observation.
     position = YTPositionTrait([0.0, 0.0, 1.0])
     focus = YTPositionTrait([0.0, 0.0, 0.0])
+    
     up = ArrayTrait(np.array([0.0, 0.0, 1.0])).valid(ndarray_shape(3), ndarray_ro())
+    scroll_delta = traitlets.Float(0.1)
     fov = traitlets.Float(45.0)
     near_plane = traitlets.Float(0.001)
     far_plane = traitlets.Float(20.0)
