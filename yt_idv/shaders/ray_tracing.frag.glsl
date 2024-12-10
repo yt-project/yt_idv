@@ -125,8 +125,6 @@ void main()
     vec3 ndx = 1.0/nzones;
 
     vec3 tex_curr_pos = vec3(0.0);
-    vec3 tex_min = vec3(0.0 + 1. * dx/2.0);
-    vec3 tex_max = vec3(1.0 - 1. * dx/2.0);
 
     bool sampled;
     bool ever_sampled = false;
