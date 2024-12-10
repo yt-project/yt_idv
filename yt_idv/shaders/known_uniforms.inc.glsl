@@ -20,6 +20,8 @@ uniform float y_origin;
 uniform float tf_log;
 uniform float tf_max;
 uniform float tf_min;
+uniform float data_min_val;
+uniform float data_max_val;
 
 // Control of RGB channel information
 uniform int channel;
