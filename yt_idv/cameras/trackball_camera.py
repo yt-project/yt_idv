@@ -86,3 +86,7 @@ class TrackballCamera(BaseCamera):
 
     def _compute_matrices(self):
         pass
+
+    def set_position(self, pos):
+        self.position = pos
+        self.view_matrix = get_lookat_matrix(self.position, self.focus, self.up)
