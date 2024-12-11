@@ -18,18 +18,20 @@ bbox_options = {
     "partial": {
         "bbox": np.array([[0.5, 1.0], [0.0, np.pi / 3], [np.pi / 4, np.pi / 2]]),
         "field": ("index", "r"),
-        "camera_position": [-0.5, -1, 2.5],
+        # "camera_position": [-0.5, -1, 2.5],  # see note
     },
     "whole": {
         "bbox": np.array([[0.0, 1.0], [0.0, 2 * np.pi], [0, np.pi]]),
         "field": ("index", "phi"),
-        "camera_position": [0.5, 0.5, 2],
+        # "camera_position": [0.5, 0.5, 2],  # see note
     },
     "quadrant_shell": {
         "bbox": np.array([[0.6, 1.0], [0.0, np.pi / 2], [0.0, np.pi / 2]]),
         "field": ("index", "theta"),
     },
 }
+# note: the camera_position keys above are commented because of
+# https://github.com/yt-project/yt_idv/issues/165
 
 
 @pytest.mark.parametrize("bbox_option", bbox_options.keys())
