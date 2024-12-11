@@ -62,6 +62,15 @@ def test_snapshots(osmesa_fake_amr, image_store):
     image_store(osmesa_fake_amr)
 
 
+def test_camera_position(osmesa_fake_amr, image_store):
+    """Check that we can update the camera position"""
+    vm = osmesa_fake_amr.scene.camera.view_matrix
+    osmesa_fake_amr.scene.camera.set_position([0.5, 2.0, 3.0])
+    # check that the view matrix has changed
+    assert np.sum(np.abs(vm - osmesa_fake_amr.scene.camera.view_matrix)) > 0.0
+    image_store(osmesa_fake_amr)
+
+
 def test_depth_buffer_toggle(osmesa_fake_amr, image_store):
     osmesa_fake_amr.scene.components[0].use_db = True
     image_store(osmesa_fake_amr)
