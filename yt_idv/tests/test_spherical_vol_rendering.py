@@ -87,6 +87,6 @@ def test_spherical_nprocs(osmesa_empty_rc, image_store, nprocs):
     osmesa_empty_rc.scene.components[0]._reset_cmap_bounds()
     cpos = bbox_options[bbox_option].get("camera_position", None)
     if cpos:
-        osmesa_empty_rc.scene.camera.position = cpos
+        osmesa_empty_rc.scene.camera.set_position(cpos)
 
     image_store(osmesa_empty_rc)
