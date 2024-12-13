@@ -8,7 +8,7 @@ from yt_idv.gui_support import add_popup_help
 from yt_idv.opengl_support import TransferFunctionTexture
 from yt_idv.scene_components.base_component import SceneComponent
 from yt_idv.scene_data.block_collection import BlockCollection
-from yt_idv.shader_objects import component_shaders
+from yt_idv.shader_objects import component_shaders, get_shader_combos
 
 
 class BlockRendering(SceneComponent):
@@ -34,34 +34,40 @@ class BlockRendering(SceneComponent):
 
     def render_gui(self, imgui, renderer, scene):
         changed = super().render_gui(imgui, renderer, scene)
+
+        max_sf = 50.0 if self._yt_geom_str == "spherical" else 20.0
         _, sample_factor = imgui.slider_float(
-            "Sample Factor", self.sample_factor, 1.0, 20.0
+            "Sample Factor", self.sample_factor, 1.0, max_sf
         )
         if _:
             self.sample_factor = sample_factor
         # Now, shaders
-        shader_combos = list(sorted(component_shaders[self.name]))
+        valid_shaders = get_shader_combos(
+            self.name, coord_system=self.data._yt_geom_str
+        )
         descriptions = [
-            component_shaders[self.name][_]["description"] for _ in shader_combos
+            component_shaders[self.name][_]["description"] for _ in valid_shaders
         ]
-        selected = shader_combos.index(self.render_method)
+        selected = valid_shaders.index(self.render_method)
         _, shader_ind = imgui.listbox("Shader", selected, descriptions)
         if _:
-            self.render_method = shader_combos[shader_ind]
+            self.render_method = valid_shaders[shader_ind]
         changed = changed or _
-        if imgui.button("Add Block Outline"):
-            from ..scene_annotations.block_outline import BlockOutline
+        if self.data._yt_geom_str == "cartesian":
+            # the following only work for cartesian data at present
+            if imgui.button("Add Block Outline"):
+                from ..scene_annotations.block_outline import BlockOutline
 
-            block_outline = BlockOutline(data=self.data)
-            scene.annotations.append(block_outline)
-        if imgui.button("Add Grid Outline"):
-            from ..scene_annotations.grid_outlines import GridOutlines
-            from ..scene_data.grid_positions import GridPositions
+                block_outline = BlockOutline(data=self.data)
+                scene.annotations.append(block_outline)
+            if imgui.button("Add Grid Outline"):
+                from ..scene_annotations.grid_outlines import GridOutlines
+                from ..scene_data.grid_positions import GridPositions
 
-            grids = self.data.data_source.ds.index.grids.tolist()
-            gp = GridPositions(grid_list=grids)
-            scene.data_objects.append(gp)
-            scene.components.append(GridOutlines(data=gp))
+                grids = self.data.data_source.ds.index.grids.tolist()
+                gp = GridPositions(grid_list=grids)
+                scene.data_objects.append(gp)
+                scene.components.append(GridOutlines(data=gp))
         if self.render_method == "transfer_function":
             # Now for the transfer function stuff
             imgui.image_button(
@@ -159,3 +165,7 @@ class BlockRendering(SceneComponent):
         shader_program._set_uniform("tf_log", float(self.tf_log))
         shader_program._set_uniform("slice_normal", np.array(self.slice_normal))
         shader_program._set_uniform("slice_position", np.array(self.slice_position))
+
+    @property
+    def _yt_geom_str(self):
+        return self.data._yt_geom_str
