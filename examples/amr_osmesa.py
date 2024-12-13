@@ -15,3 +15,7 @@ rc.scene.camera.move_forward(1.5)
 
 image = rc.run()
 yt.write_bitmap(image, "step2.png")
+
+rc.scene.camera.set_position([1.0, 1.5, 3.0])
+image = rc.run()
+yt.write_bitmap(image, "step3_set_position.png")
