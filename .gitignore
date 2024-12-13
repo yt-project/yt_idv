@@ -111,8 +111,9 @@ ENV/
 .vscode/
 .idea/
 
-# Screenshots
+# Screenshots and examples
 snap_*.png
+examples/*.png
 
 # pytest outputs
 report.html

@@ -86,3 +86,7 @@ class TrackballCamera(BaseCamera):
 
     def _compute_matrices(self):
         pass
+
+    def set_position(self, pos):
+        self.position = pos
+        self._update_matrices()
