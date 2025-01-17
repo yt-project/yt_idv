@@ -18,7 +18,6 @@ from contextlib import ExitStack, contextmanager
 import matplotlib.pyplot as plt
 import numpy as np
 import traitlets
-import traittypes
 from OpenGL import GL
 
 # Set up a mapping from numbers to names
@@ -26,6 +25,7 @@ from yt.utilities.math_utils import get_scale_matrix, get_translate_matrix
 
 from yt_idv._cmyt_utilities import validate_cmyt_name
 from yt_idv.constants import bbox_vertices
+from yt_idv.traitlets_support import ArrayTrait
 
 const_types = (
     GL.constant.IntConstant,
@@ -164,7 +164,7 @@ TEX_TARGETS = {i: getattr(GL, f"GL_TEXTURE{i}") for i in range(10)}
 
 class Texture(traitlets.HasTraits):
     texture_name = traitlets.CInt(-1)
-    data = traittypes.Array(None, allow_none=True)
+    data = ArrayTrait(None, allow_none=True)
     channels = GLValue("r32f")
     min_filter = GLValue("linear")
     mag_filter = GLValue("linear")
@@ -335,7 +335,7 @@ class Texture3D(Texture):
 class VertexAttribute(traitlets.HasTraits):
     name = traitlets.CUnicode("attr")
     id = traitlets.CInt(-1)
-    data = traittypes.Array(None, allow_none=True)
+    data = ArrayTrait(None, allow_none=True)
     each = traitlets.CInt(-1)
     opengl_type = traitlets.CInt(GL.GL_FLOAT)
     divisor = traitlets.CInt(0)
@@ -372,7 +372,7 @@ class VertexAttribute(traitlets.HasTraits):
 class VertexArray(traitlets.HasTraits):
     name = traitlets.CUnicode("vertex")
     id = traitlets.CInt(-1)
-    indices = traittypes.Array(None, allow_none=True)
+    indices = ArrayTrait(None, allow_none=True)
     index_id = traitlets.CInt(-1)
     attributes = traitlets.List(trait=traitlets.Instance(VertexAttribute))
     each = traitlets.CInt(-1)
