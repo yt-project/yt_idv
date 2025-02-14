@@ -132,7 +132,7 @@ class BlockCollection(SceneData):
                 # blocks filled with identically 0 values will be
                 # skipped by the shader, so offset by a tiny value.
                 # see https://github.com/yt-project/yt_idv/issues/171
-                n_data += np.finfo(np.float32).eps
+                n_data[n_data == 0.0] += np.finfo(np.float32).eps
 
             data_tex = Texture3D(data=n_data)
             bitmap_tex = Texture3D(
