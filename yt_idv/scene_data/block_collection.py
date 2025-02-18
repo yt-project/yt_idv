@@ -218,7 +218,7 @@ class BlockCollection(SceneData):
 def _curves_from_block_data(
     block_collection: BlockCollection,
     display_name: str = "block outlines",
-    segments_per_edge: int = 4,
+    segments_per_edge: int = 20,
 ):
     """
     Build a CurveCollection and CurveCollectionRendering from BlockCollection
