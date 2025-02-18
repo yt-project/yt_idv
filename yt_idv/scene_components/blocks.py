@@ -53,13 +53,20 @@ class BlockRendering(SceneComponent):
         if _:
             self.render_method = valid_shaders[shader_ind]
         changed = changed or _
-        if self.data._yt_geom_str == "cartesian":
-            # the following only work for cartesian data at present
-            if imgui.button("Add Block Outline"):
+        if imgui.button("Add Block Outline"):
+            if self.data._yt_geom_str == "cartesian":
                 from ..scene_annotations.block_outline import BlockOutline
 
                 block_outline = BlockOutline(data=self.data)
                 scene.annotations.append(block_outline)
+            elif self.data._yt_geom_str == "spherical":
+                from ..scene_data.block_collection import _curves_from_block_data
+
+                cc, cc_render = _curves_from_block_data(self.data)
+                scene.data_objects.append(cc)
+                scene.components.append(cc_render)
+        if self.data._yt_geom_str == "cartesian":
+            # the following only work for cartesian data at present
             if imgui.button("Add Grid Outline"):
                 from ..scene_annotations.grid_outlines import GridOutlines
                 from ..scene_data.grid_positions import GridPositions
@@ -153,7 +160,9 @@ class BlockRendering(SceneComponent):
             shader_program._set_uniform(
                 "cart_bbox_max_width", self.data.cart_bbox_max_width
             )
-            shader_program._set_uniform("cart_bbox_le", self.data.cart_bbox_le)
+            shader_program._set_uniform(
+                "cart_bbox_le", self.data.cart_bbox_le.astype("f4")
+            )
 
         shader_program._set_uniform("box_width", self.box_width)
         shader_program._set_uniform("sample_factor", self.sample_factor)

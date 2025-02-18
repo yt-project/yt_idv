@@ -159,7 +159,7 @@ class BlockCollection(SceneData):
             # 0,1 to cartesian coords of domain_le to domain_re from which full
             # spherical coords can be calculated.
             self.cart_bbox_max_width = max_wid
-            self.cart_bbox_le = domain_le.astype("f4")
+            self.cart_bbox_le = domain_le
 
             self.vertex_array.attributes.append(
                 VertexAttribute(name="le_cart", data=le_cart.astype("f4"))
@@ -213,3 +213,87 @@ class BlockCollection(SceneData):
             )
             self.texture_objects[vbo_i] = data_tex
             self.bitmap_objects[vbo_i] = bitmap_tex
+
+
+def _curves_from_block_data(
+    block_collection: BlockCollection,
+    display_name: str = "block outlines",
+    segments_per_edge: int = 4,
+):
+    """
+    Build a CurveCollection and CurveCollectionRendering from BlockCollection
+    bounding boxes for non-cartesian geometries.
+    """
+
+    if block_collection._yt_geom_str not in ("spherical",):
+        msg = "_curves_from_block_data is not implemented for "
+        msg += f"{block_collection._yt_geom_str} geometry."
+        raise NotImplementedError(msg)
+
+    from ..scene_components.curves import CurveCollectionRendering
+    from .curve import CurveCollection
+
+    data_collection = CurveCollection()
+
+    if block_collection._yt_geom_str == "spherical":
+        from ..coordinate_utilities import spherical_to_cartesian
+
+        # normalization func for cartesian coords
+        cart_le = block_collection.cart_bbox_le
+        cart_max_wid = block_collection.cart_bbox_max_width
+
+        def _norm_xyz(xyz):
+            for dim in range(3):
+                xyz[:, dim] = (xyz[:, dim] - cart_le[dim]) / cart_max_wid
+            return xyz
+
+        # should move this down to cython to speed it up
+        axis_id = block_collection.data_source.ds.coordinates.axis_id
+        n_verts = segments_per_edge + 1
+        for block in block_collection.data_source.tiles.traverse():
+            le_i = block.LeftEdge
+            re_i = block.RightEdge
+
+            r_min = le_i[axis_id["r"]]
+            r_max = re_i[axis_id["r"]]
+
+            theta_min = le_i[axis_id["theta"]]
+            theta_max = re_i[axis_id["theta"]]
+
+            phi_min = le_i[axis_id["phi"]]
+            phi_max = re_i[axis_id["phi"]]
+
+            theta_vals = np.linspace(theta_min, theta_max, n_verts)
+            phi_vals = np.linspace(phi_min, phi_max, n_verts)
+
+            # the r-variation will be straight lines always, only use 2 verts
+            r_vals = np.linspace(r_min, r_max, 2)
+
+            for r_val in (r_min, r_max):
+                r = np.full(theta_vals.shape, r_val)
+                for phi_val in (phi_min, phi_max):
+                    phi = np.full(theta_vals.shape, phi_val)
+                    x, y, z = spherical_to_cartesian(r, theta_vals, phi)
+                    xyz = _norm_xyz(np.column_stack([x, y, z]))
+                    data_collection.add_curve(xyz)
+
+                for theta_val in (theta_min, theta_max):
+                    theta = np.full(phi_vals.shape, theta_val)
+                    x, y, z = spherical_to_cartesian(r, theta, phi_vals)
+                    xyz = _norm_xyz(np.column_stack([x, y, z]))
+                    data_collection.add_curve(xyz)
+
+            for phi_val in (phi_min, phi_max):
+                phi = np.full(r_vals.shape, phi_val)
+                for theta_val in (theta_min, theta_max):
+                    theta = np.full(r_vals.shape, theta_val)
+                    x, y, z = spherical_to_cartesian(r_vals, theta, phi)
+                    xyz = _norm_xyz(np.column_stack([x, y, z]))
+                    data_collection.add_curve(xyz)
+
+    data_collection.add_data()  # call add_data() after done adding curves
+
+    data_rendering = CurveCollectionRendering(data=data_collection)
+    data_rendering.display_name = display_name
+
+    return data_collection, data_rendering
