@@ -10,7 +10,7 @@ rendering methods and annotations are supported for spherical coordinates, yt_id
 directly calculate maximum intensity projections, integrative projections and projection with custom
 transfer functions without any pre-interpolation or re-gridding (with some caveats).
 
-PUT A NICE SCREEN SHOT HERE.
+.. image:: resources/sph-vr-example.png
 
 ---------------------------------------------------
 Volume Rendering of Data in a Spherical Coordinates
@@ -25,10 +25,11 @@ Overview
 #. step along ray, calculate spherical coordinates (in the shader!), evalulate texture (discarding points outside the actual speherical volume element).
 
 
+
 Mention: Pre-processor switches in order to re-use carteisan shaders efficiently.
 
 The main limitation in this approach is in stepping along the ray: intersection with the
- cartesian bounding box of a spherical element does not gaurentee intersection with the enclosed
+cartesian bounding box of a spherical element does not gaurentee intersection with the enclosed
 spherical elemnt. So a fairly large number of sample points along the ray must be used, increasing
 the computational cost to achieve the same fidelity as rendering data that is natively in
 cartesian coordinates.
