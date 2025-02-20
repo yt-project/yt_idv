@@ -58,8 +58,7 @@ class BlockRendering(SceneComponent):
             from ..scene_annotations.grid_outlines import GridOutlines
             from ..scene_data.grid_positions import GridPositions
 
-            grids = self.data.data_source.ds.index.grids.tolist()
-            gp = GridPositions(grid_list=grids)
+            gp = GridPositions(grid_list=self.data.intersected_grids)
             scene.data_objects.append(gp)
             scene.components.append(GridOutlines(data=gp))
         if self.render_method == "transfer_function":

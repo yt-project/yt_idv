@@ -229,3 +229,19 @@ def test_shader_programs(osmesa_empty, shader_name):
         )
         assert isinstance(colormap_fragment, shader_objects.Shader)
         _ = shader_objects.ShaderProgram(colormap_vertex, colormap_fragment)
+
+
+def test_block_collection_grid_ids():
+    rc = yt_idv.render_context("osmesa", width=1024, height=1024)
+    ds = yt.testing.fake_amr_ds()
+    wid = ds.domain_width / 20.0 / 2.0
+    c = ds.domain_center
+    reg = ds.region(c, c - wid, c + wid)
+    rc.add_scene(reg, ("stream", "Density"), no_ghost=True)
+
+    block_coll = rc.scene.data_objects[0]
+    gl = block_coll.grid_id_list
+    assert len(gl) < len(ds.index.grids)
+    grids = block_coll.intersected_grids
+    assert len(grids) == len(gl)
+    rc.osmesa.OSMesaDestroyContext(rc.context)
