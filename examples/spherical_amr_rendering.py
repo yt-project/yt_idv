@@ -5,8 +5,8 @@ import yt
 
 import yt_idv
 
-# yt reminder: phi is the polar angle (0 to 2pi)
-# theta is the angle from north (0 to pi)
+# yt reminder: phi is the azimuthal angle (0 to 2pi)
+# theta is the co-latitude, the angle from north (0 to pi)
 # coord ordering here will be r, phi, theta
 bbox_options = {
     "partial": np.array([[0.5, 1.0], [0.0, np.pi / 3], [np.pi / 4, np.pi / 2]]),
@@ -22,7 +22,7 @@ bbox_options = {
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(
-        prog="amr_spherical_volume_rendering",
+        prog="spherical_amr_rendering",
         description="Loads an example spherical dataset in yt_idv",
     )
 
