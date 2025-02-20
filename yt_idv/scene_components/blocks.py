@@ -60,14 +60,17 @@ class BlockRendering(SceneComponent):
                 block_outline = BlockOutline(data=self.data)
                 scene.annotations.append(block_outline)
             elif self.data._yt_geom_str == "spherical":
-                from ..scene_data.block_collection import _curves_from_block_data
+                from ..scene_data.block_collection import _block_collection_outlines
 
-                cc, cc_render = _curves_from_block_data(self.data)
+                cc, cc_render = _block_collection_outlines(
+                    self.data, outline_type="blocks"
+                )
                 scene.data_objects.append(cc)
                 scene.components.append(cc_render)
-        if self.data._yt_geom_str == "cartesian":
-            # the following only work for cartesian data at present
-            if imgui.button("Add Grid Outline"):
+
+        # the following only work for cartesian data at present
+        if imgui.button("Add Grid Outline"):
+            if self.data._yt_geom_str == "cartesian":
                 from ..scene_annotations.grid_outlines import GridOutlines
                 from ..scene_data.grid_positions import GridPositions
 
@@ -75,6 +78,14 @@ class BlockRendering(SceneComponent):
                 gp = GridPositions(grid_list=grids)
                 scene.data_objects.append(gp)
                 scene.components.append(GridOutlines(data=gp))
+            elif self.data._yt_geom_str == "spherical":
+                from ..scene_data.block_collection import _block_collection_outlines
+
+                cc, cc_render = _block_collection_outlines(
+                    self.data, display_name="grid outlines", outline_type="grids"
+                )
+                scene.data_objects.append(cc)
+                scene.components.append(cc_render)
         if self.render_method == "transfer_function":
             # Now for the transfer function stuff
             imgui.image_button(

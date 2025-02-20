@@ -215,15 +215,20 @@ class BlockCollection(SceneData):
             self.bitmap_objects[vbo_i] = bitmap_tex
 
 
-def _curves_from_block_data(
+def _block_collection_outlines(
     block_collection: BlockCollection,
     display_name: str = "block outlines",
     segments_per_edge: int = 20,
+    outline_type: str = "blocks",
 ):
     """
     Build a CurveCollection and CurveCollectionRendering from BlockCollection
     bounding boxes for non-cartesian geometries.
     """
+
+    if outline_type not in ("blocks", "grids"):
+        msg = f"outline_type must be blocks or grids, found {outline_type}"
+        raise ValueError(msg)
 
     if block_collection._yt_geom_str not in ("spherical",):
         msg = "_curves_from_block_data is not implemented for "
@@ -234,6 +239,16 @@ def _curves_from_block_data(
     from .curve import CurveCollection
 
     data_collection = CurveCollection()
+
+    if outline_type == "blocks":
+        block_iterator = block_collection.data_source.tiles.traverse()
+    else:
+        # note this can be simplified after
+        # https://github.com/yt-project/yt_idv/pull/179
+        gids = [gid for gid, _ in block_collection.grids_by_block.values()]
+        gids = np.unique(gids)
+        ds = block_collection.data_source.ds
+        block_iterator = [ds.index.grids[gid] for gid in gids]
 
     if block_collection._yt_geom_str == "spherical":
         from ..coordinate_utilities import spherical_to_cartesian
@@ -250,7 +265,7 @@ def _curves_from_block_data(
         # should move this down to cython to speed it up
         axis_id = block_collection.data_source.ds.coordinates.axis_id
         n_verts = segments_per_edge + 1
-        for block in block_collection.data_source.tiles.traverse():
+        for block in block_iterator:
             le_i = block.LeftEdge
             re_i = block.RightEdge
 
