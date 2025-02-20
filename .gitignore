@@ -116,3 +116,6 @@ snap_*.png
 
 # pytest outputs
 report.html
+
+*.DS_Store
+*.swp

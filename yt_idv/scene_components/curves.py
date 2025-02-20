@@ -13,17 +13,11 @@ class CurveRendering(SceneComponent):
 
     name = "curve_rendering"
     data = traitlets.Instance(CurveData, help="The curve data.")
-    line_width = traitlets.CFloat(1.0)
     curve_rgba = traitlets.Tuple((1.0, 1.0, 1.0, 1.0)).tag(trait=traitlets.CFloat())
     priority = 10
 
     def render_gui(self, imgui, renderer, scene):
         changed, self.visible = imgui.checkbox("Visible", self.visible)
-
-        _, line_width = imgui.slider_float("Line Width", self.line_width, 1.0, 10.0)
-        if _:
-            self.line_width = line_width
-        changed = changed or _
 
         _, newRGBa = imgui.input_float4("RGBa", *self.curve_rgba)
         if _:
@@ -35,7 +29,9 @@ class CurveRendering(SceneComponent):
     def draw(self, scene, program):
         GL.glEnable(GL.GL_CULL_FACE)
         GL.glCullFace(GL.GL_BACK)
-        GL.glLineWidth(self.line_width)
+        # note: line width != 1.0 is not supported on all platforms.
+        # see https://github.com/yt-project/yt_idv/issues/174
+        GL.glLineWidth(1.0)
         GL.glDrawArrays(GL.GL_LINE_STRIP, 0, self.data.n_vertices)
 
     def _set_uniforms(self, scene, shader_program):
@@ -55,5 +51,5 @@ class CurveCollectionRendering(CurveRendering):
     def draw(self, scene, program):
         GL.glEnable(GL.GL_CULL_FACE)
         GL.glCullFace(GL.GL_BACK)
-        GL.glLineWidth(self.line_width)
+        GL.glLineWidth(1.0)
         GL.glDrawArrays(GL.GL_LINES, 0, self.data.n_vertices)
