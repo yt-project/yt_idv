@@ -504,3 +504,19 @@ if os.path.exists(_shlist_fn):
     default_shader_combos.update(
         {_: component_shaders[_].pop("default_value") for _ in component_shaders}
     )
+
+
+def get_shader_combos(component_name, coord_system="cartesian"):
+    shader_combos = list(sorted(component_shaders[component_name]))
+    if coord_system == "cartesian":
+        return shader_combos
+
+    valid_shader_combos = []
+    for shader_name in shader_combos:
+        shader = component_shaders[component_name][shader_name]
+        if (
+            "coordinate_systems" in shader
+            and coord_system in shader["coordinate_systems"]
+        ):
+            valid_shader_combos.append(shader_name)
+    return valid_shader_combos
