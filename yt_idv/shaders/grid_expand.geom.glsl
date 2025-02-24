@@ -51,7 +51,7 @@ void main() {
     vec3 width, le;
     vec4 newPos;
 
-    #ifdef SPHERICAL_GEOM
+    #ifdef NONCARTESIAN_GEOM
     width = vright_edge_cart[0] - vleft_edge_cart[0];
     le = vleft_edge_cart[0];
     #else
@@ -72,7 +72,7 @@ void main() {
         inverse_proj = vinverse_proj[0];
         inverse_mvm = vinverse_mvm[0];
 
-        #ifdef SPHERICAL_GEOM
+        #ifdef NONCARTESIAN_GEOM
         left_edge_cart = vleft_edge_cart[0];
         right_edge_cart = vright_edge_cart[0];
         #endif

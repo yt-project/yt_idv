@@ -28,6 +28,9 @@ _cmaps.sort(key=lambda v: v.lower())
 _buffers = ["frame", "depth"]
 
 
+_geom_directives = {"spherical": "SPHERICAL_GEOM"}
+
+
 class SceneComponent(traitlets.HasTraits):
     data = traitlets.Instance(SceneData)
     base_quad = traitlets.Instance(SceneData)
@@ -84,14 +87,18 @@ class SceneComponent(traitlets.HasTraits):
 
     @traitlets.observe("_data_geometry")
     def _update_geometry_pp_directives(self, change):
-        if change["new"] == "spherical" and change["old"] == "cartesian":
+        if change["new"] != "cartesian" and change["old"] == "cartesian":
+            geom_directive = _geom_directives[change["new"]]
             # this should only happen once on initial data load, so only handling the
             # change from the default value.
             current_shader = component_shaders[self.name][self.render_method]
             with self.hold_trait_notifications():
                 for shd in ("vertex", "geometry", "fragment"):
                     # update the preprocessor directive state for this shader
-                    self._program1_pp_defs.add_definition(shd, ("SPHERICAL_GEOM", ""))
+                    self._program1_pp_defs.add_definition(shd, (geom_directive, ""))
+                    self._program1_pp_defs.add_definition(
+                        shd, ("NONCARTESIAN_GEOM", "")
+                    )
                     pp_defs = self._program1_pp_defs[shd]
 
                     # update shader attributes of self

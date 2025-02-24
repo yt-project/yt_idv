@@ -7,7 +7,7 @@ flat in mat4 inverse_mvm;
 flat in mat4 inverse_pmvm;
 flat in ivec3 texture_offset;
 
-#ifdef SPHERICAL_GEOM
+#ifdef NONCARTESIAN_GEOM
 flat in vec3 left_edge_cart;
 flat in vec3 right_edge_cart;
 #endif
@@ -26,7 +26,7 @@ vec3 cart_to_sphere_vec3(vec3 v) {
     // transform a single point in cartesian coords to spherical
     vec3 vout = vec3(0.,0.,0.);
 
-    // in yt, phi is the polar angle from (0, 2pi), theta is the azimuthal
+    // in yt, phi is the azimuth from (0, 2pi), theta is the co-latitude
     // angle (0, pi). the id_ values below are uniforms that depend on the
     // yt dataset coordinate ordering, cart_bbox_* variables are also uniforms
     float x = v[0] * cart_bbox_max_width + cart_bbox_le[0];
@@ -81,7 +81,7 @@ void main()
 
     vec3 idir = 1.0/dir;
     vec3 tl, tr, dx_cart;
-    #ifdef SPHERICAL_GEOM
+    #ifdef NONCARTESIAN_GEOM
     tl = (left_edge_cart - camera_pos)*idir;
     tr = (right_edge_cart - camera_pos)*idir;
     dx_cart = right_edge_cart - left_edge_cart;
