@@ -138,7 +138,9 @@ class SimpleGUI:
             scene.camera._update_matrices()
 
         if imgui.button("print camera to console"):
-            print(scene.camera.dict())
+            import json
+
+            print(json.dumps(scene.camera.dict(), indent=4))
 
         imgui.tree_pop()
         return changed
