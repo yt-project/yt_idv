@@ -117,3 +117,16 @@ class BaseCamera(traitlets.HasTraits):
         shader_program._set_uniform("near_plane", self.near_plane)
         shader_program._set_uniform("far_plane", self.far_plane)
         shader_program._set_uniform("camera_pos", self.position)
+
+    def dict(self):
+        attrs = [
+            "position",
+            "focus",
+            "up",
+            "fov",
+            "near_plane",
+            "far_plane",
+            "aspect_ratio",
+            "orientation",
+        ]
+        return {ky: getattr(self, ky) for ky in attrs}
