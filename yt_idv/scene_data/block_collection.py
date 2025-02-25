@@ -140,3 +140,17 @@ class BlockCollection(SceneData):
             )
             self.texture_objects[vbo_i] = data_tex
             self.bitmap_objects[vbo_i] = bitmap_tex
+
+    _grid_id_list = None
+
+    @property
+    def grid_id_list(self):
+        """the 0-indexed grid ids that contain all the blocks"""
+        if self._grid_id_list is None:
+            gl = [gid for gid, _ in self.grids_by_block.values()]
+            self._grid_id_list = np.unique(gl).tolist()
+        return self._grid_id_list
+
+    @property
+    def intersected_grids(self):
+        return [self.data_source.ds.index.grids[gid] for gid in self.grid_id_list]
