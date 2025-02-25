@@ -4,7 +4,6 @@ import numpy as np
 import pytest
 import yt
 import yt.testing
-
 from numpy.testing import assert_equal
 from pytest_html import extras as html_extras
 

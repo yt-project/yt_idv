@@ -78,6 +78,7 @@ class BlockRendering(SceneComponent):
                 scene.components.append(GridOutlines(data=gp))
             elif self.data._yt_geom_str == "spherical":
                 from ..scene_data.block_collection import _block_collection_outlines
+
                 cc, cc_render = _block_collection_outlines(
                     self.data, display_name="grid outlines", outline_type="grids"
                 )
