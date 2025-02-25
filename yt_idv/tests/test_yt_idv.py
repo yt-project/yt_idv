@@ -5,7 +5,6 @@ import pytest
 import yt
 import yt.testing
 from numpy.testing import assert_equal
-from pytest_html import extras as html_extras
 
 import yt_idv
 from yt_idv import shader_objects
