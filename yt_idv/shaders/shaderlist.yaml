@@ -11,8 +11,8 @@ shader_definitions:
       info: A constant, specified RGBa value applied
       source: constant_rgba.frag.glsl
       blend_func:
-        - one
-        - one
+        - src alpha
+        - dst alpha
       blend_equation: func add
     apply_colormap:
       info:

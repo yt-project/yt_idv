@@ -5,6 +5,9 @@ import pytest
 import yt
 import yt.testing
 
+from numpy.testing import assert_equal
+from pytest_html import extras as html_extras
+
 import yt_idv
 from yt_idv import shader_objects
 from yt_idv.scene_components.curves import CurveCollectionRendering, CurveRendering
@@ -214,3 +217,31 @@ def test_shader_programs(osmesa_empty, shader_name):
         )
         assert isinstance(colormap_fragment, shader_objects.Shader)
         _ = shader_objects.ShaderProgram(colormap_vertex, colormap_fragment)
+
+
+def test_camera_dict_update(osmesa_fake_amr):
+    pos = [0.5, 2.0, 3.0]
+    osmesa_fake_amr.scene.camera.set_position(pos)
+
+    cdict = osmesa_fake_amr.scene.camera.dict()
+    assert_equal(cdict["position"], pos)
+
+    osmesa_fake_amr.scene.camera.set_position([4.0, 4.0, 4])
+    osmesa_fake_amr.scene.camera.update(**cdict)
+    assert_equal(osmesa_fake_amr.scene.camera.position, pos)
+
+
+def test_block_collection_grid_ids():
+    rc = yt_idv.render_context("osmesa", width=1024, height=1024)
+    ds = yt.testing.fake_amr_ds()
+    wid = ds.domain_width / 20.0 / 2.0
+    c = ds.domain_center
+    reg = ds.region(c, c - wid, c + wid)
+    rc.add_scene(reg, ("stream", "Density"), no_ghost=True)
+
+    block_coll = rc.scene.data_objects[0]
+    gl = block_coll.grid_id_list
+    assert len(gl) < len(ds.index.grids)
+    grids = block_coll.intersected_grids
+    assert len(grids) == len(gl)
+    rc.osmesa.OSMesaDestroyContext(rc.context)
