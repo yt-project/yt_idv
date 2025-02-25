@@ -68,7 +68,6 @@ class BlockRendering(SceneComponent):
                 scene.data_objects.append(cc)
                 scene.components.append(cc_render)
 
-        # the following only work for cartesian data at present
         if imgui.button("Add Grid Outline"):
             if self.data._yt_geom_str == "cartesian":
                 from ..scene_annotations.grid_outlines import GridOutlines
