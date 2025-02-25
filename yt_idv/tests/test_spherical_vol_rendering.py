@@ -45,7 +45,8 @@ def test_spherical_bounds(osmesa_empty_rc, image_store, bbox_option):
         sz,
         bbox=bbox,
         nprocs=8,
-        geometry=("spherical", ("r", "phi", "theta")),
+        geometry="spherical",
+        axis_order=("r", "phi", "theta"),
         length_unit="m",
     )
     dd = ds.all_data()
@@ -75,7 +76,8 @@ def test_spherical_nprocs(osmesa_empty_rc, image_store, nprocs):
         sz,
         bbox=bbox,
         nprocs=nprocs,
-        geometry=("spherical", ("r", "phi", "theta")),
+        geometry="spherical",
+        axis_order=("r", "phi", "theta"),
         length_unit="m",
     )
     dd = ds.all_data()

@@ -32,17 +32,6 @@ cdef class MixedCoordBBox:
 
 
 cdef class SphericalMixedCoordBBox(MixedCoordBBox):
-    cdef int get_cartesian_bbox(
-                        self,
-                        np.float64_t pos0,
-                        np.float64_t pos1,
-                        np.float64_t pos2,
-                        np.float64_t dpos0,
-                        np.float64_t dpos1,
-                        np.float64_t dpos2,
-                        np.float64_t[3] xyz_i,
-                        np.float64_t[3] dxyz_i
-                        ) noexcept nogil
 
     cdef void _get_cartesian_bbox(
                     self,
