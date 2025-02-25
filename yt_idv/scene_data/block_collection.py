@@ -145,7 +145,7 @@ class BlockCollection(SceneData):
 
     @property
     def grid_id_list(self):
-        # get the grids that contain all the blocks
+        """the 0-indexed grid ids that contain all the blocks"""
         if self._grid_id_list is None:
             gl = [gid for gid, _ in self.grids_by_block.values()]
             self._grid_id_list = np.unique(gl).tolist()
