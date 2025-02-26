@@ -64,9 +64,9 @@ class BlockCollection(SceneData):
             dx.append(dds.tolist())
             le.append(block.LeftEdge.tolist())
             re.append(block.RightEdge.tolist())
-        for g, node, (sl, _dims, _gi) in self.data_source.tiles.slice_traverse():
+        for g, node, (sl, _, gi) in self.data_source.tiles.slice_traverse():
             block = node.data
-            self.blocks_by_grid[g.id - g._id_offset].append((id(block), i))
+            self.blocks_by_grid[g.id - g._id_offset].append((id(block), gi))
             self.grids_by_block[id(node.data)] = (g.id - g._id_offset, sl)
 
         if hasattr(self.min_val, "in_units"):
