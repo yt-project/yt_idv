@@ -100,7 +100,7 @@ class BlockCollection(SceneData):
             RE = np.array([b.RightEdge for i, b in self.blocks.values()]).max(axis=0)
             self.diagonal = np.sqrt(((RE - LE) ** 2).sum())
 
-        self._set_geometry_attributes(le, re)
+        self._set_geometry_attributes(le, re, dx)
         self.vertex_array.attributes.append(
             VertexAttribute(name="model_vertex", data=vert)
         )
@@ -115,7 +115,7 @@ class BlockCollection(SceneData):
         # Now we set up our textures
         self._load_textures()
 
-    def _set_geometry_attributes(self, le, re):
+    def _set_geometry_attributes(self, le, re, dx):
         # set any vertex_array attributes that depend on the yt geometry type
 
         if self._yt_geom_str == "cartesian":
@@ -127,6 +127,25 @@ class BlockCollection(SceneData):
             )
 
             axis_id = self.data_source.ds.coordinates.axis_id
+
+            # first, we need an approximation of the grid spacing
+            # in cartesian coordinates. this is used by the
+            # ray tracing engine to determine along-ray step size
+            # so doesn't have to be exact. the ordering also
+            # doesn't matter since it's the min value that will
+            # influence step size. So here, we find some representative
+            # lengths: the change in radius across the element,
+            # the arc lengths of an element using average values of r
+            # and theta where needed (average values avoid the edge case
+            # of 0. values, which will cause the shader to crash)
+            dr = dx[:, axis_id["r"]]
+            rh = (le[:, axis_id["r"]] + re[:, axis_id["r"]]) / 2
+            rdtheta = rh * dx[:, axis_id["theta"]]
+            th = (le[:, axis_id["theta"]] + re[:, axis_id["theta"]]) / 2
+            xy = rh * np.sin(th)
+            rdphi = xy * dx[:, axis_id["phi"]]
+            dx_cart = np.column_stack([dr, rdtheta, rdphi])
+
             # cartesian bbox calculations
             bbox_handler = SphericalMixedCoordBBox()
             le_cart, re_cart = cartesian_bboxes_edges(
@@ -166,6 +185,9 @@ class BlockCollection(SceneData):
             )
             self.vertex_array.attributes.append(
                 VertexAttribute(name="re_cart", data=re_cart.astype("f4"))
+            )
+            self.vertex_array.attributes.append(
+                VertexAttribute(name="dx_cart", data=dx_cart.astype("f4"))
             )
 
             # does not seem that diagonal is used anywhere, but recalculating to

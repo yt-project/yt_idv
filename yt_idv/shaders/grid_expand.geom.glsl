@@ -8,8 +8,10 @@ flat in vec3 vright_edge[];
 #ifdef SPHERICAL_GEOM
 flat in vec3 vleft_edge_cart[];
 flat in vec3 vright_edge_cart[];
+flat in vec3 vdx_cart[];
 flat out vec3 left_edge_cart;
 flat out vec3 right_edge_cart;
+flat out vec3 dx_cart;
 #endif
 
 flat out vec3 dx;
@@ -75,6 +77,7 @@ void main() {
         #ifdef NONCARTESIAN_GEOM
         left_edge_cart = vleft_edge_cart[0];
         right_edge_cart = vright_edge_cart[0];
+        dx_cart = vdx_cart[0];
         #endif
 
         dx = vdx[0];

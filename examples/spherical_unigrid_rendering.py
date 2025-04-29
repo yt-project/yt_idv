@@ -120,7 +120,7 @@ if __name__ == "__main__":
 
     rc = yt_idv.render_context(height=800, width=800, gui=True)
     sg = rc.add_scene(ds, field, no_ghost=True)
-    rc.scene.components[0].sample_factor = 20.0
+    rc.scene.components[0].sample_factor = 5.0
     rc.scene.components[0].cmap_log = False
     rc.scene.components[0]._reset_cmap_bounds()
 

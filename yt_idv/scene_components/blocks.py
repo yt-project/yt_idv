@@ -35,9 +35,11 @@ class BlockRendering(SceneComponent):
     def render_gui(self, imgui, renderer, scene):
         changed = super().render_gui(imgui, renderer, scene)
 
-        max_sf = 50.0 if self._yt_geom_str == "spherical" else 20.0
         _, sample_factor = imgui.slider_float(
-            "Sample Factor", self.sample_factor, 1.0, max_sf
+            "Sample Factor",
+            self.sample_factor,
+            1.0,
+            20.0,
         )
         if _:
             self.sample_factor = sample_factor

@@ -10,6 +10,7 @@ flat in ivec3 texture_offset;
 #ifdef NONCARTESIAN_GEOM
 flat in vec3 left_edge_cart;
 flat in vec3 right_edge_cart;
+flat in vec3 dx_cart;
 #endif
 
 out vec4 output_color;
@@ -80,17 +81,18 @@ void main()
     // This will help solve the left/right edge issues.
 
     vec3 idir = 1.0/dir;
-    vec3 tl, tr, dx_cart;
+    vec3 tl, tr;
+    vec3 dx_effective;
     #ifdef NONCARTESIAN_GEOM
     tl = (left_edge_cart - camera_pos)*idir;
     tr = (right_edge_cart - camera_pos)*idir;
-    dx_cart = right_edge_cart - left_edge_cart;
+    dx_effective = dx_cart;
     #else
     tl = (left_edge - camera_pos)*idir;
     tr = (right_edge - camera_pos)*idir;
-    dx_cart = dx;
+    dx_effective = dx;
     #endif
-    vec3 step_size = dx_cart/ sample_factor;
+    vec3 step_size = dx_effective/ sample_factor;
 
     vec3 tmin, tmax;
     bvec3 temp_x, temp_y;
