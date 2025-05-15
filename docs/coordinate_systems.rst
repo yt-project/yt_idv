@@ -19,9 +19,9 @@ to calculate ray entry/exit points during ray tracing. Between the entry/exit po
 cartesian coordinates of the ray position are converted to the native coordinates of the data,
 which is used to sample the texture maps (which are stored in native coordinates). The initial
 implementaiton of the algorithm uses the ray entry/exit points of the cartesian bounding boxes,
-and so not all points along the ray are gaurenteed to lie within the bounds of the data -- though
+and so not all points along the ray are gauranteed to lie within the bounds of the data -- though
 these data points will be discarded during ray tracing, it does mean that a larger number of samples
-along the ray is required to gaurantee the underlying non-cartesian element is properly sampled compared
+along the ray may be required to ensure the underlying non-cartesian element is properly sampled compared
 to the standard cartesian data ray tracing (this is controlled by the ``sample_factor`` attribute of
 the ``BlockRendering`` component).
 
@@ -62,7 +62,7 @@ the rendering pipeline.
 Add support to the rendering pipeline
 *************************************
 
-A number of changes are requirer related to the rendering pipeline for the ``block_rendering``
+A number of changes are required related to the rendering pipeline for the ``block_rendering``
 shader program. In order to avoid shader code duplication for different coordinate systems and
 also avoid overly branching code within the shader itself, pre-processor directives are used
 to provide switches between shader behavior for different coordinate systems.
@@ -73,7 +73,7 @@ between all non-cartesian coordinate systems. For example, ``grid_position.vert.
 passing along the additional vertex attributes related to the cartesian bounding boxes.
 
 Functionality specific to a coordinate system should be defined with a new pre-processor
-directive flag. For spherical coordiantes, this is ``SPHERICAL_GEOM``, and is used in
+directive flag. For spherical coordinates, this is ``SPHERICAL_GEOM``, and is used in
 ``ray_tracing.frag.glsl`` for defining and using the functions for transforming from
 cartesian to spherical coordinates. To add a new one for use in the shaders, add a new
 entry to the ``yt_idv.scene_components.base_component._geom_directives`` dictionary and
