@@ -266,17 +266,36 @@ class SceneGraph(traitlets.HasTraits):
         c.update_orientation(0, 0, 0, 0)
 
         scene = SceneGraph(camera=c)
+
         if field is not None:
             scene.add_volume(data_source, field, no_ghost=no_ghost)
+            _update_scene_camera_for_geometry(ds, scene)
+
         return scene
+
+
+def _update_scene_camera_for_geometry(ds, scene):
+    # for non-cartesian geometries, the cartesian bounds may not
+    # be available until after the data is loaded and processed.
+    if str(ds.geometry) == "spherical":
+        data = scene.components[-1].data
+        if hasattr(data, "cart_bbox_center"):
+            center = data.cart_bbox_center
+            wid = data.cart_bbox_max_width
+            pos = center + 1.5 * wid
+            near_plane = 3.0 * data.cart_min_dx
+            near_plane = max(near_plane, 1e-5)
+
+            camera: TrackballCamera = scene.camera
+            camera.update(focus=center, position=pos, near_plane=near_plane)
+            camera._update_matrices()
 
 
 def _get_camera_for_geometry(data_source, ds):
 
     if str(ds.geometry) == "spherical":
-        # always return the in-screen coordinate focus here. The shader
-        # will handle transforming to the expected full cartesian and
-        # spherical coordinates
+        # dummy values here, will get updated after data is loaded
+        # and the cartesian bounds are available
         center = np.array([0.5, 0.5, 0.5])
         wid = np.array([1.0, 1.0, 1.0])
         pos = center + 1.5 * wid

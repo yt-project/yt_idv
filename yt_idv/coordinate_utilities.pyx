@@ -3,8 +3,7 @@ cimport cython
 import numpy as np
 
 cimport numpy as np
-from libc.math cimport acos, atan2, cos, sin, sqrt
-from numpy.math cimport INFINITY as NPY_INF, PI as NPY_PI
+from libc.math cimport INFINITY, M_PI, acos, atan2, cos, sin, sqrt
 
 
 @cython.cdivision(True)
@@ -45,7 +44,7 @@ cdef (np.float64_t, np.float64_t, np.float64_t) _cartesian_to_spherical(np.float
         phi = atan2(y, x)
         # atan2 returns -pi to pi, adjust to (0, 2pi)
         if phi < 0:
-            phi = phi + 2 * NPY_PI
+            phi = phi + 2 * M_PI
         return r, theta, phi
 
 
@@ -281,9 +280,9 @@ cdef class SphericalMixedCoordBBox(MixedCoordBBox):
         cdef int isign_r, isign_ph, isign_th
         cdef np.float64_t sign_r, sign_th, sign_ph
 
-        cdef np.float64_t NPY_PI_2 = NPY_PI / 2.0
-        cdef np.float64_t NPY_PI_3_2 = 3. * NPY_PI / 2.0
-        cdef np.float64_t NPY_2xPI = 2. * NPY_PI
+        cdef np.float64_t M_PI_2 = M_PI / 2.0
+        cdef np.float64_t M_PI_3_2 = 3. * M_PI / 2.0
+        cdef np.float64_t NPY_2xPI = 2. * M_PI
 
         r_i = pos0
         theta_i = pos1
@@ -293,12 +292,12 @@ cdef class SphericalMixedCoordBBox(MixedCoordBBox):
         dphi_i = dpos2
 
         # initialize the left/right values
-        xli = NPY_INF
-        yli = NPY_INF
-        zli = NPY_INF
-        xri = -1.0 * NPY_INF
-        yri = -1.0 * NPY_INF
-        zri = -1.0 * NPY_INF
+        xli = INFINITY
+        yli = INFINITY
+        zli = INFINITY
+        xri = -1.0 * INFINITY
+        yri = -1.0 * INFINITY
+        zri = -1.0 * INFINITY
 
         # find the min/max bounds over the 8 corners of the
         # spherical volume element.
@@ -342,7 +341,7 @@ cdef class SphericalMixedCoordBBox(MixedCoordBBox):
         theta_lr = theta_i - h_dtheta
         theta_lr2 = theta_i + h_dtheta
         r_r = r_i + h_dr
-        if theta_lr < NPY_PI_2 and theta_lr2 > NPY_PI_2:
+        if theta_lr < M_PI_2 and theta_lr2 > M_PI_2:
             r_xy = r_r
         else:
             r_xy = r_r * sin(theta_lr)
@@ -352,11 +351,11 @@ cdef class SphericalMixedCoordBBox(MixedCoordBBox):
         if phi_lr == 0.0 or phi_lr2 == NPY_2xPI:
             # need to re-check this, for when theta spans equator
             xri = r_xy
-        elif phi_lr < NPY_PI_2 and phi_lr2  > NPY_PI_2:
+        elif phi_lr < M_PI_2 and phi_lr2  > M_PI_2:
             yri = r_xy
-        elif phi_lr < NPY_PI and phi_lr2  > NPY_PI:
+        elif phi_lr < M_PI and phi_lr2  > M_PI:
             xli = -r_xy
-        elif phi_lr < NPY_PI_3_2 and phi_lr2  > NPY_PI_3_2:
+        elif phi_lr < M_PI_3_2 and phi_lr2  > M_PI_3_2:
             yli = -r_xy
 
         xyz_i[0] = (xri+xli)/2.

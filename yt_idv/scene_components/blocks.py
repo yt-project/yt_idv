@@ -169,14 +169,6 @@ class BlockRendering(SceneComponent):
             shader_program._set_uniform("id_theta", axis_id["theta"])
             shader_program._set_uniform("id_r", axis_id["r"])
             shader_program._set_uniform("id_phi", axis_id["phi"])
-            # the following 2 are the cartesian bounding box width
-            # and left edge for the entire domain (across all blocks)
-            shader_program._set_uniform(
-                "cart_bbox_max_width", self.data.cart_bbox_max_width
-            )
-            shader_program._set_uniform(
-                "cart_bbox_le", self.data.cart_bbox_le.astype("f4")
-            )
 
         shader_program._set_uniform("box_width", self.box_width)
         shader_program._set_uniform("sample_factor", self.sample_factor)

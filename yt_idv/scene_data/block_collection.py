@@ -164,21 +164,15 @@ class BlockCollection(SceneData):
             domain_le = le_cart.min(axis=0)
             domain_re = re_cart.max(axis=0)
             domain_wid = domain_re - domain_le
-
-            # normalize to viewport in (0, 1), preserving ratio of the bounding box
             max_wid = np.max(domain_wid)
-            for idim in range(3):
-                le_cart[:, idim] = (le_cart[:, idim] - domain_le[idim]) / max_wid
-                re_cart[:, idim] = (re_cart[:, idim] - domain_le[idim]) / max_wid
-
-            le_cart = np.asarray(le_cart)
-            re_cart = np.asarray(re_cart)
 
             # these will get passed down as uniforms to go from screen coords of
             # 0,1 to cartesian coords of domain_le to domain_re from which full
             # spherical coords can be calculated.
             self.cart_bbox_max_width = max_wid
             self.cart_bbox_le = domain_le
+            self.cart_bbox_center = (domain_re + domain_le) / 2.0
+            self.cart_min_dx = np.min(np.linalg.norm(dx_cart))
 
             self.vertex_array.attributes.append(
                 VertexAttribute(name="le_cart", data=le_cart.astype("f4"))

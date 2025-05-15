@@ -30,10 +30,7 @@ vec3 cart_to_sphere_vec3(vec3 v) {
     // in yt, phi is the azimuth from (0, 2pi), theta is the co-latitude
     // angle (0, pi). the id_ values below are uniforms that depend on the
     // yt dataset coordinate ordering, cart_bbox_* variables are also uniforms
-    float x = v[0] * cart_bbox_max_width + cart_bbox_le[0];
-    float y = v[1] * cart_bbox_max_width + cart_bbox_le[1];
-    float z = v[2] * cart_bbox_max_width + cart_bbox_le[2];
-    vout[id_r] = x * x + y * y + z * z;
+    vout[id_r] = v[0] * v[0] + v[1] * v[1] + v[2] * v[2];
     vout[id_r] = sqrt(vout[id_r]);
     vout[id_theta] = acos(z / vout[id_r]);
     float phi = atan(y, x);
@@ -44,7 +41,6 @@ vec3 cart_to_sphere_vec3(vec3 v) {
     vout[id_phi] = phi;
 
     return vout;
-
 }
 #endif
 

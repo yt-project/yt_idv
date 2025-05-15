@@ -64,8 +64,6 @@ uniform float iso_alphas[32];
 uniform int id_theta;  // azimuthal angle (0 to pi) index in the yt dataset
 uniform int id_r;  // radial index in the yt dataset
 uniform int id_phi;  // polar angle (0 to 2pi) indexi n the yt dataset
-uniform vec3 cart_bbox_le;
-uniform float cart_bbox_max_width;
 
 // draw outline control
 uniform float draw_boundary;
