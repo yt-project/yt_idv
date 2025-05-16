@@ -23,7 +23,6 @@ bbox_options = {
     "whole": {
         "bbox": np.array([[0.0, 1.0], [0.0, 2 * np.pi], [0, np.pi]]),
         "field": ("index", "phi"),
-        "camera_position": [0.5, 0.5, 2],
     },
     "quadrant_shell": {
         "bbox": np.array([[0.6, 1.0], [0.0, np.pi / 2], [0.0, np.pi / 2]]),
