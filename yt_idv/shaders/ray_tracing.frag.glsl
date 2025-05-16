@@ -32,8 +32,8 @@ vec3 cart_to_sphere_vec3(vec3 v) {
     // yt dataset coordinate ordering, cart_bbox_* variables are also uniforms
     vout[id_r] = v[0] * v[0] + v[1] * v[1] + v[2] * v[2];
     vout[id_r] = sqrt(vout[id_r]);
-    vout[id_theta] = acos(z / vout[id_r]);
-    float phi = atan(y, x);
+    vout[id_theta] = acos(v[2] / vout[id_r]);
+    float phi = atan(v[1], v[0]);
     // atan2 returns -pi to pi, adjust to (0, 2pi)
     if (phi < 0 ){
         phi = phi + 2.0 * PI;
