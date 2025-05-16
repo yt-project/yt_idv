@@ -1,3 +1,5 @@
+# temp files
+*.swp
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
@@ -8,6 +10,8 @@ __pycache__/
 
 # Cythonized files
 yt_idv/utilities.c
+yt_idv/coordinate_utilities.c
+
 
 # imgui files
 imgui.ini

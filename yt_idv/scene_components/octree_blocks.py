@@ -7,7 +7,7 @@ from OpenGL import GL
 from yt_idv.opengl_support import TransferFunctionTexture
 from yt_idv.scene_components.base_component import SceneComponent
 from yt_idv.scene_data.octree_block_collection import OctreeBlockCollection
-from yt_idv.shader_objects import component_shaders
+from yt_idv.shader_objects import component_shaders, get_shader_combos
 
 
 class OctreeBlockRendering(SceneComponent):
@@ -37,7 +37,7 @@ class OctreeBlockRendering(SceneComponent):
         if _:
             self.sample_factor = sample_factor
         # Now, shaders
-        shader_combos = list(sorted(component_shaders[self.name]))
+        shader_combos = get_shader_combos(self.name)
         descriptions = [
             component_shaders[self.name][_]["description"] for _ in shader_combos
         ]

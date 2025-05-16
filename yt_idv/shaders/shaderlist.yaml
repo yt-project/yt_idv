@@ -208,6 +208,7 @@ component_shaders:
       first_fragment: max_intensity
       second_vertex: passthrough
       second_fragment: apply_colormap
+      coordinate_systems: [cartesian, spherical]
     projection:
       description: Projective integration
       first_vertex: grid_position
@@ -215,6 +216,7 @@ component_shaders:
       first_fragment: projection
       second_vertex: passthrough
       second_fragment: apply_colormap
+      coordinate_systems: [cartesian, spherical]
     transfer_function:
       description: Color transfer function
       first_vertex: grid_position
@@ -222,6 +224,7 @@ component_shaders:
       first_fragment: transfer_function
       second_vertex: passthrough
       second_fragment: passthrough
+      coordinate_systems: [cartesian, spherical]
     isocontours:
       description: Isocontours
       first_vertex: grid_position
@@ -236,6 +239,14 @@ component_shaders:
       first_fragment: slice_sample
       second_vertex: passthrough
       second_fragment: apply_colormap
+    constant:
+      description: Constant Color
+      first_vertex: grid_position
+      first_geometry: grid_expand
+      first_fragment: constant
+      second_vertex: passthrough
+      second_fragment: apply_colormap
+      coordinate_systems: [cartesian, spherical]
   octree_block_rendering:
     default_value: max_intensity
     max_intensity:

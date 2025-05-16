@@ -1,5 +1,6 @@
 import contextlib
 
+import numpy as np
 import traitlets
 from OpenGL import GL
 from yt.data_objects.static_output import Dataset
@@ -258,15 +259,56 @@ class SceneGraph(traitlets.HasTraits):
             data_source = ds.all_data()
         else:
             ds, data_source = ds.ds, ds
-        center = ds.domain_center
-        pos = center + 1.5 * ds.domain_width.in_units("unitary")
-        near_plane = 3.0 * ds.index.get_smallest_dx().min().in_units("unitary").d
-        near_plane = max(near_plane, 1e-5)
+
+        center, pos, near_plane = _get_camera_for_geometry(data_source, ds)
 
         c = TrackballCamera(position=pos, focus=center, near_plane=near_plane)
         c.update_orientation(0, 0, 0, 0)
 
         scene = SceneGraph(camera=c)
+
         if field is not None:
             scene.add_volume(data_source, field, no_ghost=no_ghost)
+            _update_scene_camera_for_geometry(ds, scene)
+
         return scene
+
+
+def _update_scene_camera_for_geometry(ds, scene):
+    # for non-cartesian geometries, the cartesian bounds may not
+    # be available until after the data is loaded and processed.
+    if str(ds.geometry) == "spherical":
+        data = scene.components[-1].data
+        if hasattr(data, "cart_bbox_center"):
+            center = data.cart_bbox_center
+            wid = data.cart_bbox_max_width
+            pos = center + 1.5 * wid
+            near_plane = 3.0 * data.cart_min_dx
+            near_plane = max(near_plane, 1e-5)
+
+            camera: TrackballCamera = scene.camera
+            camera.update(focus=center, position=pos, near_plane=near_plane)
+            camera._update_matrices()
+
+
+def _get_camera_for_geometry(data_source, ds):
+
+    if str(ds.geometry) == "spherical":
+        # dummy values here, will get updated after data is loaded
+        # and the cartesian bounds are available
+        center = np.array([0.5, 0.5, 0.5])
+        wid = np.array([1.0, 1.0, 1.0])
+        pos = center + 1.5 * wid
+        dx_aprox = wid[0] / np.max(ds.domain_dimensions)
+        near_plane = 3.0 * dx_aprox
+        near_plane = max(near_plane, 1e-5)
+    elif str(ds.geometry) == "cartesian":
+        center = ds.domain_center
+        pos = center + 1.5 * ds.domain_width.in_units("unitary")
+        near_plane = 3.0 * ds.index.get_smallest_dx().min().in_units("unitary").d
+        near_plane = max(near_plane, 1e-5)
+    else:
+        raise NotImplementedError(
+            "Only cartesian and spherical geometries are supported at present."
+        )
+    return center, pos, near_plane
