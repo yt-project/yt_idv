@@ -283,15 +283,6 @@ def _block_collection_outlines(
     if block_collection._yt_geom_str == "spherical":
         from ..coordinate_utilities import spherical_to_cartesian
 
-        # normalization func for cartesian coords
-        cart_le = block_collection.cart_bbox_le
-        cart_max_wid = block_collection.cart_bbox_max_width
-
-        def _norm_xyz(xyz):
-            for dim in range(3):
-                xyz[:, dim] = (xyz[:, dim] - cart_le[dim]) / cart_max_wid
-            return xyz
-
         # should move this down to cython to speed it up
         axis_id = block_collection.data_source.ds.coordinates.axis_id
         n_verts = segments_per_edge + 1
@@ -319,13 +310,13 @@ def _block_collection_outlines(
                 for phi_val in (phi_min, phi_max):
                     phi = np.full(theta_vals.shape, phi_val)
                     x, y, z = spherical_to_cartesian(r, theta_vals, phi)
-                    xyz = _norm_xyz(np.column_stack([x, y, z]))
+                    xyz = np.column_stack([x, y, z])
                     data_collection.add_curve(xyz)
 
                 for theta_val in (theta_min, theta_max):
                     theta = np.full(phi_vals.shape, theta_val)
                     x, y, z = spherical_to_cartesian(r, theta, phi_vals)
-                    xyz = _norm_xyz(np.column_stack([x, y, z]))
+                    xyz = np.column_stack([x, y, z])
                     data_collection.add_curve(xyz)
 
             for phi_val in (phi_min, phi_max):
@@ -333,7 +324,7 @@ def _block_collection_outlines(
                 for theta_val in (theta_min, theta_max):
                     theta = np.full(r_vals.shape, theta_val)
                     x, y, z = spherical_to_cartesian(r_vals, theta, phi)
-                    xyz = _norm_xyz(np.column_stack([x, y, z]))
+                    xyz = np.column_stack([x, y, z])
                     data_collection.add_curve(xyz)
 
     data_collection.add_data()  # call add_data() after done adding curves
