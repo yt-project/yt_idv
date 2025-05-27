@@ -583,7 +583,7 @@ class SceneComponent(traitlets.HasTraits):
 
         return changed
 
-    def _reset_cmap_bounds(self):
+    def _reset_cmap_bounds(self, print_new_bounds=True):
         data = self.fb.data
         if self.use_db:
             data[:, :, :3] = self.fb.depth_data[:, :, None]
@@ -594,6 +594,6 @@ class SceneComponent(traitlets.HasTraits):
         if data.size == 0:
             self.cmap_min = 0.0
             self.cmap_max = 1.0
-        else:
+        elif print_new_bounds:
             print(f"Computed new cmap values {self.cmap_min} - {self.cmap_max}")
         self._cmap_bounds_invalid = False

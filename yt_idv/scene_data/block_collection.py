@@ -18,6 +18,7 @@ class BlockCollection(SceneData):
     blocks_by_grid = traitlets.Instance(defaultdict, (list,))
     grids_by_block = traitlets.Dict(default_value=())
     _yt_geom_str = traitlets.Unicode("cartesian")
+    _compute_min_max = traitlets.Bool(True)
 
     @traitlets.default("vertex_array")
     def _default_vertex_array(self):
@@ -49,8 +50,8 @@ class BlockCollection(SceneData):
         # We now set up our vertices into our current data source.
         vert, dx, le, re = [], [], [], []
 
-        self.min_val = +np.inf
-        self.max_val = -np.inf
+        min_val = +np.inf
+        max_val = -np.inf
         if self.scale and self._yt_geom_str == "cartesian":
             left_min = np.ones(3, "f8") * np.inf
             right_max = np.ones(3, "f8") * -np.inf
@@ -64,8 +65,8 @@ class BlockCollection(SceneData):
                 block.RightEdge -= left_min
                 block.RightEdge /= scale
         for i, block in enumerate(self.data_source.tiles.traverse()):
-            self.min_val = min(self.min_val, np.nanmin(np.abs(block.my_data[0])).min())
-            self.max_val = max(self.max_val, np.nanmax(np.abs(block.my_data[0])).max())
+            min_val = min(min_val, np.nanmin(np.abs(block.my_data[0])).min())
+            max_val = max(max_val, np.nanmax(np.abs(block.my_data[0])).max())
             self.blocks[id(block)] = (i, block)
             vert.append([1.0, 1.0, 1.0, 1.0])
             dds = (block.RightEdge - block.LeftEdge) / block.source_mask.shape
@@ -77,10 +78,13 @@ class BlockCollection(SceneData):
             self.blocks_by_grid[g.id - g._id_offset].append((id(block), gi))
             self.grids_by_block[id(node.data)] = (g.id - g._id_offset, sl)
 
-        if hasattr(self.min_val, "in_units"):
-            self.min_val = self.min_val.d
-        if hasattr(self.max_val, "in_units"):
-            self.max_val = self.max_val.d
+        if self._compute_min_max:
+            if hasattr(min_val, "in_units"):
+                min_val = min_val.d
+            if hasattr(max_val, "in_units"):
+                max_val = max_val.d
+            self.min_val = min_val
+            self.max_val = max_val
 
         # Now we set up our buffer
         vert = np.array(vert, dtype="f4")

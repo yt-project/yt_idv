@@ -1,7 +1,6 @@
 """
 Example demonstrating manual construction of a SceneGraph with a BlockCollection
 """
-
 import yt
 
 import yt_idv

@@ -184,3 +184,9 @@ class BlockRendering(SceneComponent):
     @property
     def _yt_geom_str(self):
         return self.data._yt_geom_str
+
+    def _reset_cmap_bounds(self):
+        super()._reset_cmap_bounds()
+        if not self.data._compute_min_max:
+            self.cmap_min = self.data.min_val
+            self.cmap_max = self.data.max_val
