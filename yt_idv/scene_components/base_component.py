@@ -77,6 +77,8 @@ class SceneComponent(traitlets.HasTraits):
     _final_pass_invalid = True
 
     # These attributes are just for colormap application
+    fixed_cmap_min = traitlets.CFloat(None, allow_none=True)
+    fixed_cmap_max = traitlets.CFloat(None, allow_none=True)
     cmap_min = traitlets.CFloat(None, allow_none=True)
     cmap_max = traitlets.CFloat(None, allow_none=True)
     cmap_log = traitlets.Bool(True)
@@ -584,6 +586,7 @@ class SceneComponent(traitlets.HasTraits):
         return changed
 
     def _reset_cmap_bounds(self, print_new_bounds=True):
+
         data = self.fb.data
         if self.use_db:
             data[:, :, :3] = self.fb.depth_data[:, :, None]
@@ -591,9 +594,19 @@ class SceneComponent(traitlets.HasTraits):
         if data.size > 0:
             self.cmap_min = data.min()
             self.cmap_max = data.max()
+
         if data.size == 0:
             self.cmap_min = 0.0
             self.cmap_max = 1.0
-        elif print_new_bounds:
+
+        # over-ride with the fixed values if they're set
+        if self.fixed_cmap_max is not None:
+            self.cmap_max = self.fixed_cmap_max
+
+        if self.fixed_cmap_min is not None:
+            self.cmap_min = self.fixed_cmap_min
+
+        if print_new_bounds:
             print(f"Computed new cmap values {self.cmap_min} - {self.cmap_max}")
+
         self._cmap_bounds_invalid = False

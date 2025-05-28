@@ -18,7 +18,8 @@ class BlockCollection(SceneData):
     blocks_by_grid = traitlets.Instance(defaultdict, (list,))
     grids_by_block = traitlets.Dict(default_value=())
     _yt_geom_str = traitlets.Unicode("cartesian")
-    _compute_min_max = traitlets.Bool(True)
+    compute_min_max = traitlets.Bool(True)
+    always_normalize = traitlets.Bool(False)
 
     @traitlets.default("vertex_array")
     def _default_vertex_array(self):
@@ -78,7 +79,7 @@ class BlockCollection(SceneData):
             self.blocks_by_grid[g.id - g._id_offset].append((id(block), gi))
             self.grids_by_block[id(node.data)] = (g.id - g._id_offset, sl)
 
-        if self._compute_min_max:
+        if self.compute_min_max:
             if hasattr(min_val, "in_units"):
                 min_val = min_val.d
             if hasattr(max_val, "in_units"):
@@ -220,7 +221,7 @@ class BlockCollection(SceneData):
             vbo_i, block = self.blocks[block_id]
             n_data = np.abs(block.my_data[0]).copy(order="F").astype("float32").d
             # Avoid setting to NaNs
-            if self.max_val != self.min_val:
+            if self.max_val != self.min_val or self.always_normalize:
                 n_data = self._normalize_by_min_max(n_data)
                 # blocks filled with identically 0 values will be
                 # skipped by the shader, so offset by a tiny value.

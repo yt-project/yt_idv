@@ -2,18 +2,6 @@ import numpy as np
 import pytest
 import yt
 
-import yt_idv
-
-
-@pytest.fixture()
-def osmesa_empty_rc():
-    """yield an OSMesa empy context then destroy"""
-
-    rc = yt_idv.render_context("osmesa", width=1024, height=1024)
-    yield rc
-    rc.osmesa.OSMesaDestroyContext(rc.context)
-
-
 bbox_options = {
     "partial": {
         "bbox": np.array([[0.5, 1.0], [0.0, np.pi / 3], [np.pi / 4, np.pi / 2]]),
