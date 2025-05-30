@@ -4,13 +4,13 @@
 
 ## Highlights
 
-**Spherical Coordinates!** With this release, yt_idv can now volume render yt datasets defined in spherical coordinates. To use it, just try to load a 3D spherical dataset (gridded AMR and uniform grids only at present) and let us know if it breaks! For an overview of how it works, see the docs [here](https://yt-idv.readthedocs.io/en/latest/coordinate_systems.html) or try out the new example scripts: [spherical_unigrid_rendering.py](https://github.com/yt-project/yt_idv/blob/main/examples/spherical_unigrid_rendering.py) and [spherical_amr_rendering_with_refinement](https://github.com/yt-project/yt_idv/blob/main/examples/spherical_amr_rendering_with_refinement.py). Pull [159](https://github.com/yt-project/yt_idv/pull/159).
+**Spherical Coordinates!** With this release, yt_idv can now volume render yt datasets defined in spherical coordinates. To use it, just try to load a 3D spherical dataset (gridded AMR and uniform grids only at present) and let us know if it breaks! For an overview of how it works, see the docs [here](https://yt-idv.readthedocs.io/en/latest/coordinate_systems.html) or try out the new example scripts: [spherical_unigrid_rendering.py](https://github.com/yt-project/yt_idv/blob/main/examples/spherical_unigrid_rendering.py) and [spherical_amr_rendering_with_refinement](https://github.com/yt-project/yt_idv/blob/main/examples/spherical_amr_rendering_with_refinement.py). Changes in [159](https://github.com/yt-project/yt_idv/pull/159), stay tuned for a paper...
 
 **More colormaps!** In [154](https://github.com/yt-project/yt_idv/pull/154) and [155](https://github.com/yt-project/yt_idv/pull/155), many more colormaps were added to the colormap dropdown, including all of the colormaps from [cmyt](https://github.com/yt-project/cmyt/).
 
-## What's Changed
+### Changes
 
-### New Features
+#### New Features
 * Volume Rendering datasets in spherical coordinates by @chrishavlin in https://github.com/yt-project/yt_idv/pull/159
 * Add more colormaps and _r colormaps by @matthewturk in https://github.com/yt-project/yt_idv/pull/154
 * Add cmyt cmaps too!  by @chrishavlin in https://github.com/yt-project/yt_idv/pull/155
@@ -18,7 +18,7 @@
 * Add some camera adjustments by @matthewturk in https://github.com/yt-project/yt_idv/pull/156
 * add `TrackballCamera.from_dataset(ds)`, add example of manual `SceneGraph` contstruction by @chrishavlin in https://github.com/yt-project/yt_idv/pull/190
 
-### Infrastructure Improvements and Bug Fixes
+#### Infrastructure Improvements and Bug Fixes
 * Add tests for shader program compilation by @chrishavlin in https://github.com/yt-project/yt_idv/pull/133
 * link to examples directory in readme by @chrishavlin in https://github.com/yt-project/yt_idv/pull/134
 * set PYOPENGL_PLATFORM before opengl imports by @chrishavlin in https://github.com/yt-project/yt_idv/pull/149
@@ -27,16 +27,13 @@
 * add a note on why ratio is needed in BlockCollection.add_data by @chrishavlin in https://github.com/yt-project/yt_idv/pull/158
 * fix extras deprecation warning by @chrishavlin in https://github.com/yt-project/yt_idv/pull/162
 * preprocessor directives followup  by @chrishavlin in https://github.com/yt-project/yt_idv/pull/89
-
 * add camera.set_position to TrackballCamera by @chrishavlin in https://github.com/yt-project/yt_idv/pull/166
 * offset the normalized block data by eps by @chrishavlin in https://github.com/yt-project/yt_idv/pull/172
 * update constant_rgba blend func, rm linewidth from curve render by @chrishavlin in https://github.com/yt-project/yt_idv/pull/175
 * Displaying camera dictionary, updating from dict by @chrishavlin in https://github.com/yt-project/yt_idv/pull/180
 * Use only intersected grids for GridOutline by @chrishavlin in https://github.com/yt-project/yt_idv/pull/179
 * use gi in slice_traverse loop not i by @chrishavlin in https://github.com/yt-project/yt_idv/pull/182
-
 * BUG: remove scaling from block outlines for spherical datasets by @chrishavlin in https://github.com/yt-project/yt_idv/pull/188
-
 * Setting fixed data normalization and color map limits by @chrishavlin in https://github.com/yt-project/yt_idv/pull/191
 * add py 3.12 to CI, setup by @chrishavlin in https://github.com/yt-project/yt_idv/pull/192
 
