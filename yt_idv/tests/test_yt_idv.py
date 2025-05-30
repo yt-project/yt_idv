@@ -256,7 +256,7 @@ def test_manual_scene_graph(image_store):
     c = TrackballCamera.from_dataset(ds)
     rc.scene = SceneGraph(camera=c)
     rc.scene.data_objects.append(BlockCollection(data_source=ds.all_data()))
-    rc.scene.data_objects[-1].add_data(("stream", "Density"), no_ghost=True)
+    rc.scene.data_objects[-1].add_data(("radius"), no_ghost=True)
     rc.scene.components.append(BlockRendering(data=rc.scene.data_objects[-1]))
 
     image_store(rc)
