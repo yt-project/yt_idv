@@ -8,8 +8,12 @@ from numpy.testing import assert_equal
 
 import yt_idv
 from yt_idv import shader_objects
+from yt_idv.cameras.trackball_camera import TrackballCamera
+from yt_idv.scene_components.blocks import BlockRendering
 from yt_idv.scene_components.curves import CurveCollectionRendering, CurveRendering
+from yt_idv.scene_data.block_collection import BlockCollection
 from yt_idv.scene_data.curve import CurveCollection, CurveData
+from yt_idv.scene_graph import SceneGraph
 
 
 @pytest.fixture()
@@ -242,4 +246,18 @@ def test_block_collection_grid_ids():
     assert len(gl) < len(ds.index.grids)
     grids = block_coll.intersected_grids
     assert len(grids) == len(gl)
+    rc.osmesa.OSMesaDestroyContext(rc.context)
+
+
+def test_manual_scene_graph(image_store):
+    rc = yt_idv.render_context("osmesa", width=1024, height=1024)
+    ds = yt.testing.fake_amr_ds()
+
+    c = TrackballCamera.from_dataset(ds)
+    rc.scene = SceneGraph(camera=c)
+    rc.scene.data_objects.append(BlockCollection(data_source=ds.all_data()))
+    rc.scene.data_objects[-1].add_data(("radius"), no_ghost=True)
+    rc.scene.components.append(BlockRendering(data=rc.scene.data_objects[-1]))
+
+    image_store(rc)
     rc.osmesa.OSMesaDestroyContext(rc.context)
