@@ -261,3 +261,24 @@ def test_manual_scene_graph(image_store):
 
     image_store(rc)
     rc.osmesa.OSMesaDestroyContext(rc.context)
+
+
+def test_block_collection_min_max(image_store):
+    rc = yt_idv.render_context("osmesa", width=1024, height=1024)
+    ds = yt.testing.fake_amr_ds()
+
+    c = TrackballCamera.from_dataset(ds)
+    rc.scene = SceneGraph(camera=c)
+    rc.scene.data_objects.append(
+        BlockCollection(
+            data_source=ds.all_data(),
+            _compute_min_max=False,
+            min_val=0.0,
+            max_val=10.0,
+        )
+    )
+    rc.scene.data_objects[-1].add_data(("stream", "Density"), no_ghost=True)
+    rc.scene.components.append(BlockRendering(data=rc.scene.data_objects[-1]))
+
+    image_store(rc)
+    rc.osmesa.OSMesaDestroyContext(rc.context)

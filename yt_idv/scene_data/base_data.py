@@ -22,7 +22,11 @@ class SceneData(traitlets.HasTraits):
 
     def _normalize_by_min_max(self, data):
         # linear normalization of data across full data range
-        return (data - self.min_val) / self.val_range
+
+        n_data = (data - self.min_val) / self.val_range
+        n_data[n_data < 0] = 0.0
+        n_data[n_data > 1] = 1.0
+        return n_data
 
     @property
     def val_range(self):
