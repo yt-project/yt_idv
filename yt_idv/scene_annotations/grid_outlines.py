@@ -25,3 +25,19 @@ class GridOutlines(SceneAnnotation):
         shader_program._set_uniform("box_width", self.box_width)
         shader_program._set_uniform("box_color", np.array(self.box_color))
         shader_program._set_uniform("box_alpha", self.box_alpha)
+
+    def render_gui(self, imgui, renderer, scene):
+        changed = super().render_gui(imgui, renderer, scene)
+        _, bw = imgui.slider_float("Width", self.box_width, 0.001, 2.50)
+        if _:
+            self.box_width = bw
+        changed = changed or _
+        _, (r, g, b) = imgui.color_edit3("Color", *self.box_color)
+        if _:
+            self.box_color = (r, g, b)
+        changed = changed or _
+        _, ba = imgui.slider_float("Alpha", self.box_alpha, 0.0, 1.0)
+        if _:
+            self.box_alpha = ba
+        changed = changed or _
+        return changed
