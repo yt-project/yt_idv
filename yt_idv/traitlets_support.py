@@ -52,3 +52,39 @@ class FontTrait(traitlets.TraitType):
             except FileNotFoundError:
                 self.error(obj, value)
         return value
+
+
+class ArrayTrait(traitlets.TraitType):
+
+    # a replacement for the un-maintained traittypes.Array, loosely
+    # based off of the implementation at https://github.com/jupyter-widgets/traittypes
+    info_text = "A numpy array"
+
+    def __init__(self, default_value=None, **kwargs):
+        if default_value is not None:
+            default_value = np.asarray(default_value)
+        super().__init__(default_value=default_value, **kwargs)
+        self.validators = []
+
+    def valid(self, *args):
+        self.validators.extend(args)
+        return self
+
+    def validate(self, obj, value):
+        if self.allow_none and value is None:
+            return value
+
+        if self.allow_none is False and value is None:
+            self.error(obj, value)
+
+        if not isinstance(value, np.ndarray):
+            # try to coerce whatever it is
+            value = np.asarray(value)
+
+        for validator in self.validators:
+            value = validator(obj, value)
+
+        if not isinstance(value, np.ndarray):
+            self.error(obj, value)
+
+        return value
