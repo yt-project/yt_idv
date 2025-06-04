@@ -1,5 +1,17 @@
 # History
 
+## 0.5.1
+
+This release fixes a Cython installation error for v0.5.0.
+
+### Changes
+
+#### Infrastructure Improvements and Bug Fixes
+* BUG: fix manifest for pxd files, nest cython utils, add build from sdist in GHA by @chrishavlin in https://github.com/yt-project/yt_idv/pull/196
+
+
+**Full Changelog**: https://github.com/yt-project/yt_idv/compare/v0.5.0...v0.5.1
+
 ## 0.5.0
 
 ### Highlights
