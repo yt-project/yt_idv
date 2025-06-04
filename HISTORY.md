@@ -2,7 +2,7 @@
 
 ## 0.5.0
 
-## Highlights
+### Highlights
 
 **Spherical Coordinates!** With this release, yt_idv can now volume render yt datasets defined in spherical coordinates. To use it, just try to load a 3D spherical dataset (gridded AMR and uniform grids only at present) and let us know if it breaks! For an overview of how it works, see the docs [here](https://yt-idv.readthedocs.io/en/latest/coordinate_systems.html) or try out the new example scripts: [spherical_unigrid_rendering.py](https://github.com/yt-project/yt_idv/blob/main/examples/spherical_unigrid_rendering.py) and [spherical_amr_rendering_with_refinement](https://github.com/yt-project/yt_idv/blob/main/examples/spherical_amr_rendering_with_refinement.py). Changes in [159](https://github.com/yt-project/yt_idv/pull/159), stay tuned for a paper...
 
