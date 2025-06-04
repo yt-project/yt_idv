@@ -3,7 +3,6 @@ from setuptools import setup
 
 from Cython.Build import cythonize  # isort:skip
 
-setup(
-    ext_modules=cythonize("yt_idv/*.pyx"),
-    include_dirs=[numpy.get_include()],
-)
+_include_dirs = [numpy.get_include()]
+
+setup(ext_modules=cythonize("yt_idv/utilities/*.pyx"), include_dirs=_include_dirs)

@@ -8,7 +8,7 @@ from yt.utilities.math_utils import (
 )
 
 from yt_idv.cameras.base_camera import BaseCamera
-from yt_idv.utilities import update_orientation
+from yt_idv.utilities.camera_utilities import update_orientation
 
 
 class TrackballCamera(BaseCamera):
