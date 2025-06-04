@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from yt_idv.coordinate_utilities import (
+from yt_idv.utilities.coordinate_utilities import (
     SphericalMixedCoordBBox,
     cartesian_bboxes,
     cartesian_bboxes_edges,

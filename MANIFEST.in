@@ -10,7 +10,7 @@ recursive-exclude * *.py[co]
 recursive-exclude .tox *
 
 recursive-include yt_idv *.pyx
-recursive-include yt_idv *.pyd
+recursive-include yt_idv *.pxd
 
 include *.md
 include *.yaml

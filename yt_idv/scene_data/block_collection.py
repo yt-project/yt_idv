@@ -126,7 +126,7 @@ class BlockCollection(SceneData):
         if self._yt_geom_str == "cartesian":
             return
         elif self._yt_geom_str == "spherical":
-            from yt_idv.coordinate_utilities import (
+            from yt_idv.utilities.coordinate_utilities import (
                 SphericalMixedCoordBBox,
                 cartesian_bboxes_edges,
             )

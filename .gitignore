@@ -9,8 +9,8 @@ __pycache__/
 *.so
 
 # Cythonized files
-yt_idv/utilities.c
-yt_idv/coordinate_utilities.c
+yt_idv/utilities/camera_utilities.c
+yt_idv/utilities/coordinate_utilities.c
 
 
 # imgui files
