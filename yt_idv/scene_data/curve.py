@@ -57,6 +57,9 @@ class CurveCollection(CurveData):
     data = Array()
     n_vertices = traitlets.CInt()
 
+    def __init__(self):
+        self.n_curves = 0
+
     def add_curve(self, curve):
         """
         add a single curve to the collection
@@ -83,6 +86,7 @@ class CurveCollection(CurveData):
             self.data = np.concatenate([self.data, data])
         else:
             self.data = data
+        self.n_curves += 1
 
     def add_data(self):
         """

@@ -1,5 +1,18 @@
 # History
 
+## 0.5.2
+
+Bug fix release to fix block outlines for spherical datasets
+
+### Changes
+
+#### Infrastructure Improvements and Bug Fixes
+
+* BUG: fix relative import errors for block outlines for spherical datasets and add new tests by @chrishavlin in https://github.com/yt-project/yt_idv/pull/198
+
+
+**Full Changelog**: https://github.com/yt-project/yt_idv/compare/v0.5.1...v0.5.2
+
 ## 0.5.1
 
 This release fixes a Cython installation error for v0.5.0.
