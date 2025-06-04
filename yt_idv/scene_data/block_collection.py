@@ -270,8 +270,8 @@ def _block_collection_outlines(
         msg += f"{block_collection._yt_geom_str} geometry."
         raise NotImplementedError(msg)
 
-    from ..scene_components.curves import CurveCollectionRendering
-    from .curve import CurveCollection
+    from yt_idv.scene_components.curves import CurveCollectionRendering
+    from yt_idv.scene_data.curve import CurveCollection
 
     data_collection = CurveCollection()
 
@@ -286,7 +286,7 @@ def _block_collection_outlines(
         block_iterator = [ds.index.grids[gid] for gid in gids]
 
     if block_collection._yt_geom_str == "spherical":
-        from ..coordinate_utilities import spherical_to_cartesian
+        from yt_idv.utilities.coordinate_utilities import spherical_to_cartesian
 
         # should move this down to cython to speed it up
         axis_id = block_collection.data_source.ds.coordinates.axis_id
