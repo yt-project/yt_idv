@@ -13,7 +13,6 @@ import numpy as np
 import traitlets
 import yaml
 from OpenGL import GL
-from packaging.version import Version
 from yt.units.yt_array import YTQuantity
 from yt.utilities.exceptions import (
     YTInvalidShaderType,
@@ -153,9 +152,7 @@ class ShaderProgram:
         fragment_shader.delete_shader()
         if geometry_shader is not None:
             geometry_shader.delete_shader()
-        if Version(np.__version__) < Version("2.3.0"):
-            # see https://github.com/yt-project/yt_idv/pull/201
-            self.introspect()
+        self.introspect()
 
     def introspect(self):
         if self.program is None:
@@ -175,7 +172,7 @@ class ShaderProgram:
             if isinstance(name, np.ndarray):
                 # fix for https://github.com/yt-project/yt_idv/issues/202
                 # until an upstream fix is in.
-                name = name.tobytes()
+                name = name.tobytes().rstrip(b"\000")
             gl_type = num_to_const[gl_type]
             self.uniforms[name.decode("utf-8")] = (size, gl_type)
 
