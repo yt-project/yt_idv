@@ -172,6 +172,10 @@ class ShaderProgram:
 
         for i in range(n_uniforms):
             name, size, gl_type = GL.glGetActiveUniform(self.program, i)
+            if isinstance(name, np.ndarray):
+                # fix for https://github.com/yt-project/yt_idv/issues/202
+                # until an upstream fix is in.
+                name = name.tobytes()
             gl_type = num_to_const[gl_type]
             self.uniforms[name.decode("utf-8")] = (size, gl_type)
 
