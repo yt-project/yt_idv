@@ -1,5 +1,13 @@
 # History
 
+## 0.5.3
+
+Bug fix release to support numpy >= 2.3.0
+
+#### Infrastructure Improvements and Bug Fixes
+
+* Bug: Fix for introspect with np 2.3.0 by @chrishavlin in https://github.com/yt-project/yt_idv/pull/204
+
 ## 0.5.2
 
 Bug fix release to fix block outlines for spherical datasets
