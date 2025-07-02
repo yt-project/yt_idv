@@ -28,7 +28,8 @@ dd = ds_halos.all_data()
 
 print(dd.quantities.extrema(("halos", "virial_radius")))
 rc = yt_idv.render_context(height=800, width=800, gui=True)
-sg = rc.add_scene(ds, None, no_ghost=True)
+sg = rc.add_scene(ds, "density", no_ghost=True)
+sg.components[0].colormap.colormap_name = "pixel_blue.cmyt"
 
 pos = ParticlePositions(
     data_source=dd,
@@ -38,8 +39,11 @@ pos = ParticlePositions(
     position_field="particle_position",
 )
 # pren.max_particle_size = 0.000000001
-pren: ParticleRendering = ParticleRendering(data=pos, scale=1.0)
-
+pren: ParticleRendering = ParticleRendering(
+    data=pos,
+    scale=1.0,
+)
+pren.max_particle_size = 1e3
 sg.data_objects.append(pos)
 sg.components.append(pren)
 
