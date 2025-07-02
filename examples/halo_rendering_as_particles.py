@@ -4,7 +4,7 @@ import yt
 from yt.extensions.astro_analysis.halo_analysis import HaloCatalog
 
 import yt_idv
-from yt_idv.scene_components.sph_particles import SPHRendering
+from yt_idv.scene_components.particles import ParticleRendering
 from yt_idv.scene_data.particle_positions import ParticlePositions
 
 # ds = yt.load_sample("Enzo_64")
@@ -34,11 +34,11 @@ pos = ParticlePositions(
     data_source=dd,
     radius_field="virial_radius",
     particle_type="halos",
-    color_field="virial_radius",
+    # color_field="virial_radius",
     position_field="particle_position",
 )
-pren: SPHRendering = SPHRendering(data=pos, scale=1.0)
-pren.max_particle_size = 0.000000001
+# pren.max_particle_size = 0.000000001
+pren: ParticleRendering = ParticleRendering(data=pos, scale=1.0)
 
 sg.data_objects.append(pos)
 sg.components.append(pren)
