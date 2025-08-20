@@ -15,6 +15,7 @@ class CurveRendering(SceneComponent):
     data = traitlets.Instance(CurveData, help="The curve data.")
     curve_rgba = traitlets.Tuple((1.0, 1.0, 1.0, 1.0)).tag(trait=traitlets.CFloat())
     priority = 10
+    _has_colormap = False
 
     def render_gui(self, imgui, renderer, scene):
         changed, self.visible = imgui.checkbox("Visible", self.visible)
