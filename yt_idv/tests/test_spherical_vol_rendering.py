@@ -26,6 +26,10 @@ bbox_options = {
         "bbox": np.array([[0.6, 1.0], [0.0, np.pi / 2], [0.0, np.pi / 2]]),
         "field": ("index", "theta"),
     },
+    "big_r": {
+        "bbox": np.array([[0.0, 100.0], [0.0, 2 * np.pi], [0, np.pi]]),
+        "field": ("index", "phi"),
+    },
 }
 
 
