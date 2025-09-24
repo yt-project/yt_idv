@@ -1,5 +1,13 @@
 # History
 
+## 0.5.4
+
+## Bug Fixes
+* add text label to slider_float for sph by @chrishavlin in https://github.com/yt-project/yt_idv/pull/208
+* spherical vol rendering: normalize radius range for rendering by @chrishavlin in https://github.com/yt-project/yt_idv/pull/214
+
+**Full Changelog**: https://github.com/yt-project/yt_idv/compare/v0.5.3...v0.5.4
+
 ## 0.5.3
 
 Bug fix release to support numpy >= 2.3.0
