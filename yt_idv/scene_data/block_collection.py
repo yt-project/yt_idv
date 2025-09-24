@@ -300,12 +300,16 @@ def _block_collection_outlines(
         # should move this down to cython to speed it up
         axis_id = block_collection.data_source.ds.coordinates.axis_id
         n_verts = segments_per_edge + 1
+
+        rad_index = axis_id["r"]
+        max_r = block_collection.data_source.ds.domain_right_edge[rad_index]
+
         for block in block_iterator:
             le_i = block.LeftEdge
             re_i = block.RightEdge
 
-            r_min = le_i[axis_id["r"]]
-            r_max = re_i[axis_id["r"]]
+            r_min = le_i[axis_id["r"]] / max_r
+            r_max = re_i[axis_id["r"]] / max_r
 
             theta_min = le_i[axis_id["theta"]]
             theta_max = re_i[axis_id["theta"]]
