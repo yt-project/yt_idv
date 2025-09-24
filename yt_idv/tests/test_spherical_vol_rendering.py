@@ -87,9 +87,10 @@ def test_spherical_nprocs(osmesa_empty_rc, image_store, nprocs):
     image_store(osmesa_empty_rc)
 
 
-def test_block_collection_outlines(osmesa_empty_rc, image_store):
+@pytest.mark.parametrize("bbox_option", ["partial", "big_r"])
+def test_block_collection_outlines(osmesa_empty_rc, image_store, bbox_option):
 
-    ds = _get_sph_yt_ds("partial")
+    ds = _get_sph_yt_ds(bbox_option)
     block_coll: BlockCollection = BlockCollection(
         data_source=ds.all_data(),
     )
