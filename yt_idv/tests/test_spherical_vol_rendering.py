@@ -26,6 +26,10 @@ bbox_options = {
         "bbox": np.array([[0.6, 1.0], [0.0, np.pi / 2], [0.0, np.pi / 2]]),
         "field": ("index", "theta"),
     },
+    "big_r": {
+        "bbox": np.array([[0.0, 100.0], [0.0, 2 * np.pi], [0, np.pi]]),
+        "field": ("index", "phi"),
+    },
 }
 
 
@@ -83,9 +87,10 @@ def test_spherical_nprocs(osmesa_empty_rc, image_store, nprocs):
     image_store(osmesa_empty_rc)
 
 
-def test_block_collection_outlines(osmesa_empty_rc, image_store):
+@pytest.mark.parametrize("bbox_option", ["partial", "big_r"])
+def test_block_collection_outlines(osmesa_empty_rc, image_store, bbox_option):
 
-    ds = _get_sph_yt_ds("partial")
+    ds = _get_sph_yt_ds(bbox_option)
     block_coll: BlockCollection = BlockCollection(
         data_source=ds.all_data(),
     )

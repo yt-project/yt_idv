@@ -104,6 +104,12 @@ class BlockCollection(SceneData):
             LE = np.array([b.LeftEdge for i, b in self.blocks.values()]).min(axis=0)
             RE = np.array([b.RightEdge for i, b in self.blocks.values()]).max(axis=0)
             self.diagonal = np.sqrt(((RE - LE) ** 2).sum())
+        elif self._yt_geom_str == "spherical":
+            rad_index = self.data_source.ds.coordinates.axis_id["r"]
+            max_r = self.data_source.ds.domain_right_edge[rad_index]
+            le[:, rad_index] = le[:, rad_index] / max_r
+            re[:, rad_index] = re[:, rad_index] / max_r
+            dx[:, rad_index] = dx[:, rad_index] / max_r
 
         self._set_geometry_attributes(le, re, dx)
         self.vertex_array.attributes.append(
@@ -122,6 +128,9 @@ class BlockCollection(SceneData):
 
     def _set_geometry_attributes(self, le, re, dx):
         # set any vertex_array attributes that depend on the yt geometry type
+        #
+        # for spherical coordinates, the radial component of le, re and dx
+        # should already be normalized in the range of (0, 1)
 
         if self._yt_geom_str == "cartesian":
             return
@@ -291,12 +300,16 @@ def _block_collection_outlines(
         # should move this down to cython to speed it up
         axis_id = block_collection.data_source.ds.coordinates.axis_id
         n_verts = segments_per_edge + 1
+
+        rad_index = axis_id["r"]
+        max_r = block_collection.data_source.ds.domain_right_edge[rad_index]
+
         for block in block_iterator:
             le_i = block.LeftEdge
             re_i = block.RightEdge
 
-            r_min = le_i[axis_id["r"]]
-            r_max = re_i[axis_id["r"]]
+            r_min = le_i[axis_id["r"]] / max_r
+            r_max = re_i[axis_id["r"]] / max_r
 
             theta_min = le_i[axis_id["theta"]]
             theta_max = re_i[axis_id["theta"]]
