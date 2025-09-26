@@ -7,7 +7,7 @@ from OpenGL import GL
 from yt_idv.gui_support import add_popup_help
 from yt_idv.opengl_support import TransferFunctionTexture
 from yt_idv.scene_components.base_component import SceneComponent
-from yt_idv.scene_data.block_collection import BlockCollection
+from yt_idv.scene_data.block_collection import BlockCollection, GridCollection
 from yt_idv.shader_objects import component_shaders, get_shader_combos
 
 
@@ -165,7 +165,7 @@ class BlockRendering(SceneComponent):
 
     def _set_uniforms(self, scene, shader_program):
         if self.data._yt_geom_str == "spherical":
-            axis_id = self.data.data_source.ds.coordinates.axis_id
+            axis_id = self.data._get_ds().coordinates.axis_id
             shader_program._set_uniform("id_theta", axis_id["theta"])
             shader_program._set_uniform("id_r", axis_id["r"])
             shader_program._set_uniform("id_phi", axis_id["phi"])
@@ -184,3 +184,8 @@ class BlockRendering(SceneComponent):
     @property
     def _yt_geom_str(self):
         return self.data._yt_geom_str
+
+
+class GridCollectionRendering(BlockRendering):
+    name = "grid_collection_rendering"
+    data = traitlets.Instance(GridCollection)

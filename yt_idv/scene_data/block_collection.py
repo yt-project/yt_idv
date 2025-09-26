@@ -14,6 +14,9 @@ class AbstractDataCollection(SceneData):
     bitmap_objects = traitlets.Dict(value_trait=traitlets.Instance(Texture3D))
     compute_min_max = traitlets.Bool(True)
     always_normalize = traitlets.Bool(False)
+    blocks = traitlets.Dict(
+        default_value=()
+    )  # Note: "blocks" here are generic volumes.
     _yt_geom_str = traitlets.Unicode("cartesian")
     scale = traitlets.Bool(False)
 
@@ -232,15 +235,13 @@ class AbstractDataCollection(SceneData):
 class BlockCollection(AbstractDataCollection):
     name = "block_collection"
     data_source = traitlets.Instance(YTDataContainer)
-    blocks = traitlets.Dict(default_value=())
-    scale = traitlets.Bool(False)
     blocks_by_grid = traitlets.Instance(defaultdict, (list,))
     grids_by_block = traitlets.Dict(default_value=())
 
     def _initialize_data_source(self, field, no_ghost=False):
         self.data_source.tiles.set_fields([field], [False], no_ghost=no_ghost)
 
-    def _volume_iterator(self, camera=None):
+    def _volume_iterator(self):
         yield from self.data_source.tiles.traverse()
 
     def _get_volume_data(self, block):
@@ -381,3 +382,41 @@ def _block_collection_outlines(
     data_rendering.display_name = display_name
 
     return data_collection, data_rendering
+
+
+class _DummyBlock:
+    def __init__(self, grid) -> None:
+        self.grid = grid
+        self.LeftEdge = grid.LeftEdge
+        self.RightEdge = grid.RightEdge
+        self.source_mask = np.ones(grid.ActiveDimensions, dtype=int)
+
+
+class GridCollection(AbstractDataCollection):
+    name = "block_collection"
+    data_source = traitlets.List(trait=traitlets.Instance(YTDataContainer))
+
+    _field = None
+    _no_ghost = None
+
+    def _initialize_data_source(self, field, no_ghost=False):
+        self._field = field
+        self._no_ghost = no_ghost
+
+    def _volume_iterator(self):
+        for grid in self.data_source:
+
+            yield _DummyBlock(grid)
+        yield from self.data_source.tiles.traverse()
+
+    def _get_volume_data(self, block):
+        return block[self._field]
+
+    def _get_ds(self):
+        return self.data_source[0].ds
+
+    def viewpoint_iter(self, camera):
+        # neglecting camera
+        for block in self._volume_iterator():
+            vbo_i, _ = self.blocks[id(block)]
+            yield (vbo_i, self.texture_objects[vbo_i], self.bitmap_objects[vbo_i])
