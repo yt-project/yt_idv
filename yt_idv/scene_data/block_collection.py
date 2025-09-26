@@ -389,7 +389,7 @@ class _DummyBlock:
         self.grid = grid
         self.LeftEdge = grid.LeftEdge
         self.RightEdge = grid.RightEdge
-        self.source_mask = np.ones(grid.ActiveDimensions, dtype=int)
+        self.source_mask = np.ones(grid.ActiveDimensions, dtype="uint8")
 
 
 class GridCollection(AbstractDataCollection):
@@ -405,18 +405,15 @@ class GridCollection(AbstractDataCollection):
 
     def _volume_iterator(self):
         for grid in self.data_source:
-
             yield _DummyBlock(grid)
-        yield from self.data_source.tiles.traverse()
 
     def _get_volume_data(self, block):
-        return block[self._field]
+        return block.grid[self._field]
 
     def _get_ds(self):
         return self.data_source[0].ds
 
     def viewpoint_iter(self, camera):
         # neglecting camera
-        for block in self._volume_iterator():
-            vbo_i, _ = self.blocks[id(block)]
+        for vbo_i in range(len(self.blocks)):
             yield (vbo_i, self.texture_objects[vbo_i], self.bitmap_objects[vbo_i])

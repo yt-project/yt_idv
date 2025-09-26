@@ -187,5 +187,5 @@ class BlockRendering(SceneComponent):
 
 
 class GridCollectionRendering(BlockRendering):
-    name = "grid_collection_rendering"
+    name = "block_rendering"
     data = traitlets.Instance(GridCollection)
