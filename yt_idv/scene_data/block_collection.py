@@ -320,22 +320,18 @@ def _block_collection_outlines(
     if outline_type == "blocks":
         block_iterator = block_collection.data_source.tiles.traverse()
     else:
-        # note this can be simplified after
-        # https://github.com/yt-project/yt_idv/pull/179
-        gids = [gid for gid, _ in block_collection.grids_by_block.values()]
-        gids = np.unique(gids)
-        ds = block_collection.data_source.ds
-        block_iterator = [ds.index.grids[gid] for gid in gids]
+        block_iterator = block_collection.intersected_grids
 
     if block_collection._yt_geom_str == "spherical":
         from yt_idv.utilities.coordinate_utilities import spherical_to_cartesian
 
         # should move this down to cython to speed it up
-        axis_id = block_collection.data_source.ds.coordinates.axis_id
+        ds = block_collection._get_ds()
+        axis_id = ds.coordinates.axis_id
         n_verts = segments_per_edge + 1
 
         rad_index = axis_id["r"]
-        max_r = block_collection.data_source.ds.domain_right_edge[rad_index]
+        max_r = ds.domain_right_edge[rad_index]
 
         for block in block_iterator:
             le_i = block.LeftEdge
@@ -423,3 +419,7 @@ class GridCollection(AbstractDataCollection):
         # neglecting camera
         for vbo_i in range(len(self.blocks)):
             yield (vbo_i, self.texture_objects[vbo_i], self.bitmap_objects[vbo_i])
+
+    @property
+    def intersected_grids(self):
+        return self.data_source  # the data_source is already a list of grids

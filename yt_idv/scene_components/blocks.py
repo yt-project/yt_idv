@@ -30,6 +30,7 @@ class BlockRendering(SceneComponent):
     slice_position = traitlets.Tuple((0.5, 0.5, 0.5)).tag(trait=traitlets.CFloat())
     slice_normal = traitlets.Tuple((1.0, 0.0, 0.0)).tag(trait=traitlets.CFloat())
 
+    _allow_block_outlines = True
     priority = 10
 
     def render_gui(self, imgui, renderer, scene):
@@ -55,20 +56,22 @@ class BlockRendering(SceneComponent):
         if _:
             self.render_method = valid_shaders[shader_ind]
         changed = changed or _
-        if imgui.button("Add Block Outline"):
-            if self.data._yt_geom_str == "cartesian":
-                from ..scene_annotations.block_outline import BlockOutline
 
-                block_outline = BlockOutline(data=self.data)
-                scene.annotations.append(block_outline)
-            elif self.data._yt_geom_str == "spherical":
-                from ..scene_data.block_collection import _block_collection_outlines
+        if self._allow_block_outlines:
+            if imgui.button("Add Block Outline"):
+                if self.data._yt_geom_str == "cartesian":
+                    from ..scene_annotations.block_outline import BlockOutline
 
-                cc, cc_render = _block_collection_outlines(
-                    self.data, outline_type="blocks"
-                )
-                scene.data_objects.append(cc)
-                scene.components.append(cc_render)
+                    block_outline = BlockOutline(data=self.data)
+                    scene.annotations.append(block_outline)
+                elif self.data._yt_geom_str == "spherical":
+                    from ..scene_data.block_collection import _block_collection_outlines
+
+                    cc, cc_render = _block_collection_outlines(
+                        self.data, outline_type="blocks"
+                    )
+                    scene.data_objects.append(cc)
+                    scene.components.append(cc_render)
 
         if imgui.button("Add Grid Outline"):
             if self.data._yt_geom_str == "cartesian":
@@ -189,3 +192,4 @@ class BlockRendering(SceneComponent):
 class GridCollectionRendering(BlockRendering):
     name = "block_rendering"
     data = traitlets.Instance(GridCollection)
+    _allow_block_outlines = False
