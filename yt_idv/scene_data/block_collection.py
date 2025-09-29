@@ -41,6 +41,7 @@ class AbstractDataCollection(SceneData):
         pass
 
     def add_data(self, field, no_ghost=False):
+
         self._initialize_data_source(field, no_ghost=no_ghost)
 
         vert, dx, le, re = [], [], [], []
@@ -240,6 +241,7 @@ class BlockCollection(AbstractDataCollection):
 
     def _initialize_data_source(self, field, no_ghost=False):
         self.data_source.tiles.set_fields([field], [False], no_ghost=no_ghost)
+        self._yt_geom_str = str(self.data_source.ds.geometry)
 
     def _volume_iterator(self):
         yield from self.data_source.tiles.traverse()
@@ -389,7 +391,10 @@ class _DummyBlock:
         self.grid = grid
         self.LeftEdge = grid.LeftEdge
         self.RightEdge = grid.RightEdge
-        self.source_mask = np.ones(grid.ActiveDimensions, dtype="uint8")
+
+    @property
+    def source_mask(self):
+        return np.ones(self.grid.ActiveDimensions, dtype="uint8")
 
 
 class GridCollection(AbstractDataCollection):
@@ -402,6 +407,7 @@ class GridCollection(AbstractDataCollection):
     def _initialize_data_source(self, field, no_ghost=False):
         self._field = field
         self._no_ghost = no_ghost
+        self._yt_geom_str = str(self.data_source[0].ds.geometry)
 
     def _volume_iterator(self):
         for grid in self.data_source:

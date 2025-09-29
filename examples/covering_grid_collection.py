@@ -8,7 +8,6 @@ from yt_idv.scene_graph import SceneGraph
 
 ds = yt.load_sample("IsolatedGalaxy")
 
-
 ag1 = ds.arbitrary_grid(ds.domain_center, ds.domain_right_edge, [64, 64, 64])
 ag2 = ds.arbitrary_grid(ds.domain_left_edge, ds.domain_center, [32, 32, 32])
 
