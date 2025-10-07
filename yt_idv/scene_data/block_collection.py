@@ -429,7 +429,6 @@ class GridCollection(AbstractDataCollection):
         return sorted_indices
 
     def viewpoint_iter(self, camera):
-        # neglecting camera
         for vbo_i in self._sorted_block_indices(camera):
             yield (vbo_i, self.texture_objects[vbo_i], self.bitmap_objects[vbo_i])
 
