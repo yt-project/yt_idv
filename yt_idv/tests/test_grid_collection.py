@@ -3,8 +3,13 @@ import pytest
 import yt
 
 from yt_idv.cameras.trackball_camera import TrackballCamera
+from yt_idv.scene_annotations.grid_outlines import GridOutlines
 from yt_idv.scene_components.blocks import GridCollectionRendering
-from yt_idv.scene_data.block_collection import GridCollection
+from yt_idv.scene_data.block_collection import (
+    GridCollection,
+    _block_collection_outlines,
+)
+from yt_idv.scene_data.grid_positions import GridPositions
 from yt_idv.scene_graph import SceneGraph
 
 _bboxes_by_geom = {
@@ -97,6 +102,16 @@ def test_grid_list(osmesa_empty_rc, image_store, geometry, grid_type):
 
     if _fields[geometry][1] is False:
         osmesa_empty_rc.scene.components[0].cmap_log = False
+
+    if geometry == "spherical":
+        outlines, outlines_render = _block_collection_outlines(grid_coll)
+        outlines_render.curve_rgba = (1.0, 0.0, 0.0, 1.0)
+    else:
+        outlines = GridPositions(grid_list=grid_coll.intersected_grids)
+        outlines_render = GridOutlines(data=outlines, box_color=(1, 0.0, 0.0))
+
+    osmesa_empty_rc.scene.data_objects.append(outlines)
+    osmesa_empty_rc.scene.components.append(outlines_render)
 
     cpos = _camera_pos.get(geometry, None)
     if cpos:

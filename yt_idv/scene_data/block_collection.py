@@ -303,8 +303,65 @@ class BlockCollection(AbstractDataCollection):
         return [self.data_source.ds.index.grids[gid] for gid in self.grid_id_list]
 
 
+class _DummyBlock:
+    def __init__(self, grid) -> None:
+        self.grid = grid
+        self.LeftEdge = grid.LeftEdge
+        self.RightEdge = grid.RightEdge
+
+    @property
+    def source_mask(self):
+        return np.ones(self.grid.ActiveDimensions, dtype="uint8")
+
+
+class GridCollection(AbstractDataCollection):
+    name = "block_collection"
+    data_source = traitlets.List(trait=traitlets.Instance(YTDataContainer))
+
+    _field = None
+    _no_ghost = None
+
+    def _initialize_data_source(self, field, no_ghost=False):
+        self._field = field
+        self._no_ghost = no_ghost
+        self._yt_geom_str = str(self.data_source[0].ds.geometry)
+
+    def _volume_iterator(self):
+        for grid in self.data_source:
+            yield _DummyBlock(grid)
+
+    def _get_volume_data(self, block):
+        return block.grid[self._field]
+
+    def _get_ds(self):
+        return self.data_source[0].ds
+
+    def _sorted_block_indices(self, camera):
+        centers = self.cartesian_center
+        ray_origin = camera.position
+        ray_direction = camera.focus - camera.position
+        ray_direction = ray_direction / np.linalg.norm(ray_direction)
+        sorted_indices = sort_points_along_ray(
+            centers, ray_origin, ray_direction, back_to_front=True
+        )
+        return sorted_indices
+
+    def viewpoint_iter(self, camera):
+        for vbo_i in self._sorted_block_indices(camera):
+            yield (vbo_i, self.texture_objects[vbo_i], self.bitmap_objects[vbo_i])
+
+    def _finalize_add_data(self):
+        # data already loaded into textures, no need to hold onto the field data
+        for grid in self.data_source:
+            grid.clear_data()
+
+    @property
+    def intersected_grids(self):
+        return self.data_source  # the data_source is already a list of grids
+
+
 def _block_collection_outlines(
-    block_collection: BlockCollection,
+    block_collection: BlockCollection | GridCollection,
     display_name: str = "block outlines",
     segments_per_edge: int = 20,
     outline_type: str = "blocks",
@@ -328,7 +385,7 @@ def _block_collection_outlines(
 
     data_collection = CurveCollection()
 
-    if outline_type == "blocks":
+    if outline_type == "blocks" and isinstance(block_collection, BlockCollection):
         block_iterator = block_collection.data_source.tiles.traverse()
     else:
         block_iterator = block_collection.intersected_grids
@@ -391,60 +448,3 @@ def _block_collection_outlines(
     data_rendering.display_name = display_name
 
     return data_collection, data_rendering
-
-
-class _DummyBlock:
-    def __init__(self, grid) -> None:
-        self.grid = grid
-        self.LeftEdge = grid.LeftEdge
-        self.RightEdge = grid.RightEdge
-
-    @property
-    def source_mask(self):
-        return np.ones(self.grid.ActiveDimensions, dtype="uint8")
-
-
-class GridCollection(AbstractDataCollection):
-    name = "block_collection"
-    data_source = traitlets.List(trait=traitlets.Instance(YTDataContainer))
-
-    _field = None
-    _no_ghost = None
-
-    def _initialize_data_source(self, field, no_ghost=False):
-        self._field = field
-        self._no_ghost = no_ghost
-        self._yt_geom_str = str(self.data_source[0].ds.geometry)
-
-    def _volume_iterator(self):
-        for grid in self.data_source:
-            yield _DummyBlock(grid)
-
-    def _get_volume_data(self, block):
-        return block.grid[self._field]
-
-    def _get_ds(self):
-        return self.data_source[0].ds
-
-    def _sorted_block_indices(self, camera):
-        centers = self.cartesian_center
-        ray_origin = camera.position
-        ray_direction = camera.focus - camera.position
-        ray_direction = ray_direction / np.linalg.norm(ray_direction)
-        sorted_indices = sort_points_along_ray(
-            centers, ray_origin, ray_direction, back_to_front=True
-        )
-        return sorted_indices
-
-    def viewpoint_iter(self, camera):
-        for vbo_i in self._sorted_block_indices(camera):
-            yield (vbo_i, self.texture_objects[vbo_i], self.bitmap_objects[vbo_i])
-
-    def _finalize_add_data(self):
-        # data already loaded into textures, no need to hold onto the field data
-        for grid in self.data_source:
-            grid.clear_data()
-
-    @property
-    def intersected_grids(self):
-        return self.data_source  # the data_source is already a list of grids
