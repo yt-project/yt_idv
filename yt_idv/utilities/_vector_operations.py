@@ -5,25 +5,25 @@ import numpy.typing as npt
 
 
 def dist_along_ray(
-    pts: npt.NDArray[np.float_],
-    ray_orgin: npt.NDArray[np.float_],
-    ray_unit_dir: npt.NDArray[np.float_],
-) -> npt.NDArray[np.float_]:
+    pts: npt.NDArray[np.float64],
+    ray_orgin: npt.NDArray[np.float64],
+    ray_unit_dir: npt.NDArray[np.float64],
+) -> npt.NDArray[np.float64]:
     """Project an array of 3D points onto an arbitrary ray
 
     Parameters
     ----------
-    pts : npt.NDArray[np.float_]
+    pts : npt.NDArray[np.float64]
         The points to project, shape (3, N) where N is the number of
         points.
-    ray_orgin : npt.NDArray[np.float_]
+    ray_orgin : npt.NDArray[np.float64]
         The 3D ray origin
-    ray_unit_dir : npt.NDArray[np.float_]
+    ray_unit_dir : npt.NDArray[np.float64]
         The ray direction vector, already a unit normal vector
 
     Returns
     -------
-    npt.NDArray[np.float_]
+    npt.NDArray[np.float64]
         the scalar distance of each point from the ray origin, of
         shape (N,) where N is the number of points
     """
@@ -54,21 +54,21 @@ def dist_along_ray(
 
 
 def sort_points_along_ray(
-    pts: npt.NDArray[np.float_],
-    ray_orgin: npt.NDArray[np.float_],
-    ray_unit_dir: npt.NDArray[np.float_],
+    pts: npt.NDArray[np.float64],
+    ray_orgin: npt.NDArray[np.float64],
+    ray_unit_dir: npt.NDArray[np.float64],
     back_to_front: bool = True,
 ) -> List[int]:
     """Project and sort an array of 3D locations along a given ray
 
     Parameters
     ----------
-    pts : npt.NDArray[np.float_]
+    pts : npt.NDArray[np.float64]
         The points to project, shape (3, N) where N is the number of
         points.
-    ray_orgin : npt.NDArray[np.float_]
+    ray_orgin : npt.NDArray[np.float64]
         The 3D ray origin
-    ray_unit_dir : npt.NDArray[np.float_]
+    ray_unit_dir : npt.NDArray[np.float64]
         The ray direction vector, already a unit normal vector
     back_to_front : bool
         If True (default), then points are sorted in reverse order
