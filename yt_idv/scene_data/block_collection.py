@@ -6,7 +6,7 @@ from yt.data_objects.data_containers import YTDataContainer
 
 from yt_idv.opengl_support import Texture3D, VertexArray, VertexAttribute
 from yt_idv.scene_data.base_data import SceneData
-from yt_idv.utilities._vector_operations import sort_centers
+from yt_idv.utilities._vector_operations import sort_points_along_ray
 
 
 class AbstractDataCollection(SceneData):
@@ -423,7 +423,7 @@ class GridCollection(AbstractDataCollection):
         ray_origin = camera.position
         ray_direction = camera.focus - camera.position
         ray_direction = ray_direction / np.linalg.norm(ray_direction)
-        sorted_indices = sort_centers(
+        sorted_indices = sort_points_along_ray(
             centers, ray_origin, ray_direction, back_to_front=True
         )
         return sorted_indices
