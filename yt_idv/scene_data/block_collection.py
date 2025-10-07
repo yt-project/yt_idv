@@ -6,6 +6,7 @@ from yt.data_objects.data_containers import YTDataContainer
 
 from yt_idv.opengl_support import Texture3D, VertexArray, VertexAttribute
 from yt_idv.scene_data.base_data import SceneData
+from yt_idv.utilities._vector_operations import sort_centers
 
 
 class AbstractDataCollection(SceneData):
@@ -152,6 +153,7 @@ class AbstractDataCollection(SceneData):
         # should already be normalized in the range of (0, 1)
 
         if self._yt_geom_str == "cartesian":
+            self.cartesian_center = (le + re) / 2
             return
         elif self._yt_geom_str == "spherical":
             from yt_idv.utilities.coordinate_utilities import (
@@ -207,6 +209,7 @@ class AbstractDataCollection(SceneData):
             self.cart_bbox_le = domain_le
             self.cart_bbox_center = (domain_re + domain_le) / 2.0
             self.cart_min_dx = np.min(np.linalg.norm(dx_cart))
+            self.cartesian_center = (le_cart + re_cart) / 2
 
             self.vertex_array.attributes.append(
                 VertexAttribute(name="le_cart", data=le_cart.astype("f4"))
@@ -415,9 +418,19 @@ class GridCollection(AbstractDataCollection):
     def _get_ds(self):
         return self.data_source[0].ds
 
+    def _sorted_block_indices(self, camera):
+        centers = self.cartesian_center
+        ray_origin = camera.position
+        ray_direction = camera.focus - camera.position
+        ray_direction = ray_direction / np.linalg.norm(ray_direction)
+        sorted_indices = sort_centers(
+            centers, ray_origin, ray_direction, back_to_front=True
+        )
+        return sorted_indices
+
     def viewpoint_iter(self, camera):
         # neglecting camera
-        for vbo_i in range(len(self.blocks)):
+        for vbo_i in self._sorted_block_indices(camera):
             yield (vbo_i, self.texture_objects[vbo_i], self.bitmap_objects[vbo_i])
 
     @property
