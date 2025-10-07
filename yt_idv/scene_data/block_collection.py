@@ -39,6 +39,13 @@ class AbstractDataCollection(SceneData):
         raise NotImplementedError("need to implement")
 
     def _post_process_blocks(self):
+        # a hook that gets called after all blocks are iterated over
+        pass
+
+    def _finalize_add_data(self):
+        # a hook that is called as the final step of add_data
+        # useful for clearing cached data or other clean up
+        # operations
         pass
 
     def add_data(self, field, no_ghost=False):
@@ -125,6 +132,7 @@ class AbstractDataCollection(SceneData):
 
         # Now we set up our textures
         self._load_textures()
+        self._finalize_add_data()
 
     def _load_textures(self):
         for block_id in sorted(self.blocks):
@@ -431,6 +439,11 @@ class GridCollection(AbstractDataCollection):
     def viewpoint_iter(self, camera):
         for vbo_i in self._sorted_block_indices(camera):
             yield (vbo_i, self.texture_objects[vbo_i], self.bitmap_objects[vbo_i])
+
+    def _finalize_add_data(self):
+        # data already loaded into textures, no need to hold onto the field data
+        for grid in self.data_source:
+            grid.clear_data()
 
     @property
     def intersected_grids(self):

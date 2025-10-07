@@ -101,10 +101,6 @@ def test_grid_list(osmesa_empty_rc, image_store, geometry, grid_type):
     cpos = _camera_pos.get(geometry, None)
     if cpos:
         osmesa_empty_rc.scene.camera.set_position(cpos)
-    osmesa_empty_rc.scene.camera.focus = (
-        0,
-        0,
-        0,
-    )
+    osmesa_empty_rc.scene.camera.focus = ds.domain_center.d
 
     image_store(osmesa_empty_rc)
