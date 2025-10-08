@@ -1,4 +1,5 @@
 from collections import defaultdict
+from typing import Union
 
 import numpy as np
 import traitlets
@@ -361,7 +362,7 @@ class GridCollection(AbstractDataCollection):
 
 
 def _block_collection_outlines(
-    block_collection: BlockCollection | GridCollection,
+    block_collection: Union[BlockCollection, GridCollection],
     display_name: str = "block outlines",
     segments_per_edge: int = 20,
     outline_type: str = "blocks",
