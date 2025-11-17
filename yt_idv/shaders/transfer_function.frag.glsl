@@ -10,7 +10,7 @@ bool sample_texture(vec3 tex_curr_pos, inout vec4 curr_color, float tdelta,
     if (!(map_sample > 0.0)) return false;
 
     vec3 offset_pos = get_offset_texture_position(ds_tex[0], tex_curr_pos);
-    float tex_sample = texture(ds_tex[0], offset_pos).r;
+    float tex_sample = data_min_val + (data_max_val-data_min_val) * texture(ds_tex[0], offset_pos).r;
 
     if (tf_log > 0.5) {
        if(tex_sample <= 0.0) return false;

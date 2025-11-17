@@ -84,6 +84,9 @@ class SceneComponent(traitlets.HasTraits):
     cmap_log = traitlets.Bool(True)
     scale = traitlets.CFloat(1.0)
 
+    # These attributes are for when we aren't applying the colormap
+    color_scale = traitlets.CFloat(1.0)
+
     # This attribute determines whether or not this component is "active"
     active = traitlets.Bool(True)
 
@@ -393,6 +396,7 @@ class SceneComponent(traitlets.HasTraits):
         with self.fb.bind(True):
             with self.program1.enable() as p:
                 scene.camera._set_uniforms(scene, p)
+                # This is for passthrough shaders.
                 self._set_uniforms(scene, p)
                 if self.render_method == "isocontours":
                     self._set_iso_uniforms(p)
@@ -406,6 +410,9 @@ class SceneComponent(traitlets.HasTraits):
             with self.fb.input_bind(1, 2):
                 with self.program2.enable() as p2:
                     with scene.bind_buffer():
+                        # For passthroughs, we set this
+                        p2._set_uniform("color_factor", self.color_scale)
+                        # Now for colormaps...
                         p2._set_uniform("cmap", 0)
                         p2._set_uniform("fb_tex", 1)
                         p2._set_uniform("db_tex", 2)
