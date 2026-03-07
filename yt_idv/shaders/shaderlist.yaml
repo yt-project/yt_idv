@@ -104,6 +104,17 @@ shader_definitions:
         - one
         - one
       blend_equation: func add
+    sum_projection:
+      info:
+        A first pass fragment shader that performs unweighted integration of the
+        data along the line of sight. See :ref:`projection-types` for more information.
+      source:
+        - ray_tracing.frag.glsl
+        - sum_projection.frag.glsl
+      blend_func:
+        - one
+        - one
+      blend_equation: func add
     text_overlay:
       info: A simple text overlay shader
       source: textoverlay.frag.glsl
@@ -214,6 +225,14 @@ component_shaders:
       first_vertex: grid_position
       first_geometry: grid_expand
       first_fragment: projection
+      second_vertex: passthrough
+      second_fragment: apply_colormap
+      coordinate_systems: [cartesian, spherical]
+    sum_projection:
+      description: Unweighted sum
+      first_vertex: grid_position
+      first_geometry: grid_expand
+      first_fragment: sum_projection
       second_vertex: passthrough
       second_fragment: apply_colormap
       coordinate_systems: [cartesian, spherical]
