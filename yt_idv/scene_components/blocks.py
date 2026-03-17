@@ -89,9 +89,34 @@ class BlockRendering(SceneComponent):
 
         if self.render_method == "transfer_function":
             # Now for the transfer function stuff
+            if self.tf_log:
+                values = np.log10([self.tf_min, self.tf_max])
+            else:
+                values = self.tf_min, self.tf_max
+            _, values = imgui.input_float2(
+                "Transfer Function Range",
+                values[0],
+                values[1],
+                format="%0.2f",
+                flags=imgui.INPUT_TEXT_ENTER_RETURNS_TRUE,
+            )
+            if _:
+                if self.tf_log:
+                    values = 10 ** values[0], 10 ** values[1]
+                self.tf_min, self.tf_max = values
+                changed = True
             imgui.image_button(
                 self.transfer_function.texture_name, 256, 32, frame_padding=0
             )
+            _, value = imgui.input_float(
+                "Scale Output",
+                self.color_scale,
+                format="%0.2f",
+                flags=imgui.INPUT_TEXT_ENTER_RETURNS_TRUE,
+            )
+            if _:
+                self.color_scale = value
+                changed = True
             imgui.text("Right click and drag to change")
             update = False
             data = self.transfer_function.data.astype("f4") / 255
@@ -129,6 +154,16 @@ class BlockRendering(SceneComponent):
                     elif renderer.io.key_ctrl:
                         yv1 = yv2 = 0.0
                     data[xb1:xb2, 0, i] = np.mgrid[yv1 : yv2 : (xb2 - xb1) * 1j]
+
+            if imgui.button("Gaussians"):
+                data = np.zeros((256, 1, 4), dtype="f4")
+                v = np.arange(256)
+                for i, center in enumerate([0.25, 0.5, 0.75]):
+                    data[:, :, i] += np.exp(-(((v - center * 256) / 10.0) ** 2))[
+                        :, None
+                    ]
+                data[:, :, 3] = data.sum(axis=(1, 2))[:, None]
+                update = True
             if update:
                 self.transfer_function.data = (data * 255).astype("u1")
 
@@ -153,6 +188,14 @@ class BlockRendering(SceneComponent):
         tf = TransferFunctionTexture(data=np.ones((256, 1, 4), dtype="u1") * 255)
         return tf
 
+    @traitlets.default("tf_min")
+    def _default_tf_min(self):
+        return self.data.min_val
+
+    @traitlets.default("tf_max")
+    def _default_tf_max(self):
+        return self.data.max_val
+
     def draw(self, scene, program):
         each = self.data.vertex_array.each
         GL.glEnable(GL.GL_CULL_FACE)
@@ -175,6 +218,8 @@ class BlockRendering(SceneComponent):
         shader_program._set_uniform("ds_tex", np.array([0, 0, 0, 0, 0, 0]))
         shader_program._set_uniform("bitmap_tex", 1)
         shader_program._set_uniform("tf_tex", 2)
+        shader_program._set_uniform("data_min_val", self.data.min_val)
+        shader_program._set_uniform("data_max_val", self.data.max_val)
         shader_program._set_uniform("tf_min", self.tf_min)
         shader_program._set_uniform("tf_max", self.tf_max)
         shader_program._set_uniform("tf_log", float(self.tf_log))
