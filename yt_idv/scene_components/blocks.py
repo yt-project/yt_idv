@@ -7,7 +7,7 @@ from OpenGL import GL
 from yt_idv.gui_support import add_popup_help
 from yt_idv.opengl_support import TransferFunctionTexture
 from yt_idv.scene_components.base_component import SceneComponent
-from yt_idv.scene_data.block_collection import BlockCollection
+from yt_idv.scene_data.block_collection import BlockCollection, GridCollection
 from yt_idv.shader_objects import component_shaders, get_shader_combos
 
 
@@ -30,6 +30,7 @@ class BlockRendering(SceneComponent):
     slice_position = traitlets.Tuple((0.5, 0.5, 0.5)).tag(trait=traitlets.CFloat())
     slice_normal = traitlets.Tuple((1.0, 0.0, 0.0)).tag(trait=traitlets.CFloat())
 
+    _allow_block_outlines = True
     priority = 10
 
     def render_gui(self, imgui, renderer, scene):
@@ -55,20 +56,22 @@ class BlockRendering(SceneComponent):
         if _:
             self.render_method = valid_shaders[shader_ind]
         changed = changed or _
-        if imgui.button("Add Block Outline"):
-            if self.data._yt_geom_str == "cartesian":
-                from ..scene_annotations.block_outline import BlockOutline
 
-                block_outline = BlockOutline(data=self.data)
-                scene.annotations.append(block_outline)
-            elif self.data._yt_geom_str == "spherical":
-                from ..scene_data.block_collection import _block_collection_outlines
+        if self._allow_block_outlines:
+            if imgui.button("Add Block Outline"):
+                if self.data._yt_geom_str == "cartesian":
+                    from ..scene_annotations.block_outline import BlockOutline
 
-                cc, cc_render = _block_collection_outlines(
-                    self.data, outline_type="blocks"
-                )
-                scene.data_objects.append(cc)
-                scene.components.append(cc_render)
+                    block_outline = BlockOutline(data=self.data)
+                    scene.annotations.append(block_outline)
+                elif self.data._yt_geom_str == "spherical":
+                    from ..scene_data.block_collection import _block_collection_outlines
+
+                    cc, cc_render = _block_collection_outlines(
+                        self.data, outline_type="blocks"
+                    )
+                    scene.data_objects.append(cc)
+                    scene.components.append(cc_render)
 
         if imgui.button("Add Grid Outline"):
             if self.data._yt_geom_str == "cartesian":
@@ -165,7 +168,7 @@ class BlockRendering(SceneComponent):
 
     def _set_uniforms(self, scene, shader_program):
         if self.data._yt_geom_str == "spherical":
-            axis_id = self.data.data_source.ds.coordinates.axis_id
+            axis_id = self.data._get_ds().coordinates.axis_id
             shader_program._set_uniform("id_theta", axis_id["theta"])
             shader_program._set_uniform("id_r", axis_id["r"])
             shader_program._set_uniform("id_phi", axis_id["phi"])
@@ -184,3 +187,9 @@ class BlockRendering(SceneComponent):
     @property
     def _yt_geom_str(self):
         return self.data._yt_geom_str
+
+
+class GridCollectionRendering(BlockRendering):
+    name = "block_rendering"
+    data = traitlets.Instance(GridCollection)
+    _allow_block_outlines = False
