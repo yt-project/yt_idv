@@ -65,6 +65,14 @@ shader_definitions:
         - one
         - zero
       blend_equation: func add
+    plane:
+        info: A fragment shader for a 2D plane in plane-coordinates.
+        source: plane.frag.glsl
+        depth_test: less
+        blend_func:
+        - src alpha
+        - dst alpha
+        blend_equation: func add
     noop:
       info:
         A second pass fragment shader that performs no operation.  Usually used
@@ -157,6 +165,9 @@ shader_definitions:
       info: A vertex shader used for unstructured mesh rendering.
       source: mesh.vert.glsl
       depth_test: less
+    plane:
+      info: A vertex shader for a 2D plane in plane-coordinates.
+      source: plane.vert.glsl
     passthrough:
       info: A second pass vertex shader that performs no operations on vertices
       source: passthrough.vert.glsl
@@ -301,6 +312,14 @@ component_shaders:
       first_fragment: text_overlay
       second_vertex: passthrough
       second_fragment: passthrough
+  image_plane:
+    default_value: default
+    default:
+      description: Default
+      first_vertex: plane
+      first_fragment: plane
+      second_vertex: passthrough
+      second_fragment: apply_colormap
   mesh_rendering:
     default_value: default
     default:
