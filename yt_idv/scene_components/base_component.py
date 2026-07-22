@@ -35,6 +35,7 @@ class SceneComponent(traitlets.HasTraits):
     data = traitlets.Instance(SceneData)
     base_quad = traitlets.Instance(SceneData)
     name = "undefined"
+    _has_colormap = True
     priority = traitlets.CInt(0)
     visible = traitlets.Bool(True)
     use_db = traitlets.Bool(False)  # use depth buffer
@@ -144,25 +145,29 @@ class SceneComponent(traitlets.HasTraits):
 
         if imgui.button("Recompile Shader"):
             changed = self._recompile_shader()
-        _, cmap_index = imgui.listbox(
-            "Colormap", _cmaps.index(self.colormap.colormap_name), _cmaps
-        )
-        if _:
-            self.colormap.colormap_name = _cmaps[cmap_index]
-        changed = changed or _
-        _ = add_popup_help(imgui, "Select the colormap to use for the rendering.")
-        changed = changed or _
-        _, self.cmap_log = imgui.checkbox("Take log", self.cmap_log)
-        changed = changed or _
-        _ = add_popup_help(
-            imgui, "If checked, the rendering will use log-normalized values."
-        )
-        changed = changed or _
-        if imgui.button("Reset Colorbounds"):
-            self._cmap_bounds_invalid = True
-            changed = True
-        _ = add_popup_help(imgui, "Click to reset the colorbounds of the current view.")
-        changed = changed or _
+
+        if self._has_colormap:
+            _, cmap_index = imgui.listbox(
+                "Colormap", _cmaps.index(self.colormap.colormap_name), _cmaps
+            )
+            if _:
+                self.colormap.colormap_name = _cmaps[cmap_index]
+            changed = changed or _
+            _ = add_popup_help(imgui, "Select the colormap to use for the rendering.")
+            changed = changed or _
+            _, self.cmap_log = imgui.checkbox("Take log", self.cmap_log)
+            changed = changed or _
+            _ = add_popup_help(
+                imgui, "If checked, the rendering will use log-normalized values."
+            )
+            changed = changed or _
+            if imgui.button("Reset Colorbounds"):
+                self._cmap_bounds_invalid = True
+                changed = True
+            _ = add_popup_help(
+                imgui, "Click to reset the colorbounds of the current view."
+            )
+            changed = changed or _
 
         if self.render_method == "isocontours":
             _ = self._render_isolayer_inputs(imgui)
