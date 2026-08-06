@@ -57,6 +57,12 @@ class SimpleGUI:
                         self.snapshot_format.format(count=self.snapshot_count),
                     )
                     self.snapshot_count += 1
+                if imgui.button("Log Image Stats"):
+                    scene.render()
+                    print(f"Min: {scene.image.min(axis=(0, 1))}")
+                    print(f"Max: {scene.image.max(axis=(0, 1))}")
+                    print(f"Mean: {scene.image.mean(axis=(0, 1))}")
+                    print(f"Std: {scene.image.std(axis=(0, 1))}")
                 imgui.tree_pop()
             _ = self.render_camera(scene)
             changed = changed or _
