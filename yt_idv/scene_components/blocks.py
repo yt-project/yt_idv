@@ -29,6 +29,7 @@ class BlockRendering(SceneComponent):
     tf_log = traitlets.Bool(True)
     slice_position = traitlets.Tuple((0.5, 0.5, 0.5)).tag(trait=traitlets.CFloat())
     slice_normal = traitlets.Tuple((1.0, 0.0, 0.0)).tag(trait=traitlets.CFloat())
+    constant_rgb = traitlets.Tuple((1.0, 1.0, 0.0)).tag(trait=traitlets.CFloat())
 
     priority = 10
 
@@ -55,37 +56,6 @@ class BlockRendering(SceneComponent):
         if _:
             self.render_method = valid_shaders[shader_ind]
         changed = changed or _
-        if imgui.button("Add Block Outline"):
-            if self.data._yt_geom_str == "cartesian":
-                from ..scene_annotations.block_outline import BlockOutline
-
-                block_outline = BlockOutline(data=self.data)
-                scene.annotations.append(block_outline)
-            elif self.data._yt_geom_str == "spherical":
-                from ..scene_data.block_collection import _block_collection_outlines
-
-                cc, cc_render = _block_collection_outlines(
-                    self.data, outline_type="blocks"
-                )
-                scene.data_objects.append(cc)
-                scene.components.append(cc_render)
-
-        if imgui.button("Add Grid Outline"):
-            if self.data._yt_geom_str == "cartesian":
-                from ..scene_annotations.grid_outlines import GridOutlines
-                from ..scene_data.grid_positions import GridPositions
-
-                gp = GridPositions(grid_list=self.data.intersected_grids)
-                scene.data_objects.append(gp)
-                scene.components.append(GridOutlines(data=gp))
-            elif self.data._yt_geom_str == "spherical":
-                from ..scene_data.block_collection import _block_collection_outlines
-
-                cc, cc_render = _block_collection_outlines(
-                    self.data, display_name="grid outlines", outline_type="grids"
-                )
-                scene.data_objects.append(cc)
-                scene.components.append(cc_render)
 
         if self.render_method == "transfer_function":
             # Now for the transfer function stuff
@@ -132,6 +102,11 @@ class BlockRendering(SceneComponent):
             if update:
                 self.transfer_function.data = (data * 255).astype("u1")
 
+        elif self.render_method == "constant":
+            _, newRGB = imgui.input_float3("RGB", *self.constant_rgb)
+            if _:
+                self.constant_rgb = tuple(newRGB)
+            changed = changed or _
         elif self.render_method == "slice":
             imgui.text("Set slicing parameters:")
 
@@ -145,6 +120,38 @@ class BlockRendering(SceneComponent):
             changed = changed or _
             _ = add_popup_help(imgui, "The normal vector of the slicing plane.")
             changed = changed or _
+
+        if imgui.button("Add Block Outline"):
+            if self.data._yt_geom_str == "cartesian":
+                from ..scene_annotations.block_outline import BlockOutline
+
+                block_outline = BlockOutline(data=self.data)
+                scene.annotations.append(block_outline)
+            elif self.data._yt_geom_str == "spherical":
+                from ..scene_data.block_collection import _block_collection_outlines
+
+                cc, cc_render = _block_collection_outlines(
+                    self.data, outline_type="blocks"
+                )
+                scene.data_objects.append(cc)
+                scene.components.append(cc_render)
+
+        if imgui.button("Add Grid Outline"):
+            if self.data._yt_geom_str == "cartesian":
+                from ..scene_annotations.grid_outlines import GridOutlines
+                from ..scene_data.grid_positions import GridPositions
+
+                gp = GridPositions(grid_list=self.data.intersected_grids)
+                scene.data_objects.append(gp)
+                scene.components.append(GridOutlines(data=gp))
+            elif self.data._yt_geom_str == "spherical":
+                from ..scene_data.block_collection import _block_collection_outlines
+
+                cc, cc_render = _block_collection_outlines(
+                    self.data, display_name="grid outlines", outline_type="grids"
+                )
+                scene.data_objects.append(cc)
+                scene.components.append(cc_render)
 
         return changed
 
@@ -180,6 +187,10 @@ class BlockRendering(SceneComponent):
         shader_program._set_uniform("tf_log", float(self.tf_log))
         shader_program._set_uniform("slice_normal", np.array(self.slice_normal))
         shader_program._set_uniform("slice_position", np.array(self.slice_position))
+
+        if self.render_method == "constant":
+            clr = np.array(self.constant_rgb + (1.0,)).astype("f4")
+            shader_program._set_uniform("curve_rgba", clr)
 
     @property
     def _yt_geom_str(self):
