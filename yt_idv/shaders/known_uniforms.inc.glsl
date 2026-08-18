@@ -64,6 +64,7 @@ uniform float iso_alphas[32];
 uniform int id_theta;  // azimuthal angle (0 to pi) index in the yt dataset
 uniform int id_r;  // radial index in the yt dataset
 uniform int id_phi;  // polar angle (0 to 2pi) indexi n the yt dataset
+uniform int n_ray_samples;  // samples per ray-element entry/exit pair
 
 // draw outline control
 uniform float draw_boundary;

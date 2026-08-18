@@ -24,6 +24,7 @@ class BlockRendering(SceneComponent):
     data = traitlets.Instance(BlockCollection)
     box_width = traitlets.CFloat(0.1)
     sample_factor = traitlets.CFloat(1.0)
+    n_ray_samples = traitlets.CInt(32)
     transfer_function = traitlets.Instance(TransferFunctionTexture)
     tf_min = traitlets.CFloat(0.0)
     tf_max = traitlets.CFloat(1.0)
@@ -36,14 +37,32 @@ class BlockRendering(SceneComponent):
     def render_gui(self, imgui, renderer, scene):
         changed = super().render_gui(imgui, renderer, scene)
 
-        _, sample_factor = imgui.slider_float(
-            "Sample Factor",
-            self.sample_factor,
-            1.0,
-            20.0,
-        )
-        if _:
-            self.sample_factor = sample_factor
+        if self.data._yt_geom_str == "spherical":
+            _, n_ray_samples = imgui.slider_int(
+                "Samples per Element",
+                self.n_ray_samples,
+                2,
+                256,
+            )
+            if _:
+                self.n_ray_samples = n_ray_samples
+                changed = True
+            _ = add_popup_help(
+                imgui,
+                "Number of samples taken between each ray entry/exit point of "
+                "a spherical volume element.",
+            )
+            changed = changed or _
+        else:
+            _, sample_factor = imgui.slider_float(
+                "Sample Factor",
+                self.sample_factor,
+                1.0,
+                20.0,
+            )
+            if _:
+                self.sample_factor = sample_factor
+
         # Now, shaders
         valid_shaders = get_shader_combos(
             self.name, coord_system=self.data._yt_geom_str
@@ -170,6 +189,7 @@ class BlockRendering(SceneComponent):
             shader_program._set_uniform("id_theta", axis_id["theta"])
             shader_program._set_uniform("id_r", axis_id["r"])
             shader_program._set_uniform("id_phi", axis_id["phi"])
+            shader_program._set_uniform("n_ray_samples", int(self.n_ray_samples))
 
         shader_program._set_uniform("box_width", self.box_width)
         shader_program._set_uniform("sample_factor", self.sample_factor)

@@ -35,6 +35,141 @@ vec3 cart_to_sphere_vec3(vec3 v) {
 
     return vout;
 }
+
+// max number of ray-surface crossings tracked for a single element: 4 from
+// the two spherical surfaces, 4 from the two conical surfaces, 2 from the two
+// phi-planes and the 2 bounding values of the ray parameter.
+const int MAX_ISECTS = 12;
+// max number of distinct entry-exit pairs within a single element
+const int MAX_SEGMENTS = 4;
+const float ISECT_TINY = 1.0e-8;
+const float ISECT_TINY_ANGLE = 1.0e-5;
+
+int solve_quadratic(float a, float hb, float c, float hdisc, out vec2 roots)
+{
+    // roots of a*t^2 + 2*hb*t + c, given the half-discriminant hb^2 - a*c.
+    // the callers supply hdisc directly because forming it from a, hb and c
+    // loses too much precision for the near-degenerate conical surfaces.
+    roots = vec2(0.0);
+    if (abs(a) < ISECT_TINY) {
+        if (abs(hb) < ISECT_TINY) return 0;
+        roots[0] = -0.5 * c / hb;
+        return 1;
+    }
+    if (hdisc < 0.0) return 0;
+    float sq = sqrt(hdisc);
+    float q = -(hb + (hb >= 0.0 ? sq : -sq));
+    roots[0] = q / a;
+    roots[1] = abs(q) > ISECT_TINY ? c / q : roots[0];
+    return 2;
+}
+
+int add_isect(float t, float tmin, float tmax, inout float ts[MAX_ISECTS], int n)
+{
+    if (n >= MAX_ISECTS) return n;
+    if (t <= tmin || t >= tmax) return n;
+    ts[n] = t;
+    return n + 1;
+}
+
+int ray_surface_isects(vec3 ro, vec3 rd, float tmin, float tmax,
+                       inout float ts[MAX_ISECTS])
+{
+    // ray parameters at which the ray crosses one of the surfaces bounding the
+    // spherical volume element, restricted to (tmin, tmax) and returned in
+    // ascending order with tmin, tmax included.
+    vec2 roots;
+    int nroots;
+
+    ts[0] = tmin;
+    ts[1] = tmax;
+    int n = 2;
+
+    float dd = dot(rd, rd);
+    float od = dot(ro, rd);
+    float oo = dot(ro, ro);
+
+    // spherical surfaces at constant r
+    for (int i = 0; i < 2; i++) {
+        float rad = i == 0 ? left_edge[id_r] : right_edge[id_r];
+        if (rad < ISECT_TINY) continue;
+        float c = oo - rad * rad;
+        nroots = solve_quadratic(dd, od, c, od * od - dd * c, roots);
+        for (int j = 0; j < nroots; j++) {
+            n = add_isect(roots[j], tmin, tmax, ts, n);
+        }
+    }
+
+    // conical surfaces at constant theta: z^2 = cos(theta)^2 * (x^2+y^2+z^2).
+    // for theta of pi/2 the cone is the z=0 plane and the quadratic has a
+    // double root there, which the factored half-discriminant recovers exactly.
+    for (int i = 0; i < 2; i++) {
+        float th = i == 0 ? left_edge[id_theta] : right_edge[id_theta];
+        if (abs(sin(th)) < ISECT_TINY_ANGLE) continue;  // cone collapses to the z axis
+        float k2 = cos(th) * cos(th);
+        float hdisc = k2 * (rd.z * rd.z * oo + dd * ro.z * ro.z
+                            - 2.0 * ro.z * rd.z * od + k2 * (od * od - dd * oo));
+        nroots = solve_quadratic(rd.z * rd.z - k2 * dd,
+                                 ro.z * rd.z - k2 * od,
+                                 ro.z * ro.z - k2 * oo,
+                                 hdisc,
+                                 roots);
+        for (int j = 0; j < nroots; j++) {
+            n = add_isect(roots[j], tmin, tmax, ts, n);
+        }
+    }
+
+    // planes at constant phi, containing the z axis
+    for (int i = 0; i < 2; i++) {
+        float ph = i == 0 ? left_edge[id_phi] : right_edge[id_phi];
+        vec3 nrm = vec3(-sin(ph), cos(ph), 0.0);
+        float den = dot(nrm, rd);
+        if (abs(den) < ISECT_TINY) continue;
+        n = add_isect(-dot(nrm, ro) / den, tmin, tmax, ts, n);
+    }
+
+    for (int i = 1; i < n; i++) {
+        float key = ts[i];
+        int j = i - 1;
+        while (j >= 0 && ts[j] > key) {
+            ts[j + 1] = ts[j];
+            j--;
+        }
+        ts[j + 1] = key;
+    }
+
+    return n;
+}
+
+int ray_element_segments(vec3 ro, vec3 rd, float tmin, float tmax,
+                         inout float seg_entry[MAX_SEGMENTS],
+                         inout float seg_exit[MAX_SEGMENTS])
+{
+    // entry-exit pairs of the ray within the spherical volume element. the
+    // surface crossings bound sub-intervals that are either entirely inside or
+    // entirely outside the element, so a single interior point of each
+    // sub-interval decides it.
+    float ts[MAX_ISECTS];
+    int nt = ray_surface_isects(ro, rd, tmin, tmax, ts);
+
+    int nseg = 0;
+    for (int i = 0; i < nt - 1; i++) {
+        float ta = ts[i];
+        float tb = ts[i + 1];
+        if (tb - ta < ISECT_TINY) continue;
+        vec3 pmid = ro + rd * (0.5 * (ta + tb));
+        if (!within_bb(cart_to_sphere_vec3(pmid), left_edge, right_edge)) continue;
+        if (nseg > 0 && ta - seg_exit[nseg - 1] < ISECT_TINY) {
+            seg_exit[nseg - 1] = tb;
+        } else if (nseg < MAX_SEGMENTS) {
+            seg_entry[nseg] = ta;
+            seg_exit[nseg] = tb;
+            nseg++;
+        }
+    }
+
+    return nseg;
+}
 #endif
 
 vec3 get_offset_texture_position(sampler3D tex, vec3 tex_curr_pos)
@@ -117,9 +252,8 @@ void main()
 
     vec3 tex_curr_pos = vec3(0.0);
 
-    bool sampled;
+    bool sampled = false;
     bool ever_sampled = false;
-    bool within_el = true;
 
     vec4 v_clip_coord;
     float f_ndc_depth;
@@ -127,22 +261,50 @@ void main()
 
     ray_position = p0;
 
-    while(t <= t1) {
+    #ifdef SPHERICAL_GEOM
 
-        // texture position
-        #ifdef SPHERICAL_GEOM
-        ray_position_native = cart_to_sphere_vec3(ray_position);
-        within_el = within_bb(ray_position_native, left_edge, right_edge);
-        #else
-        ray_position_native = ray_position;
-        #endif
+    // the cartesian bounding box only gives a first cut: walk the true
+    // entry-exit pairs of the ray within the spherical volume element.
+    float seg_entry[MAX_SEGMENTS];
+    float seg_exit[MAX_SEGMENTS];
+    int nseg = ray_element_segments(camera_pos.xyz, dir, t0, t1,
+                                    seg_entry, seg_exit);
+    if (nseg == 0) discard;
 
-        if (within_el) {
+    for (int iseg = 0; iseg < nseg; iseg++) {
+        tdelta = (seg_exit[iseg] - seg_entry[iseg]) / float(n_ray_samples);
+        for (int isample = 0; isample < n_ray_samples; isample++) {
+            t = seg_entry[iseg] + (float(isample) + 0.5) * tdelta;
+            ray_position = camera_pos.xyz + t * dir;
+            ray_position_native = cart_to_sphere_vec3(ray_position);
+
             tex_curr_pos = (ray_position_native - left_edge) / range;  // Scale from 0 .. 1
             // But, we actually need it to be 0 + normalized dx/2 to 1 - normalized dx/2
             tex_curr_pos = (tex_curr_pos * (1.0 - ndx)) + ndx/2.0;
             sampled = sample_texture(tex_curr_pos, curr_color, tdelta, t, dir);
+
+            if (sampled) {
+                ever_sampled = true;
+                v_clip_coord = projection * modelview * vec4(ray_position, 1.0);
+                f_ndc_depth = v_clip_coord.z / v_clip_coord.w;
+                depth = min(depth, (1.0 - 0.0) * 0.5 * f_ndc_depth + (1.0 + 0.0) * 0.5);
+            }
         }
+    }
+
+    t0 = seg_entry[0];
+    t1 = seg_exit[nseg - 1];
+
+    #else
+
+    while(t <= t1) {
+
+        ray_position_native = ray_position;
+
+        tex_curr_pos = (ray_position_native - left_edge) / range;  // Scale from 0 .. 1
+        // But, we actually need it to be 0 + normalized dx/2 to 1 - normalized dx/2
+        tex_curr_pos = (tex_curr_pos * (1.0 - ndx)) + ndx/2.0;
+        sampled = sample_texture(tex_curr_pos, curr_color, tdelta, t, dir);
 
         if (sampled) {
             ever_sampled = true;
@@ -155,6 +317,8 @@ void main()
         ray_position += tdelta * dir;
 
     }
+
+    #endif
 
     output_color = cleanup_phase(curr_color, dir, t0, t1);
 
