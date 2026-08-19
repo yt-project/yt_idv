@@ -17,9 +17,7 @@ jobs:
         python-version: ${{ matrix.python-version }}
     - uses: actions/checkout@v7
     - name: Install osmesa
-      run: |
-        sudo apt-get update && sudo apt-get upgrade
-        sudo apt-get install libosmesa6-dev
+      uses: ./.github/actions/install-osmesa
     - name: Upgrade pip
       run: python -m pip install --upgrade pip
     - name: Setup yt_idv
