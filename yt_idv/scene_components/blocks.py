@@ -38,7 +38,9 @@ class BlockRendering(SceneComponent):
     # in the SAME window-space-depth convention `gl_FragDepth` already uses
     # in this shader (0..1); None/`use_external_depth_clip=False` (the
     # default) is a complete no-op, identical to upstream behavior.
-    external_depth_texture = traitlets.Instance(Texture2D, allow_none=True, default_value=None)
+    external_depth_texture = traitlets.Instance(
+        Texture2D, allow_none=True, default_value=None
+    )
     use_external_depth_clip = traitlets.Bool(False)
 
     priority = 10
@@ -168,7 +170,9 @@ class BlockRendering(SceneComponent):
         each = self.data.vertex_array.each
         GL.glEnable(GL.GL_CULL_FACE)
         GL.glCullFace(GL.GL_BACK)
-        depth_clip_active = self.use_external_depth_clip and self.external_depth_texture is not None
+        depth_clip_active = (
+            self.use_external_depth_clip and self.external_depth_texture is not None
+        )
         depth_ctx = (
             self.external_depth_texture.bind(target=3)
             if depth_clip_active
@@ -196,7 +200,9 @@ class BlockRendering(SceneComponent):
         shader_program._set_uniform("external_depth_tex", 3)
         shader_program._set_uniform(
             "use_external_depth_clip",
-            float(self.use_external_depth_clip and self.external_depth_texture is not None),
+            float(
+                self.use_external_depth_clip and self.external_depth_texture is not None
+            ),
         )
         shader_program._set_uniform("tf_min", self.tf_min)
         shader_program._set_uniform("tf_max", self.tf_max)
