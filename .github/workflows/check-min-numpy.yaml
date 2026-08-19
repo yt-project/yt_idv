@@ -28,7 +28,7 @@ jobs:
       env:
           PYOPENGL_PLATFORM: osmesa
       run: pytest --html=report.html --self-contained-html
-    - uses: actions/upload-artifact@v4
+    - uses: actions/upload-artifact@v7
       name: Upload pytest report
       with:
         name: pytest-report
