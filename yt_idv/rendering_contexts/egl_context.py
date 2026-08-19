@@ -40,6 +40,24 @@ class EGLRenderingContext(OffscreenRenderingContext):
                 8,
                 EGL.EGL_BLUE_SIZE,
                 8,
+                # EGL_ALPHA_SIZE was missing here -- the requested config had
+                # NO alpha bits at all, so the pbuffer surface's default
+                # framebuffer had no real alpha channel to read back.
+                # scene_graph.SceneGraph.image() falls back to reading the
+                # DEFAULT framebuffer (via glReadPixels(..., GL_RGBA, ...))
+                # whenever `scene.fb` is None, which it is for a top-level
+                # offscreen render -- with no alpha bits present, that read
+                # came back as a uniform 1.0 for every pixel regardless of
+                # what was actually drawn (confirmed empirically: a real
+                # render's `image[..., 3]` was exactly 1.0 min/max/everywhere,
+                # even at genuinely empty background pixels that were
+                # otherwise correctly (0, 0, 0) in RGB). This silently broke
+                # every consumer relying on the framebuffer's real alpha for
+                # compositing -- see cycles-volume-override's yt_idv_
+                # renderer.py, which depends on background/clipped pixels
+                # reading alpha=0 for correct Alpha-Over compositing.
+                EGL.EGL_ALPHA_SIZE,
+                8,
                 EGL.EGL_DEPTH_SIZE,
                 24,
                 EGL.EGL_STENCIL_SIZE,
