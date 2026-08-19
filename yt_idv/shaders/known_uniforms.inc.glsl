@@ -51,6 +51,15 @@ uniform sampler3D ds_tex[6];
 // ray tracing control
 uniform float sample_factor;
 
+// external depth clip -- lets a ray's integration be stopped early at a
+// per-pixel max window-space depth supplied by the caller (e.g. an opaque
+// occluder rendered elsewhere), rather than always integrating out to the
+// block's own bounding-box exit. use_external_depth_clip == 0 disables it
+// (external_depth_tex is not sampled/read in that case). Added for
+// cycles-volume-override's yt_idv integration -- see ray_tracing.frag.glsl.
+uniform sampler2D external_depth_tex;
+uniform float use_external_depth_clip;
+
 // curve drawing control
 uniform vec4 curve_rgba;
 
