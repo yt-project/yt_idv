@@ -20,6 +20,8 @@ class BlockCollection(SceneData):
     _yt_geom_str = traitlets.Unicode("cartesian")
     compute_min_max = traitlets.Bool(True)
     always_normalize = traitlets.Bool(False)
+    field = traitlets.Any(default_value=None, allow_none=True)
+    field_units = traitlets.Unicode(default_value=None, allow_none=True)
 
     @traitlets.default("vertex_array")
     def _default_vertex_array(self):
@@ -41,6 +43,7 @@ class BlockCollection(SceneData):
             Should we speed things up by skipping ghost zone generation?
         """
         self.data_source.tiles.set_fields([field], [False], no_ghost=no_ghost)
+        self.field = self.data_source._determine_fields(field)[0]
 
         self._yt_geom_str = str(self.data_source.ds.geometry)
         # note: casting to string for compatibility with new and old geometry
@@ -66,6 +69,8 @@ class BlockCollection(SceneData):
                 block.RightEdge -= left_min
                 block.RightEdge /= scale
         for i, block in enumerate(self.data_source.tiles.traverse()):
+            if self.field_units is None:
+                self.field_units = str(getattr(block.my_data[0], "units", ""))
             min_val = min(min_val, np.nanmin(np.abs(block.my_data[0])).min())
             max_val = max(max_val, np.nanmax(np.abs(block.my_data[0])).max())
             self.blocks[id(block)] = (i, block)
@@ -243,6 +248,37 @@ class BlockCollection(SceneData):
             )
             self.texture_objects[vbo_i] = data_tex
             self.bitmap_objects[vbo_i] = bitmap_tex
+
+    @property
+    def _textures_are_normalized(self) -> bool:
+        # whether or not _load_textures min/max normalized the 3D textures
+        return self.max_val != self.min_val or self.always_normalize
+
+    @property
+    def internal_length_unit(self):
+        """
+        The physical length of a single unit of the internal coordinate system.
+
+        Block edges and spacings are rescaled before being handed to the shaders
+        (to unitary units for cartesian data, to fractions of the maximum radius
+        for spherical data), so any length measured in the rendered scene --
+        camera offsets, ray path lengths -- must be multiplied by this value to
+        get a physical length.
+        """
+        ds = self.data_source.ds
+        if self._yt_geom_str == "cartesian":
+            if self.scale:
+                raise NotImplementedError(
+                    "Physical lengths cannot be recovered when the block "
+                    "collection is initialized with scale=True."
+                )
+            return ds.quan(1.0, "unitary").in_units("code_length")
+        elif self._yt_geom_str == "spherical":
+            rad_index = ds.coordinates.axis_id["r"]
+            return ds.domain_right_edge[rad_index].in_units("code_length")
+        raise NotImplementedError(
+            f"{self.name} does not implement {self._yt_geom_str} geometries."
+        )
 
     _grid_id_list = None
 

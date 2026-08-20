@@ -6,6 +6,7 @@ from OpenGL import GL
 
 from yt_idv.gui_support import add_popup_help
 from yt_idv.opengl_support import TransferFunctionTexture
+from yt_idv.rendered_image_plane import RenderedImagePlane, image_plane_extent
 from yt_idv.scene_components.base_component import SceneComponent
 from yt_idv.scene_data.block_collection import BlockCollection
 from yt_idv.shader_objects import component_shaders, get_shader_combos
@@ -184,3 +185,90 @@ class BlockRendering(SceneComponent):
     @property
     def _yt_geom_str(self):
         return self.data._yt_geom_str
+
+    def rendered_image_plane(self):
+        """
+        Extract the rendered image as data values in physical units.
+
+        Requires ``store_first_pass_fb`` to have been set to True before the
+        scene was rendered, so that the values written by the first rendering
+        pass are available (the second pass replaces them with colors).
+
+        Returns
+        -------
+        RenderedImagePlane
+            Holds the image as a unyt array along with the physical extent of
+            the view. Units depend on the render method: ``slice`` and
+            ``max_intensity`` are in the units of the rendered field, while
+            ``projection`` is in field units times a length.
+
+        Notes
+        -----
+        Values are the absolute value of the rendered field, sampled from the
+        vertex-centered data used to build the 3D textures, so they can fall
+        slightly outside the range of the cell-centered field (particularly with
+        ``no_ghost=True``).
+        """
+        if self.first_pass_fb_rgba is None:
+            raise RuntimeError(
+                "No stored framebuffer data: set store_first_pass_fb to True "
+                "and render the scene before calling rendered_image_plane."
+            )
+
+        supported = ("slice", "max_intensity", "projection")
+        if self.render_method not in supported:
+            raise NotImplementedError(
+                f"rendered_image_plane is not implemented for the "
+                f"{self.render_method} render method (supported: {supported})."
+            )
+
+        block_collection = self.data
+        ds = block_collection.data_source.ds
+        field_units = block_collection.field_units or ""
+        length_unit = block_collection.internal_length_unit
+
+        fb_data = self.first_pass_fb_rgba
+        # values accumulate in the R channel; a nonzero alpha marks the pixels
+        # that a ray actually sampled data in.
+        values = fb_data[:, :, 0].astype("float64")
+        sampled = fb_data[:, :, 3] > 0
+
+        path_length = None
+        if self.render_method == "projection":
+            # the shader integrates the normalized values,
+            #    I = sum_i n_i ds_i,  where  n_i = (|d_i| - min) / (max - min)
+            # so recovering the integral of the field values requires the total
+            # path length, L = sum_i ds_i, which the shader accumulates in G:
+            #    sum_i |d_i| ds_i = I * (max - min) + min * L
+            path_length = fb_data[:, :, 1].astype("float64")
+            if block_collection._textures_are_normalized:
+                values = (
+                    values * block_collection.val_range
+                    + block_collection.min_val * path_length
+                )
+            # rays that missed the data integrate to zero, which is correct, so
+            # no masking is applied here.
+            data = ds.arr(values, field_units) * length_unit
+            path_length = path_length * length_unit
+        else:
+            # slice and max_intensity both write a single normalized value
+            if block_collection._textures_are_normalized:
+                values = block_collection._denormalize_by_min_max(values)
+            values[~sampled] = np.nan
+            data = ds.arr(values, field_units)
+
+        camera_state = self._first_pass_camera
+        extent, right, up = image_plane_extent(
+            camera_state["projection_matrix"],
+            camera_state["view_matrix"],
+            camera_state["focus"],
+        )
+
+        return RenderedImagePlane(
+            data=data,
+            extent=extent * length_unit,
+            center=camera_state["focus"] * length_unit,
+            right=right,
+            up=up,
+            path_length=path_length,
+        )
