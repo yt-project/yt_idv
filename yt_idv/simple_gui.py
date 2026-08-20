@@ -3,7 +3,6 @@ import math
 import imgui
 import matplotlib.pyplot as plt
 import numpy as np
-from imgui.integrations.pyglet import create_renderer
 from yt.visualization.image_writer import write_bitmap, write_image
 
 from .opengl_support import Texture2D
@@ -17,6 +16,11 @@ class SimpleGUI:
     draw = False
 
     def __init__(self, window):
+        # import pyglet integration here rather than at module scope to avoid
+        # creating a pyglet shadow window on import, which requires a display.
+        # Allows us to run headless tests without a display.
+        from imgui.integrations.pyglet import create_renderer
+
         self.window = window
         self.context = imgui.create_context()
         self.renderer = create_renderer(window)
