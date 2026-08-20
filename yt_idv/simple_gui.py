@@ -20,6 +20,7 @@ class SimpleGUI:
         self.window = window
         self.context = imgui.create_context()
         self.renderer = create_renderer(window)
+        self._fix_hidpi_scaling(window)
         self.snapshot_count = 0
         self.snapshot_format = r"snap_{count:04d}.png"
         data = plt.get_cmap("viridis")(np.mgrid[0.0:1.0:256j]).reshape((-1, 1, 4))
@@ -31,6 +32,32 @@ class SimpleGUI:
         )
         data = (data[:, :, :4] * 255).astype("u1")
         self.colormap = Texture2D(data=data, boundary_x="clamp", boundary_y="clamp")
+
+    def _fix_hidpi_scaling(self, window):
+        # Reconcile imgui's notion of display size with pyglet's.
+
+        io = self.renderer.io
+        window_size = window.get_size()
+        fb_size = window.get_framebuffer_size()
+
+        # Avoid division by zero if window is minimized or zero-sized
+        if not all(window_size):
+            return
+
+        # pyglet 2.1 changed scale definitions, causing retina display clipping;
+        # recalculate true framebuffer scale
+        # Note: This is a no-op on Linux and pyglet <= 2.0 where get_pixel_ratio()
+        # already equals fb_size / window_size
+        io.display_size = window_size
+        io.display_fb_scale = (
+            fb_size[0] / window_size[0],
+            fb_size[1] / window_size[1],
+        )
+
+        # Scale font size up when imgui falls back to using raw physical pixels
+        ui_scale = window.get_pixel_ratio() / io.display_fb_scale[0]
+        if ui_scale != 1.0:
+            io.font_global_scale = ui_scale
 
     def render(self, scene):
         imgui.new_frame()
