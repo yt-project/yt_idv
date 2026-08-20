@@ -1,0 +1,49 @@
+name: Install OSMesa
+description: >
+  Install the OSMesa development headers used for offscreen rendering, caching
+  the downloaded .deb files so runs do not have to hit the Ubuntu archives.
+
+inputs:
+  packages:
+    description: Space separated list of apt packages to install.
+    required: false
+    default: libosmesa6-dev
+
+runs:
+  using: composite
+  steps:
+    - name: Restore cached apt packages
+      id: apt-cache
+      uses: actions/cache@v6
+      with:
+        path: /tmp/osmesa-debs
+        key: osmesa-debs-${{ runner.os }}-${{ env.ImageOS }}-${{ env.ImageVersion }}-${{ inputs.packages }}
+
+    - name: Download apt packages
+      if: steps.apt-cache.outputs.cache-hit != 'true'
+      shell: bash
+      env:
+        PACKAGES: ${{ inputs.packages }}
+      run: |
+        set -euo pipefail
+        sudo mkdir -p /tmp/osmesa-debs/partial
+        sudo apt-get update
+        sudo apt-get install -y --download-only \
+          -o Dir::Cache::archives=/tmp/osmesa-debs $PACKAGES
+        sudo rm -rf /tmp/osmesa-debs/partial /tmp/osmesa-debs/lock
+        sudo chown -R "$(id -u):$(id -g)" /tmp/osmesa-debs
+
+    - name: Install apt packages
+      shell: bash
+      env:
+        PACKAGES: ${{ inputs.packages }}
+      run: |
+        set -euo pipefail
+        shopt -s nullglob
+        debs=(/tmp/osmesa-debs/*.deb)
+        if [ ${#debs[@]} -gt 0 ]; then
+          sudo dpkg --install "${debs[@]}"
+        else
+          echo "nothing to install, the runner image already provides $PACKAGES"
+        fi
+        dpkg-query -W $PACKAGES
