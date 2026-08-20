@@ -15,13 +15,6 @@ flat in vec3 dx_cart;
 
 out vec4 output_color;
 
-bool within_bb(vec3 pos)
-{
-    bvec3 left =  greaterThanEqual(pos, left_edge);
-    bvec3 right = lessThanEqual(pos, right_edge);
-    return all(left) && all(right);
-}
-
 #ifdef SPHERICAL_GEOM
 vec3 cart_to_sphere_vec3(vec3 v) {
     // transform a single point in cartesian coords to spherical
@@ -139,7 +132,7 @@ void main()
         // texture position
         #ifdef SPHERICAL_GEOM
         ray_position_native = cart_to_sphere_vec3(ray_position);
-        within_el = within_bb(ray_position_native);
+        within_el = within_bb(ray_position_native, left_edge, right_edge);
         #else
         ray_position_native = ray_position;
         #endif

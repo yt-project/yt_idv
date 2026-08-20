@@ -8,13 +8,6 @@ flat in mat4 inverse_pmvm;
 flat in ivec3 texture_offset;
 out vec4 output_color;
 
-bool within_bb(vec3 pos)
-{
-    bvec3 left =  greaterThanEqual(pos, left_edge);
-    bvec3 right = lessThanEqual(pos, right_edge);
-    return all(left) && all(right);
-}
-
 vec3 get_offset_texture_position(sampler3D tex, vec3 tex_curr_pos)
 {
     ivec3 texsize = textureSize(tex, 0); // lod (mipmap level) always 0?

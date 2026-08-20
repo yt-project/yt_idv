@@ -79,6 +79,33 @@ def test_slice(osmesa_fake_amr, image_store):
     image_store(osmesa_fake_amr)
 
 
+def _interior_gaps(image):
+    """Undrawn pixels that are enclosed by drawn pixels along both axes."""
+    drawn = image[:, :, 3] > 0
+
+    def enclosed(axis):
+        forward = np.maximum.accumulate(drawn, axis=axis)
+        backward = np.flip(np.maximum.accumulate(np.flip(drawn, axis), axis), axis)
+        return forward & backward
+
+    return ~drawn & enclosed(0) & enclosed(1)
+
+
+@pytest.mark.parametrize("near_plane", [1e-4, 1e-2])
+def test_slice_no_block_boundary_gaps(osmesa_fake_amr, near_plane):
+    """Rays that hit a face shared by two blocks must be drawn by one of them."""
+    component = osmesa_fake_amr.scene.components[0]
+    component.render_method = "slice"
+    component.slice_position = (0.5, 0.5, 0.5)
+    component.slice_normal = (1.0, 1.0, 0.0)
+
+    camera = osmesa_fake_amr.scene.camera
+    camera.near_plane = near_plane
+    camera._update_matrices()
+
+    assert _interior_gaps(osmesa_fake_amr.run()).sum() == 0
+
+
 def test_annotate_boxes(osmesa_empty, image_store):
     """Check the box annotation."""
     osmesa_empty.scene.add_box([0.0, 0.0, 0.0], [1.0, 1.0, 1.0])

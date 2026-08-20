@@ -18,7 +18,7 @@ void main()
     inverse_proj = inverse(projection);
     // inverse model-view-matrix
     inverse_mvm = inverse(modelview);
-    inverse_pmvm = inverse(projection * modelview);
+    inverse_pmvm = inv_pmvm;
     gl_Position = projection * modelview * model_vertex;
     dx = vec3(in_dx);
     left_edge = vec3(in_left_edge);
