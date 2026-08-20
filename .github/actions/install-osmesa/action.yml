@@ -14,7 +14,7 @@ runs:
   steps:
     - name: Restore cached apt packages
       id: apt-cache
-      uses: actions/cache@v4
+      uses: actions/cache@v6
       with:
         path: /tmp/osmesa-debs
         key: osmesa-debs-${{ runner.os }}-${{ env.ImageOS }}-${{ env.ImageVersion }}-${{ inputs.packages }}
