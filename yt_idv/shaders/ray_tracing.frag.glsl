@@ -42,6 +42,8 @@ vec3 cart_to_sphere_vec3(vec3 v) {
 const int MAX_ISECTS = 12;
 // max number of distinct entry-exit pairs within a single element
 const int MAX_SEGMENTS = 4;
+// upper bound on the samples taken within a single entry-exit pair
+const int MAX_SEGMENT_SAMPLES = 1024;
 const float ISECT_TINY = 1.0e-8;
 const float ISECT_TINY_ANGLE = 1.0e-5;
 
@@ -170,6 +172,31 @@ int ray_element_segments(vec3 ro, vec3 rd, float tmin, float tmax,
 
     return nseg;
 }
+
+float spherical_step_size(vec3 ro, vec3 rd, float t_entry, float t_exit)
+{
+    // the sampling length along the ray, set by the smallest of the
+    // characteristic lengths of the volume element,
+    //     dr,  r * dtheta,  r * sin(theta) * dphi
+    // scaled by the sampling factor eta. in spherical coordinates the
+    // sample_factor uniform holds log10(eta).
+    //
+    // r and theta are evaluated at the ray's closest approach to the origin,
+    // restricted to the portion of the ray within the element.
+    float t_eval = clamp(-dot(ro, rd) / dot(rd, rd), t_entry, t_exit);
+    vec3 p_eval = cart_to_sphere_vec3(ro + rd * t_eval);
+
+    // guard r using 1% of the radial cell width, so that r never drops below a
+    // physical fraction of the voxel regardless of units, and guard theta using
+    // 1% of the angular cell width, for consistent pole behavior across grids.
+    float r_guarded = max(p_eval[id_r], left_edge[id_r] + 0.01 * dx[id_r]);
+    float sin_theta_guarded = max(sin(p_eval[id_theta]), sin(0.01 * dx[id_theta]));
+
+    float ds = min(dx[id_r], min(r_guarded * dx[id_theta],
+                                 r_guarded * sin_theta_guarded * dx[id_phi]));
+
+    return pow(10.0, sample_factor) * ds;
+}
 #endif
 
 vec3 get_offset_texture_position(sampler3D tex, vec3 tex_curr_pos)
@@ -216,7 +243,6 @@ void main()
     tr = (right_edge - camera_pos)*idir;
     dx_effective = dx;
     #endif
-    vec3 step_size = dx_effective/ sample_factor;
 
     vec3 tmin, tmax;
     bvec3 temp_x, temp_y;
@@ -239,11 +265,18 @@ void main()
     vec3 p0 = camera_pos.xyz + dir * t0;
     vec3 p1 = camera_pos.xyz + dir * t1;
 
+    #ifdef SPHERICAL_GEOM
+    // the step size varies with position within the element, it is set for
+    // each ray entry/exit pair below.
+    float tdelta = 0.0;
+    #else
+    vec3 step_size = dx_effective / sample_factor;
     vec3 dxidir = abs(idir)  * step_size;
 
     temp_t = min(dxidir.xx, dxidir.yz);
 
     float tdelta = min(temp_t.x, temp_t.y);
+    #endif
     float t = t0;
 
     vec3 range = (right_edge + dx/2.0) - (left_edge - dx/2.0);  // texture range in native coords
@@ -272,8 +305,14 @@ void main()
     if (nseg == 0) discard;
 
     for (int iseg = 0; iseg < nseg; iseg++) {
-        tdelta = (seg_exit[iseg] - seg_entry[iseg]) / float(n_ray_samples);
-        for (int isample = 0; isample < n_ray_samples; isample++) {
+        float seg_dt = seg_exit[iseg] - seg_entry[iseg];
+        // dir is normalized up to the small offset applied above, so the ray
+        // parameter maps to path length with length(dir).
+        float dt = spherical_step_size(camera_pos.xyz, dir,
+                                       seg_entry[iseg], seg_exit[iseg]) / length(dir);
+        int nsamples = int(clamp(ceil(seg_dt / dt), 1.0, float(MAX_SEGMENT_SAMPLES)));
+        tdelta = seg_dt / float(nsamples);
+        for (int isample = 0; isample < nsamples; isample++) {
             t = seg_entry[iseg] + (float(isample) + 0.5) * tdelta;
             ray_position = camera_pos.xyz + t * dir;
             ray_position_native = cart_to_sphere_vec3(ray_position);

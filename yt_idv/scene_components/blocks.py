@@ -18,13 +18,23 @@ class BlockRendering(SceneComponent):
     including mesh outline.  This allows us to render a single collection of
     blocks multiple times in a single scene and to separate out the memory
     handling from the display.
+
+    Note that the meaning of ``sample_factor`` depends on the coordinate system
+    of the data. For cartesian data, it is the number of samples taken per cell
+    width along a ray. For spherical data, the step size along a ray within a
+    volume element is
+
+        ds = eta * min(dr, r * dtheta, r * sin(theta) * dphi)
+
+    and ``sample_factor`` stores log10(eta), so that a ``sample_factor`` of 0
+    (the default for spherical data) samples at the smallest characteristic
+    length of the element and smaller values sample more finely.
     """
 
     name = "block_rendering"
     data = traitlets.Instance(BlockCollection)
     box_width = traitlets.CFloat(0.1)
-    sample_factor = traitlets.CFloat(1.0)
-    n_ray_samples = traitlets.CInt(32)
+    sample_factor = traitlets.CFloat()
     transfer_function = traitlets.Instance(TransferFunctionTexture)
     tf_min = traitlets.CFloat(0.0)
     tf_max = traitlets.CFloat(1.0)
@@ -38,19 +48,21 @@ class BlockRendering(SceneComponent):
         changed = super().render_gui(imgui, renderer, scene)
 
         if self.data._yt_geom_str == "spherical":
-            _, n_ray_samples = imgui.slider_int(
-                "Samples per Element",
-                self.n_ray_samples,
-                2,
-                256,
+            _, sample_factor = imgui.slider_float(
+                "log10(Sample Factor)",
+                self.sample_factor,
+                -1.0,
+                1.0,
             )
             if _:
-                self.n_ray_samples = n_ray_samples
+                self.sample_factor = sample_factor
                 changed = True
             _ = add_popup_help(
                 imgui,
-                "Number of samples taken between each ray entry/exit point of "
-                "a spherical volume element.",
+                "log10 of the sampling factor, eta. The step size along a ray "
+                "within a spherical volume element is eta times the smallest "
+                "of the element's characteristic lengths, dr, r * dtheta and "
+                "r * sin(theta) * dphi. Smaller values sample more finely.",
             )
             changed = changed or _
         else:
@@ -168,6 +180,16 @@ class BlockRendering(SceneComponent):
 
         return changed
 
+    @traitlets.default("sample_factor")
+    def _default_sample_factor(self):
+        # in spherical coordinates, sample_factor stores log10 of the sampling
+        # factor eta (so the default of 0.0 corresponds to eta of 1), while in
+        # cartesian coordinates it is the number of samples per cell width.
+        data = self._trait_values.get("data", None)
+        if data is not None and data._yt_geom_str == "spherical":
+            return 0.0
+        return 1.0
+
     @traitlets.default("transfer_function")
     def _default_transfer_function(self):
         tf = TransferFunctionTexture(data=np.ones((256, 1, 4), dtype="u1") * 255)
@@ -189,7 +211,6 @@ class BlockRendering(SceneComponent):
             shader_program._set_uniform("id_theta", axis_id["theta"])
             shader_program._set_uniform("id_r", axis_id["r"])
             shader_program._set_uniform("id_phi", axis_id["phi"])
-            shader_program._set_uniform("n_ray_samples", int(self.n_ray_samples))
 
         shader_program._set_uniform("box_width", self.box_width)
         shader_program._set_uniform("sample_factor", self.sample_factor)
