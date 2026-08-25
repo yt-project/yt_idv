@@ -36,7 +36,7 @@ void main()
 
     // inverse model-view-matrix
     vinverse_mvm = inverse(modelview);
-    vinverse_pmvm = inverse(projection * modelview);
+    vinverse_pmvm = inv_pmvm;
     gl_Position = projection * modelview * model_vertex;
 
     // native coordinates

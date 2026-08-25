@@ -7,13 +7,6 @@ flat in mat4 inverse_mvm;
 flat in mat4 inverse_pmvm;
 out vec4 output_color;
 
-bool within_bb(vec3 pos)
-{
-    bvec3 left =  greaterThanEqual(pos, left_edge);
-    bvec3 right = lessThanEqual(pos, right_edge);
-    return all(left) && all(right);
-}
-
 bool sample_texture(vec3 tex_curr_pos, inout vec4 curr_color, float tdelta,
                     float t, vec3 dir);
 vec4 cleanup_phase(in vec4 curr_color, in vec3 dir, in float t0, in float t1);
@@ -25,31 +18,25 @@ vec4 cleanup_phase(in vec4 curr_color, in vec3 dir, in float t0, in float t1);
 
 void main()
 {
-    // Obtain screen coordinates
-    // https://www.opengl.org/wiki/Compute_eye_space_from_window_space#From_gl_FragCoord
-    vec4 ndcPos;
-    ndcPos.xy = ((2.0 * gl_FragCoord.xy) - (2.0 * viewport.xy)) / (viewport.zw) - 1;
-    ndcPos.z = (2.0 * gl_FragCoord.z - 1.0);
-    ndcPos.w = 1.0;
+    // the interpolated position on this block's face that the ray passes
+    // through. un-projecting gl_FragCoord through inverse_pmvm gives the same
+    // point in exact arithmetic, but with a small near plane that matrix is
+    // badly conditioned and the float32 result is off by enough that two
+    // blocks disagree about where a ray crosses the face they share.
+    vec3 ray_position = v_model.xyz;
 
-    vec4 clipPos = ndcPos / gl_FragCoord.w;
-    vec4 eyePos = inverse_proj * clipPos;
-    eyePos /= eyePos.w;
-
-    vec3 ray_position = (inverse_pmvm * clipPos).xyz;
-
-    // Five samples
     vec3 dir = normalize(camera_pos.xyz - ray_position);
-    dir = max(abs(dir), 0.0001) * sign(dir);
     vec4 curr_color = vec4(0.0);
 
     // We'll compute the t at which this ray intersects the slice. If that t
     // results in a position that is within this box, we'll sample and return.
     // For a nice, rust-y walkthrough: https://samsymons.com/blog/math-notes-ray-plane-intersection/
     float t_intersect = dot((slice_position - ray_position), slice_normal) / dot(dir, slice_normal);
-    if (abs(t_intersect) < 1e-5) discard;
+    // the ray runs parallel to the slice (or through it at a grazing angle
+    // that overflows), so it never lands in this block
+    if (isinf(t_intersect) || isnan(t_intersect)) discard;
     ray_position += t_intersect * dir;
-    if (!within_bb(ray_position)) discard;
+    if (!within_bb(ray_position, left_edge, right_edge)) discard;
 
     vec3 range = (right_edge + dx/2.0) - (left_edge - dx/2.0);
     vec3 nzones = range / dx;

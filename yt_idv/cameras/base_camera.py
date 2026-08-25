@@ -114,6 +114,9 @@ class BaseCamera(traitlets.HasTraits):
         shader_program._set_uniform(
             "viewport", np.array(GL.glGetIntegerv(GL.GL_VIEWPORT), dtype="f4")
         )
+        shader_program._set_uniform(
+            "inv_pmvm", np.linalg.inv(self.projection_matrix @ self.view_matrix)
+        )
         shader_program._set_uniform("near_plane", self.near_plane)
         shader_program._set_uniform("far_plane", self.far_plane)
         shader_program._set_uniform("camera_pos", self.position)
