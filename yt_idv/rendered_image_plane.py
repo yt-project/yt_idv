@@ -64,8 +64,10 @@ class RenderedImagePlane:
         """
         Integrate the image over the plane, treating pixels as rectangles.
 
-        Pixels that no ray sampled (NaN) are skipped rather than treated as
-        zeros, so the result is the integral over the rendered data alone.
+    Unsampled pixels (NaN) are skipped rather than treated as zeros,
+    so the result is finite when rays do not intersect the data being
+    rendered. The result is thus the integral over the sample region
+    and not the whole image plane.
 
         Returns
         -------
