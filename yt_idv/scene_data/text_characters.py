@@ -28,7 +28,9 @@ class TextCharacters(SceneData):
     def build_textures(self):
         # This doesn't check if the textures have already been built
         self.font.set_size(self.font_size, 200)
-        chars = [ord(c) for c in string.printable if c.isprintable()]
+        # skip whitespace control characters (\t, \n, \r, \x0b, \x0c): fonts
+        # have no glyphs for them, so loading them warns and draws nothing
+        chars = [ord(_) for _ in string.printable if _ == " " or not _.isspace()]
         tex_ids = GL.glGenTextures(len(chars))
         vert = []
         for i, (tex_id, char_code) in enumerate(zip(tex_ids, chars)):
