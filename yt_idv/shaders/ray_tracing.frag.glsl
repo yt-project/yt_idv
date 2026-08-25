@@ -98,6 +98,17 @@ void main()
     t0 = max(t0, 0.0);
     if (t1 <= t0) discard;
 
+    // Each pixel within the silhouette of the block is covered by two faces of
+    // the cube emitted by the geometry shader, and both of them march the same
+    // t0 -> t1 segment. Face culling is supposed to drop one of them, but some
+    // drivers do not apply it reliably, and a duplicated march doubles the
+    // result of the integrating render methods (which blend additively). So
+    // keep only the fragment on the exiting face, which is also the one that
+    // survives culling: the ray leaves the box at t1, and the entering face,
+    // at t0, may be clipped by the near plane or lie behind the camera.
+    float t_face = dot(v_model.xyz - camera_pos.xyz, dir) / dot(dir, dir);
+    if (t_face < 0.5 * (t0 + t1)) discard;
+
     // Some more discussion of this here:
     //  http://prideout.net/blog/?p=64
 

@@ -4,7 +4,7 @@ import numpy as np
 import pytest
 import yt
 from numpy.testing import assert_allclose
-from unyt import Unit
+from unyt import Unit, unyt_array
 
 import yt_idv
 from yt_idv.rendered_image_plane import image_plane_extent
@@ -23,6 +23,27 @@ def osmesa_uniform():
         {("gas", "density"): (1.0 + rng.random(shape), "g/cm**3")},
         shape,
         length_unit="kpc",
+        bbox=np.array([[0.0, 1.0]] * 3),
+    )
+    rc = yt_idv.render_context("osmesa", width=512, height=512)
+    rc.add_scene(ds.all_data(), ("gas", "density"), no_ghost=False)
+    rc.scene.components[0].store_first_pass_fb = True
+    yield rc
+    rc.osmesa.OSMesaDestroyContext(rc.context)
+
+
+@pytest.fixture()
+def osmesa_constant():
+    """An OSMesa context with a 1 m cube at a constant density of 1 g/m**3.
+
+    The total mass is 1 g, so a projection of the cube has to integrate to 1 g
+    once the rays are close enough to parallel to be a true projection.
+    """
+    shape = (32, 32, 32)
+    ds = yt.load_uniform_grid(
+        {("gas", "density"): unyt_array(np.ones(shape), "g/m**3")},
+        shape,
+        length_unit="m",
         bbox=np.array([[0.0, 1.0]] * 3),
     )
     rc = yt_idv.render_context("osmesa", width=512, height=512)
@@ -72,6 +93,23 @@ def test_values_are_denormalized(osmesa_uniform, render_method):
     assert values.min() >= block_collection.min_val
     assert values.max() <= block_collection.max_val
     assert values.max() > 1.0
+    # pixels that no ray sampled should not masquerade as data
+    assert np.isnan(frb.data).any()
+
+
+@pytest.mark.parametrize("render_method", ["max_intensity", "slice"])
+def test_constant_values_are_denormalized(osmesa_constant, render_method):
+    component = osmesa_constant.scene.components[0]
+    component.render_method = render_method
+    osmesa_constant.scene.render()
+
+    frb = component.rendered_image_plane()
+    block_collection = component.data
+
+    values = frb.data[np.isfinite(frb.data)]
+    assert values.min() == block_collection.min_val
+    assert values.max() == block_collection.max_val
+
     # pixels that no ray sampled should not masquerade as data
     assert np.isnan(frb.data).any()
 
@@ -158,6 +196,57 @@ def test_integrate(osmesa_uniform):
         integral.d, (frb.data[sampled].mean() * area).to(integral.units).d, rtol=1e-6
     )
     assert integral.d > 0
+
+
+def test_integrate_constant(osmesa_constant):
+    component = osmesa_constant.scene.components[0]
+    component.render_method = "projection"
+
+    # the camera is a perspective one, so it only integrates to the total mass
+    # in the limit of parallel rays: view the cube from far away with a field of
+    # view narrow enough that it still fills a good fraction of the image. the
+    # rays then diverge by at most fov / 2 = 1 degree.
+    camera = osmesa_constant.scene.camera
+    camera.update(position=[0.5, 0.5, 60.0], focus=[0.5, 0.5, 0.5], up=[0.0, 1.0, 0.0])
+    camera.fov = 2.0
+    camera.aspect_ratio = 1.0
+    camera.far_plane = 100.0
+    camera._update_matrices()
+    # the ray marcher overshoots the exit point by up to one step, which is a
+    # 1 / (2 * 32 * sample_factor) error on a path of one code_length
+    component.sample_factor = 8.0
+    osmesa_constant.scene.render()
+
+    frb = component.rendered_image_plane()
+    ny, nx = frb.data.shape
+    dx, dy = frb.pixel_size
+    assert_allclose((dx * nx).d, frb.width.d, rtol=1e-12)
+    assert_allclose((dy * ny).d, frb.height.d, rtol=1e-12)
+
+    # the whole cube has to be inside the image, or the integral would clip it
+    assert frb.width.d > 1.0 and frb.height.d > 1.0
+
+    integral = frb.integrate()
+    assert integral.units.dimensions == Unit("g").dimensions
+
+    # a 1 m cube at a constant 1 g/m**3 holds 1 g
+    assert_allclose(integral.to("g").d, 1.0, rtol=1e-2)
+
+
+def test_projection_marches_each_ray_once(osmesa_constant):
+    # every pixel within the silhouette of a block is covered by two faces of
+    # the cube the geometry shader emits, and the projection shader blends
+    # additively, so a ray that is marched twice doubles the integral
+    component = osmesa_constant.scene.components[0]
+    component.render_method = "projection"
+    osmesa_constant.scene.render()
+
+    frb = component.rendered_image_plane()
+
+    # the default camera looks down the body diagonal of the domain, so no ray
+    # can travel further through it than sqrt(3) code_length (plus the single
+    # step the marcher can overshoot the exit point by)
+    assert frb.path_length.max().d <= np.sqrt(3) + 1.0 / 32
 
 
 def test_image_plane_extent_round_trip():
