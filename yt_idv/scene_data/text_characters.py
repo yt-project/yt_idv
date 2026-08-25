@@ -3,7 +3,15 @@ from collections import namedtuple
 
 import numpy as np
 import traitlets
-from matplotlib.ft2font import LoadFlags
+
+try:
+    # LoadFlags was added in matplotlib 3.10, replacing the module-level
+    # LOAD_* constants
+    from matplotlib.ft2font import LoadFlags
+
+    LOAD_FORCE_AUTOHINT = LoadFlags.FORCE_AUTOHINT
+except ImportError:
+    from matplotlib.ft2font import LOAD_FORCE_AUTOHINT
 from OpenGL import GL
 
 from yt_idv.opengl_support import Texture2D, VertexArray, VertexAttribute
@@ -35,7 +43,7 @@ class TextCharacters(SceneData):
         vert = []
         for i, (tex_id, char_code) in enumerate(zip(tex_ids, chars)):
             self.font.clear()
-            self.font.set_text(chr(char_code), flags=LoadFlags.FORCE_AUTOHINT)
+            self.font.set_text(chr(char_code), flags=LOAD_FORCE_AUTOHINT)
             self.font.draw_glyphs_to_bitmap(antialiased=True)
             glyph = self.font.load_char(char_code)
             x0, y0, x1, y1 = glyph.bbox
