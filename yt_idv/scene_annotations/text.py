@@ -29,6 +29,8 @@ class TextAnnotation(SceneAnnotation):
             x = 0
             dy = 0
             for c in line:
+                if c not in self.data.characters:
+                    continue
                 e = self.data.characters[c]
                 draw_instructions.append((x, y, e.texture, e.vbo_offset))
                 dy = max(dy, e.vert_advance)
