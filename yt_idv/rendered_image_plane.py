@@ -62,17 +62,17 @@ class RenderedImagePlane:
 
     def integrate(self) -> unyt_quantity:
         """
-        Integrate the image over the plane, treating pixels as rectangles.
+            Integrate the image over the plane, treating pixels as rectangles.
 
-    Unsampled pixels (NaN) are skipped rather than treated as zeros,
-    so the result is finite when rays do not intersect the data being
-    rendered. The result is thus the integral over the sample region
-    and not the whole image plane.
+        Unsampled pixels (NaN) are skipped rather than treated as zeros,
+        so the result is finite when rays do not intersect the data being
+        rendered. The result is thus the integral over the sample region
+        and not the whole image plane.
 
-        Returns
-        -------
-        unyt_quantity
-            The integral, in the units of ``data`` times an area.
+            Returns
+            -------
+            unyt_quantity
+                The integral, in the units of ``data`` times an area.
         """
         dx, dy = self.pixel_size
         return np.nansum(self.data) * dx * dy
