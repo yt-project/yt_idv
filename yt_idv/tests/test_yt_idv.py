@@ -162,9 +162,7 @@ def test_curves(osmesa_fake_amr, image_store):
     x1d = np.linspace(0, 1, 10)
     xyz = np.column_stack([x1d, x1d, np.zeros((10,))])
     curved.add_data(xyz)
-    curve_render = CurveRendering(
-        data=curved, curve_rgba=(1.0, 0.0, 0.0, 1.0), line_width=4
-    )
+    curve_render = CurveRendering(data=curved, curve_rgba=(1.0, 0.0, 0.0, 1.0))
     curve_render.display_name = "single streamline"
     osmesa_fake_amr.scene.data_objects.append(curved)
     osmesa_fake_amr.scene.components.append(curve_render)
@@ -178,7 +176,7 @@ def test_curves(osmesa_fake_amr, image_store):
     curve_collection.add_data()  # call add_data() after done adding curves
 
     cc_render = CurveCollectionRendering(
-        data=curve_collection, curve_rgba=(0.2, 0.2, 0.2, 1.0), line_width=4
+        data=curve_collection, curve_rgba=(0.2, 0.2, 0.2, 1.0)
     )
     cc_render.display_name = "multiple streamlines"
     osmesa_fake_amr.scene.data_objects.append(curve_collection)
@@ -299,7 +297,7 @@ def test_block_collection_min_max(image_store):
     rc.scene.data_objects.append(
         BlockCollection(
             data_source=ds.all_data(),
-            _compute_min_max=False,
+            compute_min_max=False,
             min_val=0.0,
             max_val=10.0,
         )

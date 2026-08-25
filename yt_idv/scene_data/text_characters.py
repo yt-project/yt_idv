@@ -3,7 +3,15 @@ from collections import namedtuple
 
 import numpy as np
 import traitlets
-from matplotlib.ft2font import LOAD_FORCE_AUTOHINT
+
+try:
+    # LoadFlags was added in matplotlib 3.10, replacing the module-level
+    # LOAD_* constants
+    from matplotlib.ft2font import LoadFlags
+
+    LOAD_FORCE_AUTOHINT = LoadFlags.FORCE_AUTOHINT
+except ImportError:
+    from matplotlib.ft2font import LOAD_FORCE_AUTOHINT
 from OpenGL import GL
 
 from yt_idv.opengl_support import Texture2D, VertexArray, VertexAttribute
