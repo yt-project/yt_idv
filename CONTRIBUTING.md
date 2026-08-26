@@ -101,7 +101,8 @@ Once your environment is setup, you are ready to make changes!
 ### Running and writing tests
 
 The test suite renders headlessly, and defaults to the `osmesa` backend, so you
-need an environment with `osmesa` available:
+need an environment with `osmesa` available or you need to specify the backend.
+To run the tests with the default backend (`osmesa`) :
 
     ```
     $ pytest yt_idv
