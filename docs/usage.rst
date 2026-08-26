@@ -69,13 +69,14 @@ Off-screen Rendering
 --------------------
 
 To utilize off-screen rendering, you can request either the "egl" or "osmesa"
-render context::
+render context for true headless rendering::
 
     import yt
     import yt_idv
 
     ds = yt.load_sample("IsolatedGalaxy")
     rc = yt_idv.render_context("egl", width = 1024, height = 1024)
+    # rc = yt_idv.render_context("osmesa", width = 1024, height = 1024)
     rc.add_scene(ds, "density")
     image = rc.run()
     yt.write_bitmap(image, "idv.png")
@@ -84,12 +85,12 @@ Here, we load up the dataset, create a default scene, render it without a
 window, and output the results.  When ``rc.run()`` is called, it returns an
 image array, which we then supply to ``yt.write_bitmap``.
 
-.. note:: On macOS, neither of these is usually the right choice: a hidden pyglet
-          window (``render_context("pyglet", visible=False, gui=False)``) renders
-          on the GPU and is far faster.  Reach for ``"egl"`` only when there is no
-          window server session at all, and never for ``"osmesa"`` -- current Mesa
-          builds for macOS no longer ship ``libOSMesa``.  See
-          :ref:`headless-macos`.
+Alternatively, if you are on a machine with a window server session, you can
+use the default ``"pyglet"`` context but specify additional keywords
+to render offscreen: ``yt_idv.render_context("pyglet", visible=False, gui=False)``.
+This is the recommended approach for headless rendering on macOS with the GPU (see
+:ref:`headless-macos` for extra setup for ``egl`` or legacy versions of ``osmesa`` on
+macOS).
 
 This seems a bit clunky, right?  Having to save the image?  Well, if you're
 running in something that can render ipywidgets (such as Jupyter lab or a
