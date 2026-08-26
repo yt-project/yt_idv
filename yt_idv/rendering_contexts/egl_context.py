@@ -78,3 +78,17 @@ class EGLRenderingContext(OffscreenRenderingContext):
 
         GL.glClearColor(0.0, 0.0, 0.0, 0.0)
         GL.glClear(GL.GL_COLOR_BUFFER_BIT | GL.GL_DEPTH_BUFFER_BIT)
+
+    def close(self):
+        if self.context is None:
+            return
+        EGL.eglMakeCurrent(
+            self.display, EGL.EGL_NO_SURFACE, EGL.EGL_NO_SURFACE, EGL.EGL_NO_CONTEXT
+        )
+        EGL.eglDestroyContext(self.display, self.context)
+        EGL.eglDestroySurface(self.display, self.surface)
+        self.context = None
+        self.surface = None
+        # eglTerminate is deliberately not called: the display comes from
+        # EGL_DEFAULT_DISPLAY and is shared, so tearing it down would break any
+        # context created later in the same process.

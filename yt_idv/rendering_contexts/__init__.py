@@ -1,6 +1,35 @@
 import os
 
 
+def prepare_platform(engine):
+    """
+    Set up the environment that PyOpenGL reads when it is imported.
+
+    Must run before anything imports OpenGL: PyOpenGL binds its platform the
+    first time ``OpenGL.platform`` is imported, so the engine is fixed for the
+    lifetime of the process.
+
+    Parameters
+    ----------
+    engine: str, "pyglet", "osmesa" or "egl"
+
+    """
+    # PYOPENGL_PLATFORM must be set before any opengl imports
+    if engine in ("osmesa", "egl"):
+        os.environ["PYOPENGL_PLATFORM"] = engine
+    elif engine == "pyglet":
+        # an inherited value would bind PyOpenGL to an offscreen platform and
+        # leave the hidden window without a usable context
+        os.environ.pop("PYOPENGL_PLATFORM", None)
+
+    if engine == "egl":
+        # also before the opengl imports: importing OpenGL.platform under
+        # PYOPENGL_PLATFORM=egl resolves libEGL right away
+        from ._darwin_egl import configure_mesa_egl
+
+        configure_mesa_egl()
+
+
 def render_context(engine="pyglet", **kwargs):
     """
     Return the appropriate rendering context.
@@ -17,16 +46,7 @@ def render_context(engine="pyglet", **kwargs):
 
     """
 
-    # PYOPENGL_PLATFORM must be set before any opengl imports
-    if engine in ("osmesa", "egl"):
-        os.environ["PYOPENGL_PLATFORM"] = engine
-
-    if engine == "egl":
-        # also before the opengl imports: importing OpenGL.platform under
-        # PYOPENGL_PLATFORM=egl resolves libEGL right away
-        from ._darwin_egl import configure_mesa_egl
-
-        configure_mesa_egl()
+    prepare_platform(engine)
 
     import OpenGL.error
 

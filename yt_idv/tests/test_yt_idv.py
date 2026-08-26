@@ -6,7 +6,6 @@ import yt
 import yt.testing
 from numpy.testing import assert_equal
 
-import yt_idv
 from yt_idv import shader_objects
 from yt_idv.cameras.trackball_camera import TrackballCamera
 from yt_idv.scene_components.blocks import BlockRendering
@@ -17,66 +16,64 @@ from yt_idv.scene_graph import SceneGraph
 
 
 @pytest.fixture()
-def osmesa_fake_amr():
-    """Return an OSMesa context that has a "fake" AMR dataset added, with "radius"
+def fake_amr_rc(make_rc):
+    """Return a context that has a "fake" AMR dataset added, with "radius"
     as the field.
     """
     ds = yt.testing.fake_amr_ds()
     dd = ds.all_data()
-    rc = yt_idv.render_context("osmesa", width=1024, height=1024)
+    rc = make_rc()
     rc.add_scene(dd, "radius", no_ghost=True)
-    yield rc
-    rc.osmesa.OSMesaDestroyContext(rc.context)
+    return rc
 
 
 @pytest.fixture()
-def osmesa_empty():
-    """Return an OSMesa context that has no dataset."""
-    rc = yt_idv.render_context("osmesa", width=1024, height=1024)
+def empty_scene_rc(make_rc):
+    """Return a context that has no dataset."""
+    rc = make_rc()
     ds = yt.testing.fake_amr_ds()
     rc.add_scene(ds, None)
     rc.ds = ds
-    yield rc
-    rc.osmesa.OSMesaDestroyContext(rc.context)
+    return rc
 
 
-def test_snapshots(osmesa_fake_amr, image_store):
+def test_snapshots(fake_amr_rc, image_store):
     """Check that we can make some snapshots."""
-    osmesa_fake_amr.scene.components[0].render_method = "max_intensity"
-    image_store(osmesa_fake_amr)
-    osmesa_fake_amr.scene.components[0].render_method = "projection"
-    image_store(osmesa_fake_amr)
-    osmesa_fake_amr.scene.components[0].render_method = "transfer_function"
-    image_store(osmesa_fake_amr)
-    osmesa_fake_amr.scene.components[0]._recompile_shader()
-    image_store(osmesa_fake_amr)
+    fake_amr_rc.scene.components[0].render_method = "max_intensity"
+    image_store(fake_amr_rc)
+    fake_amr_rc.scene.components[0].render_method = "projection"
+    image_store(fake_amr_rc)
+    fake_amr_rc.scene.components[0].render_method = "transfer_function"
+    image_store(fake_amr_rc)
+    fake_amr_rc.scene.components[0]._recompile_shader()
+    image_store(fake_amr_rc)
 
 
-def test_camera_position(osmesa_fake_amr, image_store):
+def test_camera_position(fake_amr_rc, image_store):
     """Check that we can update the camera position"""
-    vm = osmesa_fake_amr.scene.camera.view_matrix
-    osmesa_fake_amr.scene.camera.set_position([0.5, 2.0, 3.0])
+    vm = fake_amr_rc.scene.camera.view_matrix
+    fake_amr_rc.scene.camera.set_position([0.5, 2.0, 3.0])
     # check that the view matrix has changed
-    assert np.sum(np.abs(vm - osmesa_fake_amr.scene.camera.view_matrix)) > 0.0
-    image_store(osmesa_fake_amr)
+    assert np.sum(np.abs(vm - fake_amr_rc.scene.camera.view_matrix)) > 0.0
+    image_store(fake_amr_rc)
 
 
-def test_depth_buffer_toggle(osmesa_fake_amr, image_store):
-    osmesa_fake_amr.scene.components[0].use_db = True
-    image_store(osmesa_fake_amr)
+def test_depth_buffer_toggle(fake_amr_rc, image_store):
+    fake_amr_rc.scene.components[0].use_db = True
+    image_store(fake_amr_rc)
 
 
-def test_slice(osmesa_fake_amr, image_store):
-    osmesa_fake_amr.scene.components[0].render_method = "slice"
-    osmesa_fake_amr.scene.components[0].slice_position = (0.5, 0.5, 0.5)
+def test_slice(fake_amr_rc, image_store):
+    fake_amr_rc.scene.components[0].render_method = "slice"
+    fake_amr_rc.scene.components[0].slice_position = (0.5, 0.5, 0.5)
     for ax in [0, 1, 2]:
         normal = [0.0, 0.0, 0.0]
         normal[ax] = 1.0
-        osmesa_fake_amr.scene.components[0].slice_normal = tuple(normal)
-        image_store(osmesa_fake_amr)
-    osmesa_fake_amr.scene.components[0].slice_normal = (1.0, 1.0, 0.0)
-    osmesa_fake_amr.scene.components[0].slice_position = (0.5, 0.25, 0.5)
-    image_store(osmesa_fake_amr)
+        fake_amr_rc.scene.components[0].slice_normal = tuple(normal)
+        image_store(fake_amr_rc)
+    fake_amr_rc.scene.components[0].slice_normal = (1.0, 1.0, 0.0)
+    fake_amr_rc.scene.components[0].slice_position = (0.5, 0.25, 0.5)
+    image_store(fake_amr_rc)
 
 
 def _interior_gaps(image):
@@ -92,70 +89,70 @@ def _interior_gaps(image):
 
 
 @pytest.mark.parametrize("near_plane", [1e-4, 1e-2])
-def test_slice_no_block_boundary_gaps(osmesa_fake_amr, near_plane):
+def test_slice_no_block_boundary_gaps(fake_amr_rc, near_plane):
     """Rays that hit a face shared by two blocks must be drawn by one of them."""
-    component = osmesa_fake_amr.scene.components[0]
+    component = fake_amr_rc.scene.components[0]
     component.render_method = "slice"
     component.slice_position = (0.5, 0.5, 0.5)
     component.slice_normal = (1.0, 1.0, 0.0)
 
-    camera = osmesa_fake_amr.scene.camera
+    camera = fake_amr_rc.scene.camera
     camera.near_plane = near_plane
     camera._update_matrices()
 
-    assert _interior_gaps(osmesa_fake_amr.run()).sum() == 0
+    assert _interior_gaps(fake_amr_rc.run()).sum() == 0
 
 
-def test_annotate_boxes(osmesa_empty, image_store):
+def test_annotate_boxes(empty_scene_rc, image_store):
     """Check the box annotation."""
-    osmesa_empty.scene.add_box([0.0, 0.0, 0.0], [1.0, 1.0, 1.0])
-    image_store(osmesa_empty)
-    osmesa_empty.scene.add_box([0.2, 0.2, 0.3], [0.8, 0.8, 0.7])
-    image_store(osmesa_empty)
-    osmesa_empty.scene.annotations[-1].box_width /= 2
-    osmesa_empty.scene.annotations[-1].box_color = (1.0, 0.0, 0.0)
-    image_store(osmesa_empty)
+    empty_scene_rc.scene.add_box([0.0, 0.0, 0.0], [1.0, 1.0, 1.0])
+    image_store(empty_scene_rc)
+    empty_scene_rc.scene.add_box([0.2, 0.2, 0.3], [0.8, 0.8, 0.7])
+    image_store(empty_scene_rc)
+    empty_scene_rc.scene.annotations[-1].box_width /= 2
+    empty_scene_rc.scene.annotations[-1].box_color = (1.0, 0.0, 0.0)
+    image_store(empty_scene_rc)
 
 
-def test_annotate_grids(osmesa_empty, image_store):
+def test_annotate_grids(empty_scene_rc, image_store):
     """Make sure we can add some grid positions."""
     from yt_idv.scene_annotations.grid_outlines import GridOutlines  # NOQA
     from yt_idv.scene_data.grid_positions import GridPositions  # NOQA
 
-    gp = GridPositions(grid_list=osmesa_empty.ds.index.grids.tolist())
-    osmesa_empty.scene.data_objects.append(gp)
+    gp = GridPositions(grid_list=empty_scene_rc.ds.index.grids.tolist())
+    empty_scene_rc.scene.data_objects.append(gp)
     go = GridOutlines(data=gp)
-    osmesa_empty.scene.components.append(go)
-    image_store(osmesa_empty)
-    osmesa_empty.scene.camera.offset_position(0.25)
-    image_store(osmesa_empty)
-    osmesa_empty.scene.camera.offset_position(0.5)
-    image_store(osmesa_empty)
+    empty_scene_rc.scene.components.append(go)
+    image_store(empty_scene_rc)
+    empty_scene_rc.scene.camera.offset_position(0.25)
+    image_store(empty_scene_rc)
+    empty_scene_rc.scene.camera.offset_position(0.5)
+    image_store(empty_scene_rc)
 
 
-def test_annotate_text(osmesa_empty, image_store):
+def test_annotate_text(empty_scene_rc, image_store):
     """Test that text can be annotated and updated."""
-    text = osmesa_empty.scene.add_text("Origin 0 0", origin=(0.0, 0.0))
-    image_store(osmesa_empty)
+    text = empty_scene_rc.scene.add_text("Origin 0 0", origin=(0.0, 0.0))
+    image_store(empty_scene_rc)
     text.text = "Change text"
-    image_store(osmesa_empty)
+    image_store(empty_scene_rc)
     text.text = "Origin -0.5 -0.5"
     text.origin = (-0.5, -0.5)
-    image_store(osmesa_empty)
+    image_store(empty_scene_rc)
     text.origin = (0.0, 0.0)
     text.text = "S 1.0"
-    image_store(osmesa_empty)
+    image_store(empty_scene_rc)
     text.text = "S 2.0"
     text.scale = 2.0
-    image_store(osmesa_empty)
+    image_store(empty_scene_rc)
 
 
-def test_isocontour_functionality(osmesa_fake_amr, image_store):
-    osmesa_fake_amr.scene.components[0].render_method = "isocontours"
-    image_store(osmesa_fake_amr)
+def test_isocontour_functionality(fake_amr_rc, image_store):
+    fake_amr_rc.scene.components[0].render_method = "isocontours"
+    image_store(fake_amr_rc)
 
 
-def test_curves(osmesa_fake_amr, image_store):
+def test_curves(fake_amr_rc, image_store):
     # add a single curve
 
     curved = CurveData()
@@ -164,9 +161,9 @@ def test_curves(osmesa_fake_amr, image_store):
     curved.add_data(xyz)
     curve_render = CurveRendering(data=curved, curve_rgba=(1.0, 0.0, 0.0, 1.0))
     curve_render.display_name = "single streamline"
-    osmesa_fake_amr.scene.data_objects.append(curved)
-    osmesa_fake_amr.scene.components.append(curve_render)
-    image_store(osmesa_fake_amr)
+    fake_amr_rc.scene.data_objects.append(curved)
+    fake_amr_rc.scene.components.append(curve_render)
+    image_store(fake_amr_rc)
 
     curve_collection = CurveCollection()
     xyz = np.column_stack([x1d, np.zeros((10,)), x1d])
@@ -179,10 +176,10 @@ def test_curves(osmesa_fake_amr, image_store):
         data=curve_collection, curve_rgba=(0.2, 0.2, 0.2, 1.0)
     )
     cc_render.display_name = "multiple streamlines"
-    osmesa_fake_amr.scene.data_objects.append(curve_collection)
-    osmesa_fake_amr.scene.components.append(cc_render)
+    fake_amr_rc.scene.data_objects.append(curve_collection)
+    fake_amr_rc.scene.components.append(cc_render)
 
-    image_store(osmesa_fake_amr)
+    image_store(fake_amr_rc)
 
 
 @pytest.fixture()
@@ -196,7 +193,7 @@ def set_very_bad_shader():
     known_shaders["vertex"]["default"]["source"] = good_shader
 
 
-def test_bad_shader(osmesa_empty, set_very_bad_shader):
+def test_bad_shader(empty_scene_rc, set_very_bad_shader):
     # this test is meant to check that a bad shader would indeed be caught
     # by the subsequent test_shader_programs test.
     shader_name = "box_outline"
@@ -213,7 +210,7 @@ def test_bad_shader(osmesa_empty, set_very_bad_shader):
 
 
 @pytest.mark.parametrize("shader_name", list(shader_objects.component_shaders.keys()))
-def test_shader_programs(osmesa_empty, shader_name):
+def test_shader_programs(empty_scene_rc, shader_name):
     for program in shader_objects.component_shaders[shader_name].values():
 
         vertex_shader = shader_objects._validate_shader(
@@ -246,20 +243,20 @@ def test_shader_programs(osmesa_empty, shader_name):
         _ = shader_objects.ShaderProgram(colormap_vertex, colormap_fragment)
 
 
-def test_camera_dict_update(osmesa_fake_amr):
+def test_camera_dict_update(fake_amr_rc):
     pos = [0.5, 2.0, 3.0]
-    osmesa_fake_amr.scene.camera.set_position(pos)
+    fake_amr_rc.scene.camera.set_position(pos)
 
-    cdict = osmesa_fake_amr.scene.camera.dict()
+    cdict = fake_amr_rc.scene.camera.dict()
     assert_equal(cdict["position"], pos)
 
-    osmesa_fake_amr.scene.camera.set_position([4.0, 4.0, 4])
-    osmesa_fake_amr.scene.camera.update(**cdict)
-    assert_equal(osmesa_fake_amr.scene.camera.position, pos)
+    fake_amr_rc.scene.camera.set_position([4.0, 4.0, 4])
+    fake_amr_rc.scene.camera.update(**cdict)
+    assert_equal(fake_amr_rc.scene.camera.position, pos)
 
 
-def test_block_collection_grid_ids():
-    rc = yt_idv.render_context("osmesa", width=1024, height=1024)
+def test_block_collection_grid_ids(make_rc):
+    rc = make_rc()
     ds = yt.testing.fake_amr_ds()
     wid = ds.domain_width / 20.0 / 2.0
     c = ds.domain_center
@@ -271,11 +268,10 @@ def test_block_collection_grid_ids():
     assert len(gl) < len(ds.index.grids)
     grids = block_coll.intersected_grids
     assert len(grids) == len(gl)
-    rc.osmesa.OSMesaDestroyContext(rc.context)
 
 
-def test_manual_scene_graph(image_store):
-    rc = yt_idv.render_context("osmesa", width=1024, height=1024)
+def test_manual_scene_graph(make_rc, image_store):
+    rc = make_rc()
     ds = yt.testing.fake_amr_ds()
 
     c = TrackballCamera.from_dataset(ds)
@@ -285,11 +281,10 @@ def test_manual_scene_graph(image_store):
     rc.scene.components.append(BlockRendering(data=rc.scene.data_objects[-1]))
 
     image_store(rc)
-    rc.osmesa.OSMesaDestroyContext(rc.context)
 
 
-def test_block_collection_min_max(image_store):
-    rc = yt_idv.render_context("osmesa", width=1024, height=1024)
+def test_block_collection_min_max(make_rc, image_store):
+    rc = make_rc()
     ds = yt.testing.fake_amr_ds()
 
     c = TrackballCamera.from_dataset(ds)
@@ -306,4 +301,3 @@ def test_block_collection_min_max(image_store):
     rc.scene.components.append(BlockRendering(data=rc.scene.data_objects[-1]))
 
     image_store(rc)
-    rc.osmesa.OSMesaDestroyContext(rc.context)

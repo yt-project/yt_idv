@@ -52,43 +52,43 @@ def _get_sph_yt_ds(bbox_option: str):
 
 
 @pytest.mark.parametrize("bbox_option", bbox_options.keys())
-def test_spherical_bounds(osmesa_empty_rc, image_store, bbox_option):
+def test_spherical_bounds(empty_rc, image_store, bbox_option):
 
     ds = _get_sph_yt_ds(bbox_option)
     dd = ds.all_data()
 
     field = bbox_options[bbox_option]["field"]
-    osmesa_empty_rc.add_scene(dd, field, no_ghost=True)
-    osmesa_empty_rc.scene.components[0].sample_factor = 5.0
-    osmesa_empty_rc.scene.components[0].cmap_log = False
+    empty_rc.add_scene(dd, field, no_ghost=True)
+    empty_rc.scene.components[0].sample_factor = 5.0
+    empty_rc.scene.components[0].cmap_log = False
     cpos = bbox_options[bbox_option].get("camera_position", None)
     if cpos:
-        osmesa_empty_rc.scene.camera.set_position(cpos)
+        empty_rc.scene.camera.set_position(cpos)
 
-    image_store(osmesa_empty_rc)
+    image_store(empty_rc)
 
 
 @pytest.mark.parametrize("nprocs", [1, 2, 4, 16])
-def test_spherical_nprocs(osmesa_empty_rc, image_store, nprocs):
+def test_spherical_nprocs(empty_rc, image_store, nprocs):
 
     bbox_option = "whole"
     ds = _get_sph_yt_ds(bbox_option)
     dd = ds.all_data()
 
     field = bbox_options[bbox_option]["field"]
-    osmesa_empty_rc.add_scene(dd, field, no_ghost=True)
-    osmesa_empty_rc.scene.components[0].sample_factor = 5.0
-    osmesa_empty_rc.scene.components[0].cmap_log = False
-    osmesa_empty_rc.scene.components[0]._reset_cmap_bounds()
+    empty_rc.add_scene(dd, field, no_ghost=True)
+    empty_rc.scene.components[0].sample_factor = 5.0
+    empty_rc.scene.components[0].cmap_log = False
+    empty_rc.scene.components[0]._reset_cmap_bounds()
     cpos = bbox_options[bbox_option].get("camera_position", None)
     if cpos:
-        osmesa_empty_rc.scene.camera.set_position(cpos)
+        empty_rc.scene.camera.set_position(cpos)
 
-    image_store(osmesa_empty_rc)
+    image_store(empty_rc)
 
 
 @pytest.mark.parametrize("bbox_option", ["partial", "big_r"])
-def test_block_collection_outlines(osmesa_empty_rc, image_store, bbox_option):
+def test_block_collection_outlines(empty_rc, image_store, bbox_option):
 
     ds = _get_sph_yt_ds(bbox_option)
     block_coll: BlockCollection = BlockCollection(
@@ -108,11 +108,11 @@ def test_block_collection_outlines(osmesa_empty_rc, image_store, bbox_option):
     assert curve_coll.n_curves > 0
 
     c = TrackballCamera.from_dataset(ds)
-    osmesa_empty_rc.scene = SceneGraph(camera=c)
-    osmesa_empty_rc.scene.data_objects.append(block_coll)
-    osmesa_empty_rc.scene.components.append(block_rendering)
+    empty_rc.scene = SceneGraph(camera=c)
+    empty_rc.scene.data_objects.append(block_coll)
+    empty_rc.scene.components.append(block_rendering)
 
-    osmesa_empty_rc.scene.data_objects.append(curve_coll)
-    osmesa_empty_rc.scene.components.append(curve_render)
+    empty_rc.scene.data_objects.append(curve_coll)
+    empty_rc.scene.components.append(curve_render)
 
-    image_store(osmesa_empty_rc)
+    image_store(empty_rc)
