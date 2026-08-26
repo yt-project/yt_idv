@@ -1,3 +1,4 @@
+import contextlib
 from math import ceil, floor
 
 import numpy as np
@@ -5,7 +6,7 @@ import traitlets
 from OpenGL import GL
 
 from yt_idv.gui_support import add_popup_help
-from yt_idv.opengl_support import TransferFunctionTexture
+from yt_idv.opengl_support import Texture2D, TransferFunctionTexture
 from yt_idv.scene_components.base_component import SceneComponent
 from yt_idv.scene_data.block_collection import BlockCollection
 from yt_idv.shader_objects import component_shaders, get_shader_combos
@@ -29,6 +30,18 @@ class BlockRendering(SceneComponent):
     tf_log = traitlets.Bool(True)
     slice_position = traitlets.Tuple((0.5, 0.5, 0.5)).tag(trait=traitlets.CFloat())
     slice_normal = traitlets.Tuple((1.0, 0.0, 0.0)).tag(trait=traitlets.CFloat())
+    # External depth clip (cycles-volume-override addition -- see
+    # ray_tracing.frag.glsl's own comment on the shader-side half of this):
+    # lets a caller stop each ray's integration early at a per-pixel max
+    # window-space depth, e.g. from an already-rendered opaque occluder.
+    # `external_depth_texture` is a single-channel (H, W) float32 Texture2D
+    # in the SAME window-space-depth convention `gl_FragDepth` already uses
+    # in this shader (0..1); None/`use_external_depth_clip=False` (the
+    # default) is a complete no-op, identical to upstream behavior.
+    external_depth_texture = traitlets.Instance(
+        Texture2D, allow_none=True, default_value=None
+    )
+    use_external_depth_clip = traitlets.Bool(False)
 
     priority = 10
 
@@ -157,11 +170,20 @@ class BlockRendering(SceneComponent):
         each = self.data.vertex_array.each
         GL.glEnable(GL.GL_CULL_FACE)
         GL.glCullFace(GL.GL_BACK)
+        depth_clip_active = (
+            self.use_external_depth_clip and self.external_depth_texture is not None
+        )
+        depth_ctx = (
+            self.external_depth_texture.bind(target=3)
+            if depth_clip_active
+            else contextlib.nullcontext()
+        )
         with self.transfer_function.bind(target=2):
-            for tex_ind, tex, bitmap_tex in self.data.viewpoint_iter(scene.camera):
-                with tex.bind(target=0):
-                    with bitmap_tex.bind(target=1):
-                        GL.glDrawArrays(GL.GL_POINTS, tex_ind * each, each)
+            with depth_ctx:
+                for tex_ind, tex, bitmap_tex in self.data.viewpoint_iter(scene.camera):
+                    with tex.bind(target=0):
+                        with bitmap_tex.bind(target=1):
+                            GL.glDrawArrays(GL.GL_POINTS, tex_ind * each, each)
 
     def _set_uniforms(self, scene, shader_program):
         if self.data._yt_geom_str == "spherical":
@@ -175,6 +197,13 @@ class BlockRendering(SceneComponent):
         shader_program._set_uniform("ds_tex", np.array([0, 0, 0, 0, 0, 0]))
         shader_program._set_uniform("bitmap_tex", 1)
         shader_program._set_uniform("tf_tex", 2)
+        shader_program._set_uniform("external_depth_tex", 3)
+        shader_program._set_uniform(
+            "use_external_depth_clip",
+            float(
+                self.use_external_depth_clip and self.external_depth_texture is not None
+            ),
+        )
         shader_program._set_uniform("tf_min", self.tf_min)
         shader_program._set_uniform("tf_max", self.tf_max)
         shader_program._set_uniform("tf_log", float(self.tf_log))

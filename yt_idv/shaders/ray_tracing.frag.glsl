@@ -125,9 +125,44 @@ void main()
     float f_ndc_depth;
     float depth = 1.0;
 
+    // External depth clip (cycles-volume-override addition): lets a caller
+    // stop this ray's integration early at a per-pixel max window-space
+    // depth (e.g. an already-rendered opaque occluder), rather than always
+    // integrating all the way out to t1 (this block's own bounding-box
+    // exit). Sampled ONCE per fragment, not per ray-march step -- it's a
+    // per-pixel constant, computing it every iteration would be wasted
+    // work. Disabled (use_external_depth_clip == 0) means external_max_depth
+    // is never actually compared against, so behavior is unchanged from
+    // upstream when this feature isn't used.
+    float external_max_depth = 1.0;
+    if (use_external_depth_clip > 0.5) {
+        // NOTE: known_uniforms.inc.glsl's comment on `viewport` (`(offset_x,
+        // offset_y, 1 / screen_x, 1 / screen_y)`) is WRONG/stale -- it's
+        // actually set from `GL.glGetIntegerv(GL_VIEWPORT)` verbatim (see
+        // yt_idv.cameras.base_camera.BaseCamera._set_uniforms), i.e. raw
+        // (x, y, width, height) in pixels, not reciprocals. Confirmed the
+        // hard way: multiplying by viewport.zw (as the comment implies)
+        // sends screen_uv far outside [0, 1], and with the texture's
+        // default "clamp" boundary that means EVERY fragment ends up
+        // sampling the same corner texel regardless of its real screen
+        // position -- silently "worked" for a spatially-uniform test depth
+        // (any single texel equals a uniform array's value) but a
+        // per-pixel-varying depth had zero effect anywhere. Divide, don't
+        // multiply.
+        vec2 screen_uv = (gl_FragCoord.xy - viewport.xy) / viewport.zw;
+        external_max_depth = texture(external_depth_tex, screen_uv).r;
+    }
+
     ray_position = p0;
 
     while(t <= t1) {
+
+        if (use_external_depth_clip > 0.5) {
+            v_clip_coord = projection * modelview * vec4(ray_position, 1.0);
+            f_ndc_depth = v_clip_coord.z / v_clip_coord.w;
+            float current_depth = 0.5 * f_ndc_depth + 0.5;
+            if (current_depth >= external_max_depth) break;
+        }
 
         // texture position
         #ifdef SPHERICAL_GEOM
