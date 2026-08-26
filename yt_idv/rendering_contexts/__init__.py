@@ -44,6 +44,10 @@ def render_context(engine="pyglet", **kwargs):
 
         return OSMesaRenderingContext(**kwargs)
     elif engine == "egl":
+        from ._darwin_egl import configure_mesa_egl
+
+        configure_mesa_egl()
+
         from .egl_context import EGLRenderingContext
 
         return EGLRenderingContext(**kwargs)

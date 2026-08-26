@@ -84,6 +84,13 @@ Here, we load up the dataset, create a default scene, render it without a
 window, and output the results.  When ``rc.run()`` is called, it returns an
 image array, which we then supply to ``yt.write_bitmap``.
 
+.. note:: On macOS, neither of these is usually the right choice: a hidden pyglet
+          window (``render_context("pyglet", visible=False, gui=False)``) renders
+          on the GPU and is far faster.  Reach for ``"egl"`` only when there is no
+          window server session at all, and never for ``"osmesa"`` -- current Mesa
+          builds for macOS no longer ship ``libOSMesa``.  See
+          :ref:`headless-macos`.
+
 This seems a bit clunky, right?  Having to save the image?  Well, if you're
 running in something that can render ipywidgets (such as Jupyter lab or a
 Jupyter notebook) you can create an auto-updating image widget::
