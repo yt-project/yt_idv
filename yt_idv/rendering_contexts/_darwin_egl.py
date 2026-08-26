@@ -1,18 +1,22 @@
 """Wiring needed to drive Mesa's EGL on macOS.
 
 macOS ships no EGL of its own, so headless rendering there means using a Mesa
-build (homebrew's ``mesa``, for example).  Two things have to be arranged before
-``OpenGL.GL`` is imported:
+build (homebrew's ``mesa``, for example).  Three things have to be arranged, all
+of them before ``OpenGL.platform`` is imported:
 
 * Mesa's EGL defaults to the X11 platform, which needs a running XQuartz
   server.  ``EGL_PLATFORM=surfaceless`` selects the platform that works without
   a display server.
-* PyOpenGL's EGL platform resolves its GL entry points by asking
-  ``ctypes.util.find_library`` for ``"OpenGL"`` before ``"GL"``.  On macOS the
-  first name always hits Apple's ``OpenGL.framework``, which knows nothing about
-  the EGL context we just made current, so every GL call would land in the wrong
-  library.  Loading the Mesa dylibs by absolute path and assigning them onto the
-  platform object sidesteps that lookup entirely.
+* PyOpenGL finds its libraries through ``ctypes.util.find_library``, whose macOS
+  search path does not include Homebrew, so importing ``OpenGL.platform`` under
+  ``PYOPENGL_PLATFORM=egl`` fails outright -- that import resolves ``libEGL``
+  eagerly.  ``find_library`` reads ``DYLD_FALLBACK_LIBRARY_PATH`` at call time,
+  so putting the Mesa directory there first is enough to fix the lookup.
+* That is not enough for GL itself: PyOpenGL's EGL platform asks for
+  ``"OpenGL"`` before ``"GL"``, and the first name always hits Apple's
+  ``OpenGL.framework``, which knows nothing about the EGL context we are about
+  to make current.  So ``GL`` is replaced on the platform object with Mesa's
+  ``libGL`` loaded by absolute path.
 """
 
 import ctypes
@@ -31,10 +35,10 @@ an existing install by setting YT_IDV_MESA_PREFIX to the directory that holds
 lib/lib{name}.dylib.\
 """
 
-_APPLE_GL_MSG = """\
-PyOpenGL has already bound {name} to Apple's OpenGL.framework, which cannot be
-used with an EGL context. Build the EGL render context before anything imports
-OpenGL.GL.\
+_WRONG_PLATFORM_MSG = """\
+PyOpenGL is already using a non-EGL platform, so its GL entry points are bound
+to Apple's OpenGL.framework and cannot be used with an EGL context. Build the
+EGL render context before anything imports OpenGL.\
 """
 
 
@@ -65,25 +69,50 @@ def _find_dylib(name):
     return None
 
 
-def configure_mesa_egl():
-    """Bind PyOpenGL's EGL platform to a Mesa GL/EGL pair.
+def _prepend_dyld_path(directory):
+    key = "DYLD_FALLBACK_LIBRARY_PATH"
+    entries = [entry for entry in os.environ.get(key, "").split(":") if entry]
+    if directory in entries:
+        return
+    if not entries:
+        # setting the variable replaces dyld's implicit default, so spell it out
+        entries = [str(Path.home() / "lib"), "/usr/local/lib", "/lib", "/usr/lib"]
+    os.environ[key] = ":".join([directory, *entries])
 
-    Must be called before anything imports ``OpenGL.GL``.  A no-op off macOS.
+
+def configure_mesa_egl():
+    """Point PyOpenGL's EGL platform at a Mesa GL/EGL pair.
+
+    Must be called before anything imports ``OpenGL.platform``.  A no-op off
+    macOS.
     """
     if sys.platform != "darwin":
         return
 
     os.environ.setdefault("EGL_PLATFORM", "surfaceless")
 
+    paths = {}
+    for name in ("EGL", "GL"):
+        found = _find_dylib(name)
+        if found is None:
+            raise ImportError(_NOT_FOUND_MSG.format(name=name))
+        paths[name] = found
+
+    # Importing OpenGL.platform under PYOPENGL_PLATFORM=egl resolves libEGL
+    # eagerly, through ctypes.util.find_library -- which reads
+    # DYLD_FALLBACK_LIBRARY_PATH at call time and otherwise never looks in
+    # Homebrew.  This has to be in place before that import happens.
+    _prepend_dyld_path(str(Path(paths["EGL"]).parent))
+
     from OpenGL import platform
 
-    for name in ("EGL", "GL"):
-        already_bound = platform.PLATFORM.__dict__.get(name)
-        if already_bound is not None:
-            if getattr(already_bound, "_name", "").startswith("/System/"):
-                raise ImportError(_APPLE_GL_MSG.format(name=name))
+    if type(platform.PLATFORM).__name__ != "EGLPlatform":
+        raise ImportError(_WRONG_PLATFORM_MSG)
+
+    # find_library("OpenGL") resolves to Apple's framework even now, and
+    # PyOpenGL tries that name before "GL", so GL still needs replacing.
+    for name, path in paths.items():
+        bound = platform.PLATFORM.__dict__.get(name)
+        if bound is not None and not getattr(bound, "_name", "").startswith("/System/"):
             continue
-        path = _find_dylib(name)
-        if path is None:
-            raise ImportError(_NOT_FOUND_MSG.format(name=name))
         setattr(platform.PLATFORM, name, ctypes.CDLL(path, ctypes.RTLD_GLOBAL))

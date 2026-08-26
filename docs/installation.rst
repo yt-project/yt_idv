@@ -84,9 +84,9 @@ run the following from a terminal:
     Aqua
 
 If ``Aqua`` is returned, a window server session is active and you can use
-pyget (see ). If it returns ``Background`` or ``StandardIO`` then no window
-session is available (expected over ``ssh``) and you'll need to install
-extra libraries for headless rendering.
+pyglet (see :doc:`usage`). If it returns ``Background`` or ``StandardIO`` then
+no window session is available (expected over ``ssh``) and you'll need to
+install extra libraries for headless rendering.
 
 Headless rendering on macOS without window server
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -103,7 +103,7 @@ Then request the ``egl`` engine as usual::
 
     rc = yt_idv.render_context("egl", width=1024, height=1024)
 
-``yt_idv`` handles the two macOS-specific wrinkles for you when it builds an EGL
+``yt_idv`` handles the macOS-specific wrinkles for you when it builds an EGL
 context on darwin. Mesa is searched for under ``$YT_IDV_MESA_PREFIX``, ``$CONDA_PREFIX``,
 ``/opt/homebrew``, ``/usr/local`` and ``/opt/local`` (in that order, checking
 both ``lib/`` and ``opt/mesa/lib/``).  If yours lives somewhere else, point

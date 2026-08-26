@@ -21,6 +21,13 @@ def render_context(engine="pyglet", **kwargs):
     if engine in ("osmesa", "egl"):
         os.environ["PYOPENGL_PLATFORM"] = engine
 
+    if engine == "egl":
+        # also before the opengl imports: importing OpenGL.platform under
+        # PYOPENGL_PLATFORM=egl resolves libEGL right away
+        from ._darwin_egl import configure_mesa_egl
+
+        configure_mesa_egl()
+
     import OpenGL.error
 
     if engine == "pyglet":
@@ -44,10 +51,6 @@ def render_context(engine="pyglet", **kwargs):
 
         return OSMesaRenderingContext(**kwargs)
     elif engine == "egl":
-        from ._darwin_egl import configure_mesa_egl
-
-        configure_mesa_egl()
-
         from .egl_context import EGLRenderingContext
 
         return EGLRenderingContext(**kwargs)
