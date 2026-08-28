@@ -104,8 +104,10 @@ def test_constant_values_are_denormalized(constant_rc, render_method):
     block_collection = component.data
 
     values = frb.data[np.isfinite(frb.data)]
-    assert values.min() == block_collection.min_val
-    assert values.max() == block_collection.max_val
+    # the values round-trip through float32 normalization on the GPU, which
+    # some drivers do not reproduce bit-exactly: allow a few float32 ulps
+    assert_allclose(values.min().d, block_collection.min_val, rtol=1e-6)
+    assert_allclose(values.max().d, block_collection.max_val, rtol=1e-6)
 
     # pixels that no ray sampled should not masquerade as data
     assert np.isnan(frb.data).any()
