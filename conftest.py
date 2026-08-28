@@ -35,6 +35,12 @@ def pytest_addoption(parser):
         default=1024,
         help="default height of offscreen rendering canvases",
     )
+    parser.addoption(
+        "--skip-image-tests",
+        action="store_true",
+        default=False,
+        help="skip tests marked as image_test (they need a live rendering context)",
+    )
 
 
 def _resolve_backend(config):
@@ -54,6 +60,11 @@ def _resolve_backend(config):
 
 
 def pytest_configure(config):
+    config.addinivalue_line(
+        "markers",
+        "image_test: test renders with a live rendering context "
+        "(deselect with --skip-image-tests)",
+    )
     # this will get run before all tests, before collection and
     # any opengl imports that happen within test files.
     config._offscreen_backend = _resolve_backend(config)
@@ -62,6 +73,15 @@ def pytest_configure(config):
         config.getoption("--canvas-height"),
     )
     prepare_platform(config._offscreen_backend)
+
+
+def pytest_collection_modifyitems(config, items):
+    if not config.getoption("--skip-image-tests"):
+        return
+    skip_image = pytest.mark.skip(reason="--skip-image-tests was given")
+    for item in items:
+        if "image_test" in item.keywords:
+            item.add_marker(skip_image)
 
 
 def pytest_report_header(config):

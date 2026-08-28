@@ -37,6 +37,7 @@ def empty_scene_rc(make_rc):
     return rc
 
 
+@pytest.mark.image_test
 def test_snapshots(fake_amr_rc, image_store):
     """Check that we can make some snapshots."""
     fake_amr_rc.scene.components[0].render_method = "max_intensity"
@@ -49,6 +50,7 @@ def test_snapshots(fake_amr_rc, image_store):
     image_store(fake_amr_rc)
 
 
+@pytest.mark.image_test
 def test_camera_position(fake_amr_rc, image_store):
     """Check that we can update the camera position"""
     vm = fake_amr_rc.scene.camera.view_matrix
@@ -58,11 +60,13 @@ def test_camera_position(fake_amr_rc, image_store):
     image_store(fake_amr_rc)
 
 
+@pytest.mark.image_test
 def test_depth_buffer_toggle(fake_amr_rc, image_store):
     fake_amr_rc.scene.components[0].use_db = True
     image_store(fake_amr_rc)
 
 
+@pytest.mark.image_test
 def test_slice(fake_amr_rc, image_store):
     fake_amr_rc.scene.components[0].render_method = "slice"
     fake_amr_rc.scene.components[0].slice_position = (0.5, 0.5, 0.5)
@@ -89,6 +93,7 @@ def _interior_gaps(image):
 
 
 @pytest.mark.parametrize("near_plane", [1e-4, 1e-2])
+@pytest.mark.image_test
 def test_slice_no_block_boundary_gaps(fake_amr_rc, near_plane):
     """Rays that hit a face shared by two blocks must be drawn by one of them."""
     component = fake_amr_rc.scene.components[0]
@@ -103,6 +108,7 @@ def test_slice_no_block_boundary_gaps(fake_amr_rc, near_plane):
     assert _interior_gaps(fake_amr_rc.run()).sum() == 0
 
 
+@pytest.mark.image_test
 def test_annotate_boxes(empty_scene_rc, image_store):
     """Check the box annotation."""
     empty_scene_rc.scene.add_box([0.0, 0.0, 0.0], [1.0, 1.0, 1.0])
@@ -114,6 +120,7 @@ def test_annotate_boxes(empty_scene_rc, image_store):
     image_store(empty_scene_rc)
 
 
+@pytest.mark.image_test
 def test_annotate_grids(empty_scene_rc, image_store):
     """Make sure we can add some grid positions."""
     from yt_idv.scene_annotations.grid_outlines import GridOutlines  # NOQA
@@ -130,6 +137,7 @@ def test_annotate_grids(empty_scene_rc, image_store):
     image_store(empty_scene_rc)
 
 
+@pytest.mark.image_test
 def test_annotate_text(empty_scene_rc, image_store):
     """Test that text can be annotated and updated."""
     text = empty_scene_rc.scene.add_text("Origin 0 0", origin=(0.0, 0.0))
@@ -147,11 +155,13 @@ def test_annotate_text(empty_scene_rc, image_store):
     image_store(empty_scene_rc)
 
 
+@pytest.mark.image_test
 def test_isocontour_functionality(fake_amr_rc, image_store):
     fake_amr_rc.scene.components[0].render_method = "isocontours"
     image_store(fake_amr_rc)
 
 
+@pytest.mark.image_test
 def test_curves(fake_amr_rc, image_store):
     # add a single curve
 
@@ -193,6 +203,7 @@ def set_very_bad_shader():
     known_shaders["vertex"]["default"]["source"] = good_shader
 
 
+@pytest.mark.image_test
 def test_bad_shader(empty_scene_rc, set_very_bad_shader):
     # this test is meant to check that a bad shader would indeed be caught
     # by the subsequent test_shader_programs test.
@@ -210,6 +221,7 @@ def test_bad_shader(empty_scene_rc, set_very_bad_shader):
 
 
 @pytest.mark.parametrize("shader_name", list(shader_objects.component_shaders.keys()))
+@pytest.mark.image_test
 def test_shader_programs(empty_scene_rc, shader_name):
     for program in shader_objects.component_shaders[shader_name].values():
 
@@ -243,6 +255,7 @@ def test_shader_programs(empty_scene_rc, shader_name):
         _ = shader_objects.ShaderProgram(colormap_vertex, colormap_fragment)
 
 
+@pytest.mark.image_test
 def test_camera_dict_update(fake_amr_rc):
     pos = [0.5, 2.0, 3.0]
     fake_amr_rc.scene.camera.set_position(pos)
@@ -255,6 +268,7 @@ def test_camera_dict_update(fake_amr_rc):
     assert_equal(fake_amr_rc.scene.camera.position, pos)
 
 
+@pytest.mark.image_test
 def test_block_collection_grid_ids(make_rc):
     rc = make_rc()
     ds = yt.testing.fake_amr_ds()
@@ -270,6 +284,7 @@ def test_block_collection_grid_ids(make_rc):
     assert len(grids) == len(gl)
 
 
+@pytest.mark.image_test
 def test_manual_scene_graph(make_rc, image_store):
     rc = make_rc()
     ds = yt.testing.fake_amr_ds()
@@ -283,6 +298,7 @@ def test_manual_scene_graph(make_rc, image_store):
     image_store(rc)
 
 
+@pytest.mark.image_test
 def test_block_collection_min_max(make_rc, image_store):
     rc = make_rc()
     ds = yt.testing.fake_amr_ds()
