@@ -27,7 +27,7 @@ jobs:
           # macOS runners fall back to Apple's slow software GL renderer,
           # so render at reduced resolution to keep runtimes reasonable
           - os: macos-latest
-            test-args: --canvas-width 256 --canvas-height 256
+            test-args: --canvas-width 128 --canvas-height 128
 
     steps:
     - name: Set up Python ${{ matrix.python-version }}
