@@ -19,6 +19,8 @@ jobs:
           - os: macos-latest
             backend: osmesa
         include:
+          - backend: osmesa
+            system-packages: libosmesa6-dev
           # pyglet needs a display server on linux; macOS runners have a
           # WindowServer session and ubuntu+osmesa is fully headless
           - os: ubuntu-latest
@@ -28,6 +30,12 @@ jobs:
           # so render at reduced resolution to keep runtimes reasonable
           - os: macos-latest
             test-args: --canvas-width 128 --canvas-height 128
+          # single egl smoke test: no GPU on the runners, so Mesa renders in
+          # software through its surfaceless platform (no display server)
+          - os: ubuntu-latest
+            backend: egl
+            python-version: '3.12'
+            system-packages: libegl1 libegl-mesa0
 
     steps:
     - name: Set up Python ${{ matrix.python-version }}
@@ -35,9 +43,11 @@ jobs:
       with:
         python-version: ${{ matrix.python-version }}
     - uses: actions/checkout@v7
-    - name: Install osmesa
-      if: matrix.backend == 'osmesa'
+    - name: Install system packages
+      if: matrix.system-packages
       uses: ./.github/actions/install-osmesa
+      with:
+        packages: ${{ matrix.system-packages }}
     - name: Upgrade pip
       run: python -m pip install --upgrade pip
     - name: Setup yt_idv
@@ -47,6 +57,9 @@ jobs:
     - name: Run Tests
       env:
           YT_IDV_TEST_BACKEND: ${{ matrix.backend }}
+          # mesa ignores an empty EGL_PLATFORM; on the display-less runners
+          # its EGL otherwise defaults to x11 and fails to initialize
+          EGL_PLATFORM: ${{ matrix.backend == 'egl' && 'surfaceless' || '' }}
       run: ${{ matrix.test-launcher }} pytest ${{ matrix.test-args }} --html=report.html --self-contained-html
     - uses: actions/upload-artifact@v7
       name: Upload pytest report
