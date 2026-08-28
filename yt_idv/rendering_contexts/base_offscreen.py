@@ -37,3 +37,7 @@ class OffscreenRenderingContext(BaseContext):
             return
         self.scene.render()
         super().snap(*args, **kwargs)
+
+    def close(self):
+        """Release the underlying rendering context. Safe to call twice."""
+        raise NotImplementedError

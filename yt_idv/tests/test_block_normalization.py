@@ -17,7 +17,7 @@ def ds_yt_ugrid():
     return ds
 
 
-def test_block_collection_normalization(osmesa_empty_rc, ds_yt_ugrid):
+def test_block_collection_normalization(empty_rc, ds_yt_ugrid):
 
     block_coll: BlockCollection = BlockCollection(
         data_source=ds_yt_ugrid.all_data(),
@@ -31,7 +31,7 @@ def test_block_collection_normalization(osmesa_empty_rc, ds_yt_ugrid):
     assert np.allclose(block_coll.texture_objects[0].data, 0.5)
 
 
-def test_block_rendering_cmap_norms(osmesa_empty_rc, ds_yt_ugrid, image_store):
+def test_block_rendering_cmap_norms(empty_rc, ds_yt_ugrid, image_store):
 
     block_coll: BlockCollection = BlockCollection(
         data_source=ds_yt_ugrid.all_data(),
@@ -61,8 +61,8 @@ def test_block_rendering_cmap_norms(osmesa_empty_rc, ds_yt_ugrid, image_store):
     assert block_rendering.cmap_max == 1.0
 
     c = TrackballCamera.from_dataset(ds_yt_ugrid)
-    osmesa_empty_rc.scene = SceneGraph(camera=c)
-    osmesa_empty_rc.scene.data_objects.append(block_coll)
-    osmesa_empty_rc.scene.components.append(block_rendering)
+    empty_rc.scene = SceneGraph(camera=c)
+    empty_rc.scene.data_objects.append(block_coll)
+    empty_rc.scene.components.append(block_rendering)
 
-    image_store(osmesa_empty_rc)
+    image_store(empty_rc)

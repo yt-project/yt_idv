@@ -32,3 +32,6 @@ exclude = '''
 [tool.isort]
 profile = "black"
 combine_as_imports = true
+
+[tool.pytest.ini_options]
+offscreen_backend = "osmesa"

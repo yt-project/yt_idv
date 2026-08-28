@@ -100,12 +100,29 @@ Once your environment is setup, you are ready to make changes!
 
 ### Running and writing tests
 
-The test suite is run with `pytest` using headless `osmesa` tests, so you need
-an environment with `osmesa` available. To run the tests:
+The test suite renders headlessly, and defaults to the `osmesa` backend, so you
+need an environment with `osmesa` available or you need to specify the backend.
+To run the tests with the default backend (`osmesa`) :
 
     ```
     $ pytest yt_idv
     ```
+
+The backend is a whole-session choice (`PYOPENGL_PLATFORM` is read once, when
+PyOpenGL is first imported), so covering more than one means running `pytest`
+more than once. To pick a different one:
+
+    ```
+    $ pytest yt_idv --offscreen-backend=egl
+    $ pytest yt_idv --offscreen-backend=pyglet   # hidden window, uses the GPU
+    $ YT_IDV_TEST_BACKEND=pyglet pytest yt_idv   # same, via the environment
+    ```
+
+The `--offscreen-backend` flag wins over `YT_IDV_TEST_BACKEND`, which wins over
+the `offscreen_backend` value in `pyproject.toml`. Each run reports the backend
+it used in the pytest header. Note that `egl` on macOS needs a Mesa install --
+see [the installation docs](https://yt-idv.readthedocs.io/en/latest/installation.html)
+for the extra headless setup.
 
 ## Pull Request Guidelines
 
