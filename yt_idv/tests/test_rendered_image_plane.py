@@ -27,7 +27,9 @@ def uniform_rc(make_rc):
     rc = make_rc()
     rc.add_scene(ds.all_data(), ("gas", "density"), no_ghost=False)
     rc.scene.components[0].store_first_pass_fb = True
-    return rc
+    # yield (not return) so this frame's ds survives until teardown: the scene
+    # only holds weakref proxies to the dataset, which cyclic GC would collect
+    yield rc
 
 
 @pytest.fixture()
@@ -49,7 +51,8 @@ def constant_rc(make_rc):
     rc = make_rc()
     rc.add_scene(ds.all_data(), ("gas", "density"), no_ghost=False)
     rc.scene.components[0].store_first_pass_fb = True
-    return rc
+    # yield for the same reason as uniform_rc
+    yield rc
 
 
 def test_block_collection_field_metadata(uniform_rc):
