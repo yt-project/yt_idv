@@ -1,7 +1,8 @@
-name: Install OSMesa
+name: Install apt packages
 description: >
-  Install the OSMesa development headers used for offscreen rendering, caching
-  the downloaded .deb files so runs do not have to hit the Ubuntu archives.
+  Install the system libraries used for offscreen rendering (OSMesa or EGL),
+  caching the downloaded .deb files so runs do not have to hit the Ubuntu
+  archives.
 
 inputs:
   packages:
