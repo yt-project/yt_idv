@@ -57,6 +57,9 @@ class SceneComponent(traitlets.HasTraits):
     geometry_shader = ShaderTrait(allow_none=True).tag(shader_type="geometry")
     vertex_shader = ShaderTrait(allow_none=True).tag(shader_type="vertex")
     fb = traitlets.Instance(Framebuffer)
+    first_pass_fb_rgba = traitlets.Instance(np.ndarray, allow_none=True)
+    store_first_pass_fb = traitlets.Bool(False)
+    _first_pass_camera = traitlets.Dict(allow_none=True, default_value=None)
     colormap_fragment = ShaderTrait(allow_none=True).tag(shader_type="fragment")
     colormap_vertex = ShaderTrait(allow_none=True).tag(shader_type="vertex")
     colormap = traitlets.Instance(ColormapTexture)
@@ -399,6 +402,19 @@ class SceneComponent(traitlets.HasTraits):
                 with self.data.vertex_array.bind(p):
                     self.draw(scene, p)
 
+        # store a copy of the frame buffer data before we do any color-mapping
+        # so that we can extract raw data values elsewhere (e.g., get max projection
+        # data values in raw values not color-mapped values). The camera state is
+        # stored alongside it so that the physical extent of the image can be
+        # recovered even if the camera moves afterwards.
+        if self.store_first_pass_fb:
+            self.first_pass_fb_rgba = self._read_first_pass_fb()
+            self._first_pass_camera = {
+                "projection_matrix": np.array(scene.camera.projection_matrix),
+                "view_matrix": np.array(scene.camera.view_matrix),
+                "focus": np.array(scene.camera.focus),
+            }
+
         if self._cmap_bounds_invalid:
             self._reset_cmap_bounds()
 
@@ -448,6 +464,33 @@ class SceneComponent(traitlets.HasTraits):
         full_array = np.zeros(32, dtype="float32")
         full_array[: len(self.iso_layers)] = iso_vals
         return full_array
+
+    def _read_first_pass_fb(self):
+        # glReadPixels allocates its result with shape (width, height, 4) but
+        # fills it row-by-row in y, so the array has to be reshaped to be
+        # indexed as [y, x, channel] (a no-op for square viewports). Row 0 is
+        # the bottom of the image, following the OpenGL convention.
+        data = np.asarray(self.fb.data)
+        _, _, width, height = self.fb.viewport
+        return data.reshape((height, width, 4))
+
+    @property
+    def first_pass_fb_data(self):
+        """
+        The values written by the first rendering pass, before color-mapping.
+
+        A (ny, nx) array of the R channel of the stored framebuffer, or None if
+        ``store_first_pass_fb`` has not been set and the scene rendered. Note
+        that these are the raw values used internally by the shaders (min/max
+        normalized, in the internal coordinate system): use
+        ``rendered_image_plane`` for values in physical units.
+        """
+        if self.first_pass_fb_rgba is None:
+            return None
+        return self.first_pass_fb_rgba[:, :, 0]
+
+    def rendered_image_plane(self):
+        raise NotImplementedError("This method must be implemented in subclasses.")
 
     def _get_sanitized_iso_tol(self):
         # isocontour selection conditions:

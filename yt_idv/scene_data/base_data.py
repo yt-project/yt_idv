@@ -28,6 +28,12 @@ class SceneData(traitlets.HasTraits):
         n_data[n_data > 1] = 1.0
         return n_data
 
+    def _denormalize_by_min_max(self, n_data):
+        # inverse of _normalize_by_min_max. Note that values that were clipped
+        # during normalization are not recoverable.
+
+        return n_data * self.val_range + self.min_val
+
     @property
     def val_range(self):
         # the data range (max - min) across all data.
