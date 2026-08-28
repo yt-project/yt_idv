@@ -228,8 +228,13 @@ def test_integrate_constant(constant_rc):
     integral = frb.integrate()
     assert integral.units.dimensions == Unit("g").dimensions
 
-    # a 1 m cube at a constant 1 g/m**3 holds 1 g
-    assert_allclose(integral.to("g").d, 1.0, rtol=1e-2)
+    # a 1 m cube at a constant 1 g/m**3 holds 1 g. the integral carries two
+    # resolution-dependent errors: pixel centers inside the cube's silhouette
+    # each count a full pixel of area (up to a half-pixel band around the
+    # perimeter of the unit cross-section), and each ray overshoots the exit
+    # face by up to one step
+    rtol = 2 * max(dx.d, dy.d) + 1.0 / (32 * component.sample_factor)
+    assert_allclose(integral.to("g").d, 1.0, rtol=rtol)
 
 
 def test_projection_marches_each_ray_once(constant_rc):
