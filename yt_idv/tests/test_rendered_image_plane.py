@@ -35,7 +35,8 @@ def constant_rc(make_rc):
     """A rendering context with a 1 m cube at a constant density of 1 g/m**3.
 
     The total mass is 1 g, so a projection of the cube has to integrate to 1 g
-    once the rays are close enough to parallel to be a true projection.
+    once the rays are close enough to parallel to be a true projection. Data
+    is split into 8 grids to check sensitivity to number of grids.
     """
     shape = (32, 32, 32)
     ds = yt.load_uniform_grid(
@@ -43,6 +44,7 @@ def constant_rc(make_rc):
         shape,
         length_unit="m",
         bbox=np.array([[0.0, 1.0]] * 3),
+        nprocs=8,
     )
     rc = make_rc()
     rc.add_scene(ds.all_data(), ("gas", "density"), no_ghost=False)
@@ -232,7 +234,7 @@ def test_integrate_constant(constant_rc):
     # resolution-dependent errors: pixel centers inside the cube's silhouette
     # each count a full pixel of area (up to a half-pixel band around the
     # perimeter of the unit cross-section), and each ray overshoots the exit
-    # face by up to one step
+    # face by up to one step (fixture ds has a single grid, size (32,32,32))
     rtol = 2 * max(dx.d, dy.d) + 1.0 / (32 * component.sample_factor)
     assert_allclose(integral.to("g").d, 1.0, rtol=rtol)
 
@@ -248,9 +250,13 @@ def test_projection_marches_each_ray_once(constant_rc):
     frb = component.rendered_image_plane()
 
     # the default camera looks down the body diagonal of the domain, so no ray
-    # can travel further through it than sqrt(3) code_length (plus the single
-    # step the marcher can overshoot the exit point by)
-    assert frb.path_length.max().d <= np.sqrt(3) + 1.0 / 32
+    # travels further through the data than sqrt(3) code_length. each block's
+    # marcher can overshoot that block's exit by up to one step, a step along a
+    # diagonal ray is sqrt(3) * dx, and a ray can cross at most 2 + 2 + 2 - 2 = 4
+    # blocks of the 2x2x2 decomposition. a double-marched ray would instead
+    # approach 2 * sqrt(3)
+    step = np.sqrt(3) / 32 / component.sample_factor
+    assert frb.path_length.max().d <= np.sqrt(3) + 4 * step
 
 
 def test_image_plane_extent_round_trip():
