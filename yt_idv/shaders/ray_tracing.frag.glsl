@@ -50,8 +50,12 @@ const float ISECT_TINY_ANGLE = 1.0e-5;
 int solve_quadratic(float a, float hb, float c, float hdisc, out vec2 roots)
 {
     // roots of a*t^2 + 2*hb*t + c, given the half-discriminant hb^2 - a*c.
-    // the callers supply hdisc directly because forming it from a, hb and c
-    // loses too much precision for the near-degenerate conical surfaces.
+    // the callers supply hdisc directly: forming it from a, hb and c differences
+    // the squares of camera-scale magnitudes, and for rays near tangency the
+    // true value is smaller than one ulp of those operands, so even its sign
+    // would depend on the driver's rounding (hardware GPUs and llvmpipe
+    // disagree). the callers build it from vectors around the ray's closest
+    // approach to the origin instead, whose magnitudes are element-scale.
     roots = vec2(0.0);
     if (abs(a) < ISECT_TINY) {
         if (abs(hb) < ISECT_TINY) return 0;
@@ -91,12 +95,20 @@ int ray_surface_isects(vec3 ro, vec3 rd, float tmin, float tmax,
     float od = dot(ro, rd);
     float oo = dot(ro, ro);
 
+    // the ray's closest approach to the origin; see solve_quadratic for why
+    // the half-discriminants are built from these instead of hb^2 - a*c.
+    vec3 perp = ro - (od / dd) * rd;
+    // |cross(ro, rd)|^2 = dd * oo - od * od
+    vec3 ro_x_rd = cross(ro, rd);
+    float cross2 = dot(ro_x_rd, ro_x_rd);
+
     // spherical surfaces at constant r
     for (int i = 0; i < 2; i++) {
         float rad = i == 0 ? left_edge[id_r] : right_edge[id_r];
         if (rad < ISECT_TINY) continue;
         float c = oo - rad * rad;
-        nroots = solve_quadratic(dd, od, c, od * od - dd * c, roots);
+        nroots = solve_quadratic(dd, od, c,
+                                 dd * (rad * rad - dot(perp, perp)), roots);
         for (int j = 0; j < nroots; j++) {
             n = add_isect(roots[j], tmin, tmax, ts, n);
         }
@@ -109,8 +121,10 @@ int ray_surface_isects(vec3 ro, vec3 rd, float tmin, float tmax,
         float th = i == 0 ? left_edge[id_theta] : right_edge[id_theta];
         if (abs(sin(th)) < ISECT_TINY_ANGLE) continue;  // cone collapses to the z axis
         float k2 = cos(th) * cos(th);
-        float hdisc = k2 * (rd.z * rd.z * oo + dd * ro.z * ro.z
-                            - 2.0 * ro.z * rd.z * od + k2 * (od * od - dd * oo));
+        // |rd.z * ro - ro.z * rd|^2 = rd.z^2 * oo - 2 * ro.z * rd.z * od
+        //                             + dd * ro.z^2
+        vec3 mz = rd.z * ro - ro.z * rd;
+        float hdisc = k2 * (dot(mz, mz) - k2 * cross2);
         nroots = solve_quadratic(rd.z * rd.z - k2 * dd,
                                  ro.z * rd.z - k2 * od,
                                  ro.z * ro.z - k2 * oo,
