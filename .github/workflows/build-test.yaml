@@ -24,6 +24,10 @@ jobs:
           - os: ubuntu-latest
             backend: pyglet
             test-launcher: xvfb-run -a
+          # macOS runners fall back to Apple's slow software GL renderer,
+          # so render at reduced resolution to keep runtimes reasonable
+          - os: macos-latest
+            test-args: --canvas-width 256 --canvas-height 256
 
     steps:
     - name: Set up Python ${{ matrix.python-version }}
@@ -43,7 +47,7 @@ jobs:
     - name: Run Tests
       env:
           YT_IDV_TEST_BACKEND: ${{ matrix.backend }}
-      run: ${{ matrix.test-launcher }} pytest --html=report.html --self-contained-html
+      run: ${{ matrix.test-launcher }} pytest ${{ matrix.test-args }} --html=report.html --self-contained-html
     - uses: actions/upload-artifact@v7
       name: Upload pytest report
       with:
