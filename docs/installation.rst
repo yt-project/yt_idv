@@ -68,5 +68,57 @@ To avoid having to set this variable each time, you can add the above line to yo
 
 See `Issue 81 <https://github.com/yt-project/yt_idv/issues/81>`_ for more information.
 
+
+.. _headless-macos:
+
+Extra steps for headless rendering on macOS
+-------------------------------------------
+
+If you're using a machine with a logged-in window server session, you can use a
+hidden pyglet window for headless rendering with the GPU. If you're not sure,
+run the following from a terminal:
+
+.. code-block:: console
+
+    $ launchctl managername
+    Aqua
+
+If ``Aqua`` is returned, a window server session is active and you can use
+pyglet (see :doc:`usage`). If it returns ``Background`` or ``StandardIO`` then
+no window session is available (expected over ``ssh``) and you'll need to
+install extra libraries for headless rendering.
+
+Headless rendering on macOS without window server
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+``OSMesa`` been deprecated on Mesa builds for macOS, so it is
+recommended that you use ``egl`` installed through Mesa. The following
+should provide ``libEGL`` and ``libGL``:
+
+.. code-block:: console
+
+    $ brew install mesa
+
+Then request the ``egl`` engine as usual::
+
+    rc = yt_idv.render_context("egl", width=1024, height=1024)
+
+``yt_idv`` handles the macOS-specific wrinkles for you when it builds an EGL
+context on darwin. Mesa is searched for under ``$YT_IDV_MESA_PREFIX``, ``$CONDA_PREFIX``,
+``/opt/homebrew``, ``/usr/local`` and ``/opt/local`` (in that order, checking
+both ``lib/`` and ``opt/mesa/lib/``).  If yours lives somewhere else, point
+``yt_idv`` at it:
+
+.. code-block:: console
+
+    $ export YT_IDV_MESA_PREFIX=/path/to/mesa   # contains lib/libEGL.dylib
+
+
+While ``OSMesa`` is not recommended for new installs, the ``yt_idv`` test suite
+only runs on ``OSMesa`` at present. So to run on macOS, you'd
+need to install an older version of Mesa (25.0.5 or below). You can do so from conda
+easily with ``conda install mesalib<=25.0.5``.
+
+
 .. _Github repo: https://github.com/yt-project/yt_idv
 .. _tarball: https://github.com/yt-project/yt_idv/tarball/master

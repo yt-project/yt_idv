@@ -5,6 +5,7 @@ from yt import write_bitmap
 from yt_idv.simple_gui import SimpleGUI
 
 from .base_context import BaseContext
+from .base_offscreen import offscreen_render_to_scene
 
 
 class PygletRenderingContext(pyglet.window.Window, BaseContext):
@@ -160,4 +161,9 @@ class PygletRenderingContext(pyglet.window.Window, BaseContext):
             pass
 
     def run(self):
-        pyglet.app.run()
+        if not self.offscreen:
+            pyglet.app.run()
+            return
+        # a hidden window still has a real GPU context, so render straight into
+        # it and hand back the image the way the offscreen contexts do
+        return offscreen_render_to_scene(self)

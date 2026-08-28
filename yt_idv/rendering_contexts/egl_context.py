@@ -40,6 +40,8 @@ class EGLRenderingContext(OffscreenRenderingContext):
                 8,
                 EGL.EGL_BLUE_SIZE,
                 8,
+                EGL.EGL_ALPHA_SIZE,
+                8,
                 EGL.EGL_DEPTH_SIZE,
                 24,
                 EGL.EGL_STENCIL_SIZE,
