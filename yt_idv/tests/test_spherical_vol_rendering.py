@@ -59,7 +59,7 @@ def test_spherical_bounds(empty_rc, image_store, bbox_option):
 
     field = bbox_options[bbox_option]["field"]
     empty_rc.add_scene(dd, field, no_ghost=True)
-    empty_rc.scene.components[0].sample_factor = 5.0
+    empty_rc.scene.components[0].sample_factor = 0.0  # log10(eta)
     empty_rc.scene.components[0].cmap_log = False
     cpos = bbox_options[bbox_option].get("camera_position", None)
     if cpos:
@@ -77,7 +77,7 @@ def test_spherical_nprocs(empty_rc, image_store, nprocs):
 
     field = bbox_options[bbox_option]["field"]
     empty_rc.add_scene(dd, field, no_ghost=True)
-    empty_rc.scene.components[0].sample_factor = 5.0
+    empty_rc.scene.components[0].sample_factor = 0.0  # log10(eta)
     empty_rc.scene.components[0].cmap_log = False
     empty_rc.scene.components[0]._reset_cmap_bounds()
     cpos = bbox_options[bbox_option].get("camera_position", None)
