@@ -89,9 +89,10 @@ def image_plane_extent(projection_matrix, view_matrix, focus):
     """
     The extent of the viewport in the plane that contains the camera focus.
 
-    Because the camera uses a perspective projection, the region of space that
-    the image covers depends on distance from the camera: this returns the
-    extent in the plane through ``focus`` that is normal to the view direction.
+    For a perspective projection, the region of space that the image covers
+    depends on distance from the camera; for an orthographic projection it is
+    the same in every plane. In both cases this returns the extent in the
+    plane through ``focus`` that is normal to the view direction.
 
     Parameters
     ----------

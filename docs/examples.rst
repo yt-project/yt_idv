@@ -98,6 +98,16 @@ data being rendered. The image plane extraction is currently supported for
 ``render_method`` of ``max_intensity``, ``slice`` and ``projection``. For the
 case of ``projection``, the data values are the path-integrated data values along
 ray paths and will be sensitive to the camera type (which determines ray path).
+With the default perspective camera the rays diverge from the camera position, so
+the integrals only approximate a yt projection; setting
+
+.. code-block:: python
+
+   rc.scene.camera.projection_type = "orthographic"
+
+before rendering casts parallel rays, so that the ``projection`` values integrate
+like a yt projection (note that particle and mesh components ignore
+``projection_type``: particle billboard sizing assumes a perspective projection).
 
 See :meth:`~yt_idv.scene_components.blocks.BlockRendering.rendered_image_plane` for
 more details.

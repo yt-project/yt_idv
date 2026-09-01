@@ -39,6 +39,8 @@ uniform vec4 viewport; // (offset_x, offset_y, 1 / screen_x, 1 / screen_y)
 uniform mat4 inv_pmvm;
 uniform float near_plane;
 uniform float far_plane;
+uniform vec3 camera_view_dir; // normalize(focus - position)
+uniform int projection_type;  // 0 = perspective (default), 1 = orthographic
 
 // textures we tend to use
 uniform sampler1D cm_tex;
