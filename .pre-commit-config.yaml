@@ -1,13 +1,4 @@
 repos:
--   repo: https://github.com/asottile/setup-cfg-fmt
-    rev: v3.2.0
-    hooks:
-    - id: setup-cfg-fmt
-      args: [
-        --include-version-classifiers,
-        --max-py-version=3.12,
-        --min-py-version=3.9,
-      ]
 -   repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v6.0.0
     hooks:

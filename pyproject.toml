@@ -1,18 +1,92 @@
 [build-system]
 requires = [
-  "setuptools >= 61.2",
-  "wheel >= 0.36.2",
+  "setuptools>=77",
   "Cython>=3.0.3",
   "numpy>=2.0.0",
 ]
 build-backend = "setuptools.build_meta"
 
+[project]
+name = "yt_idv"
+dynamic = ["version"]
+description = "Interactive Volume Rendering for yt"
+readme = "README.md"
+license = "BSD-3-Clause"
+license-files = ["LICENSE"]
+authors = [
+  { name = "Matthew Turk", email = "matthewturk@gmail.com" },
+]
+requires-python = ">=3.10"
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Intended Audience :: Science/Research",
+  "Operating System :: MacOS :: MacOS X",
+  "Operating System :: POSIX :: Linux",
+  "Programming Language :: Cython",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3 :: Only",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python :: 3.14",
+  "Programming Language :: Python :: Implementation :: CPython",
+  "Topic :: Multimedia :: Graphics :: 3D Rendering",
+  "Topic :: Scientific/Engineering :: Astronomy",
+  "Topic :: Scientific/Engineering :: Visualization",
+]
+dependencies = [
+  "Click>=7.0",
+  "cmyt",
+  "matplotlib>=3.0",
+  "numpy>=1.18.0",
+  "pyOpenGL>=3.1.5",
+  "pyglet>=2.0.dev0,<3.0.0",
+  "pyyaml>=5.3.1",
+  "traitlets>=5.0.5",
+  "traittypes>=0.2.1",
+  "yt>=4.1.0",
+]
+
+[project.optional-dependencies]
+gui = [
+  "imgui>=1.2.0",
+]
+minimal = [
+  "matplotlib<3.10",
+  "numpy<2.0",
+]
+test = [
+  "pytest>=6.2.4",
+  "pytest-html",
+]
+
+[project.urls]
+Homepage = "https://github.com/yt-project/yt_idv"
+Documentation = "https://yt-idv.readthedocs.io"
+Source = "https://github.com/yt-project/yt_idv"
+Changelog = "https://github.com/yt-project/yt_idv/blob/main/HISTORY.md"
+
+[project.scripts]
+yt_idv = "yt_idv.cli:main"
+
+[tool.setuptools.dynamic]
+version = { attr = "yt_idv.__version__" }
+
+[tool.setuptools.packages.find]
+include = ["yt_idv", "yt_idv.*"]
+
+[tool.setuptools.package-data]
+yt_idv = ["**/*.glsl", "**/*.yaml", "**/*.pyx", "**/*.pxd"]
+
 [tool.black]
 line-length = 88
 target-version = [
-  'py39',
   'py310',
   'py311',
+  'py312',
+  'py313',
+  'py314',
 ]
 include = '\.pyi?$'
 exclude = '''

@@ -1,27 +1,10 @@
-include AUTHORS.rst
-include CONTRIBUTING.rst
-include HISTORY.rst
-include LICENSE
-include README.rst
+include AUTHORS.md
+include CONTRIBUTING.md
+include HISTORY.md
 
-recursive-include tests *
-recursive-exclude * __pycache__
-recursive-exclude * *.py[co]
-recursive-exclude .tox *
-
-recursive-include yt_idv *.pyx
-recursive-include yt_idv *.pxd
-
-include *.md
-include *.yaml
-include *.yml
-include .bumpversion.cfg
-include Makefile
-include tox.ini
-recursive-include docs *.txt
+recursive-include docs *.rst conf.py Makefile make.bat *.txt *.png
 recursive-include examples *.ipynb
 recursive-include examples *.py
-recursive-include yt_idv *.glsl
-recursive-include yt_idv *.yaml
 
-recursive-include docs *.rst conf.py Makefile make.bat *.jpg *.png *.gif
+recursive-exclude * __pycache__
+recursive-exclude * *.py[co]

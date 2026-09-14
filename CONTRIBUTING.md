@@ -154,7 +154,7 @@ To create a release, follow these steps:
 
 ### prep for release
 
-First make sure the version specified in `setup.cfg` and `yt_idv/__init__.py`
+First make sure the version specified in `yt_idv/__init__.py`
 match the upcoming release and that there is an entry in `HISTORY.md`. Push up
 any updates to the version or history and then move on to the next step.
 
@@ -187,4 +187,4 @@ match the release notes in `HISTORY.md` for this version.
 ### cleanup from release
 
 While not strictly necessary, it helps to bump the active development version
-in `setup.cfg` and `yt_idv/__init__.py` and add a blank entry in `HISTORY.md`.
+in `yt_idv/__init__.py` and add a blank entry in `HISTORY.md`.
