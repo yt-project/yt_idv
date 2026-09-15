@@ -8,11 +8,20 @@ Installation
 Stable release
 --------------
 
-To install yt_idv, run this command in your terminal:
+yt_idv includes an optional interactive GUI but at present the GUI is limited to  python 3.12 and lower.
+For 3.13+ you can install without the GUI and run in headless mode.
+
+To install yt_idv without GUI support, run this command in your terminal:
 
 .. code-block:: console
 
     $ pip install yt_idv
+
+To install yt_idv with the GUI, run this command in your terminal:
+
+.. code-block:: console
+
+    $ pip install "yt_idv[gui]"
 
 This is the preferred method to install yt_idv, as it will always install the most recent stable release.
 
@@ -114,7 +123,7 @@ install extra libraries for headless rendering.
 Headless rendering on macOS without window server
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-``OSMesa`` been deprecated on Mesa builds for macOS, so it is
+``OSMesa`` has been deprecated on Mesa builds for macOS, so it is
 recommended that you use ``egl`` installed through Mesa. The following
 should provide ``libEGL`` and ``libGL``:
 
