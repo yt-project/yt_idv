@@ -208,6 +208,14 @@ class BlockRendering(SceneComponent):
         vertex-centered data used to build the 3D textures, so they can fall
         slightly outside the range of the cell-centered field (particularly with
         ``no_ghost=True``).
+
+        For ``projection``, values are path integrals along the rays cast by
+        the camera. With the default perspective camera the rays diverge, so
+        the integrals only approximate a yt projection; setting
+        ``camera.projection_type = "orthographic"`` before rendering casts
+        parallel rays, making them true parallel-ray path integrals (and
+        ``RenderedImagePlane.integrate`` then recovers the total up to
+        discretization error).
         """
         if self.first_pass_fb_rgba is None:
             raise RuntimeError(

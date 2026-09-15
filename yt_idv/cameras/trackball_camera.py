@@ -2,6 +2,7 @@ import numpy as np
 import traitlets
 from yt.utilities.math_utils import (
     get_lookat_matrix,
+    get_orthographic_matrix,
     get_perspective_matrix,
     quaternion_to_rotation_matrix,
     rotation_matrix_to_quaternion,
@@ -26,8 +27,29 @@ class TrackballCamera(BaseCamera):
     """
 
     @property
-    def proj_func(self):
-        return get_perspective_matrix
+    def orthographic_scale(self):
+        # half-height of the orthographic view volume, chosen to match the
+        # perspective frustum's half-height at the focal plane so that
+        # toggling projection_type preserves the apparent size at the focus
+        # (exact for aspect_ratio == 1) and moving the camera still zooms
+        return np.tan(np.radians(self.fov) / 2.0) * np.linalg.norm(
+            self.position - self.focus
+        )
+
+    def _get_projection_matrix(self):
+        if self.projection_type == "orthographic":
+            # get_orthographic_matrix uses the column-major (OpenGL) layout,
+            # the transpose of get_perspective_matrix; yt_idv computes
+            # projection @ view row-major and uploads with transpose=GL_TRUE
+            return get_orthographic_matrix(
+                self.orthographic_scale,
+                self.aspect_ratio,
+                self.near_plane,
+                self.far_plane,
+            ).T
+        return get_perspective_matrix(
+            self.fov, self.aspect_ratio, self.near_plane, self.far_plane
+        )
 
     @traitlets.default("orientation")
     def _orientation_default(self):
@@ -62,17 +84,13 @@ class TrackballCamera(BaseCamera):
 
         self.view_matrix = get_lookat_matrix(self.position, self.focus, self.up)
 
-        self.projection_matrix = self.proj_func(
-            self.fov, self.aspect_ratio, self.near_plane, self.far_plane
-        )
+        self.projection_matrix = self._get_projection_matrix()
 
     def _update_matrices(self):
         self.view_matrix = get_lookat_matrix(self.position, self.focus, self.up)
         self.orientation = rotation_matrix_to_quaternion(self.view_matrix[0:3, 0:3])
 
-        self.projection_matrix = self.proj_func(
-            self.fov, self.aspect_ratio, self.near_plane, self.far_plane
-        )
+        self.projection_matrix = self._get_projection_matrix()
 
     def move_forward(self, move_amount):
         dpos = (self.focus - self.position) / np.linalg.norm(self.focus - self.position)
@@ -83,6 +101,10 @@ class TrackballCamera(BaseCamera):
             dpos = np.array([0.0, 0.0, 0.0])
         self.position += dpos
         self.view_matrix = get_lookat_matrix(self.position, self.focus, self.up)
+        if self.projection_type == "orthographic":
+            # the orthographic scale depends on the camera-focus distance,
+            # so moving the camera zooms only if the projection is rebuilt
+            self.projection_matrix = self._get_projection_matrix()
 
     def _compute_matrices(self):
         pass

@@ -152,7 +152,8 @@ def test_projection_path_length_and_units(uniform_rc):
     assert_allclose(mean_along_ray[center].d, 1.5, atol=0.1)
 
 
-def test_frb_geometry(uniform_rc):
+@pytest.mark.parametrize("projection_type", ["perspective", "orthographic"])
+def test_frb_geometry(uniform_rc, projection_type):
     component = uniform_rc.scene.components[0]
     component.render_method = "slice"
 
@@ -160,13 +161,15 @@ def test_frb_geometry(uniform_rc):
     camera.update(position=[0.5, 0.5, 2.5], focus=[0.5, 0.5, 0.5], up=[0.0, 1.0, 0.0])
     camera.fov = 45.0
     camera.aspect_ratio = 1.0
+    camera.projection_type = projection_type
     camera._update_matrices()
     uniform_rc.scene.render()
 
     frb = component.rendered_image_plane()
 
     # for a symmetric frustum the visible extent at the focus plane is
-    # 2 * distance * tan(fov / 2)
+    # 2 * distance * tan(fov / 2); the orthographic view volume is sized to
+    # match it, so the expected extent is the same in both modes
     distance = 2.0
     expected = 2 * distance * np.tan(np.radians(45.0) / 2)
     assert_allclose(frb.width.d, expected, rtol=1e-5)
@@ -242,6 +245,67 @@ def test_integrate_constant(constant_rc):
     assert_allclose(integral.to("g").d, 1.0, rtol=rtol)
 
 
+def test_integrate_constant_orthographic(constant_rc):
+    component = constant_rc.scene.components[0]
+    component.render_method = "projection"
+
+    # with parallel rays there is no need for the far-away narrow-fov setup of
+    # test_integrate_constant: a normal camera distance and fov suffice
+    camera = constant_rc.scene.camera
+    camera.update(position=[0.5, 0.5, 2.5], focus=[0.5, 0.5, 0.5], up=[0.0, 1.0, 0.0])
+    camera.fov = 45.0
+    camera.aspect_ratio = 1.0
+    camera.projection_type = "orthographic"
+    camera._update_matrices()
+    component.sample_factor = 8.0
+    constant_rc.scene.render()
+
+    frb = component.rendered_image_plane()
+    dx, dy = frb.pixel_size
+
+    # the whole cube has to be inside the image, or the integral would clip it
+    assert frb.width.d > 1.0 and frb.height.d > 1.0
+
+    integral = frb.integrate()
+    assert integral.units.dimensions == Unit("g").dimensions
+
+    # a 1 m cube at a constant 1 g/m**3 holds 1 g. the rays are truly parallel,
+    # so unlike the perspective case there is no fov-divergence error term:
+    # only the pixelization of the silhouette and the exit overshoot remain.
+    # each ray crosses two blocks of the 2x2x2 decomposition along the view
+    # axis and overshoots each block's exit by up to one step
+    rtol = 2 * max(dx.d, dy.d) + 2.0 / (32 * component.sample_factor)
+    assert_allclose(integral.to("g").d, 1.0, rtol=rtol)
+
+
+def test_orthographic_path_length_is_uniform(uniform_rc):
+    component = uniform_rc.scene.components[0]
+    component.render_method = "projection"
+
+    camera = uniform_rc.scene.camera
+    camera.update(position=[0.5, 0.5, 2.5], focus=[0.5, 0.5, 0.5], up=[0.0, 1.0, 0.0])
+    camera.fov = 45.0
+    camera.aspect_ratio = 1.0
+    camera.projection_type = "orthographic"
+    camera._update_matrices()
+    component.sample_factor = 8.0
+    uniform_rc.scene.render()
+
+    frb = component.rendered_image_plane()
+    ny, nx = frb.data.shape
+    center = (ny // 2, nx // 2)
+
+    # each parallel axis-aligned ray crosses the full unit depth of the domain
+    # exactly once, overshooting the exit by at most one step
+    step = 1.0 / (32 * component.sample_factor)
+    assert_allclose(frb.path_length[center].d, 1.0, atol=1.5 * step)
+
+    # and, unlike perspective rays through the image corners, every sampled
+    # ray has the same path length
+    sampled = frb.path_length.d > 0.5
+    assert_allclose(frb.path_length.d[sampled], 1.0, atol=1.5 * step)
+
+
 def test_projection_marches_each_ray_once(constant_rc):
     # every pixel within the silhouette of a block is covered by two faces of
     # the cube the geometry shader emits, and the projection shader blends
@@ -263,14 +327,24 @@ def test_projection_marches_each_ray_once(constant_rc):
 
 
 def test_image_plane_extent_round_trip():
-    from yt.utilities.math_utils import get_lookat_matrix, get_perspective_matrix
+    from yt.utilities.math_utils import (
+        get_lookat_matrix,
+        get_orthographic_matrix,
+        get_perspective_matrix,
+    )
 
     focus = np.array([0.5, 0.5, 0.5])
     position = np.array([1.0, 2.0, 3.0])
     view_matrix = get_lookat_matrix(position, focus, np.array([0.0, 1.0, 0.0]))
 
+    projection_matrices = []
     for aspect in (1.0, 1.6):
-        projection_matrix = get_perspective_matrix(45.0, aspect, 0.001, 20.0)
+        projection_matrices.append(get_perspective_matrix(45.0, aspect, 0.001, 20.0))
+        # get_orthographic_matrix is column-major; transpose to the row-major
+        # convention yt_idv uses (as TrackballCamera._get_projection_matrix does)
+        projection_matrices.append(get_orthographic_matrix(2.0, aspect, 0.001, 20.0).T)
+
+    for projection_matrix in projection_matrices:
         extent, right, up = image_plane_extent(projection_matrix, view_matrix, focus)
 
         # the corners of the extent must map back to the corners of the
