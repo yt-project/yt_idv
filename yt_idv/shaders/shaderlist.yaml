@@ -14,6 +14,13 @@ shader_definitions:
         - src alpha
         - dst alpha
       blend_equation: func add
+    constant_rgba_no_blend:
+      info: A constant, specified RGBa value applied without blending.
+      source: constant_rgba.frag.glsl
+      blend_func:
+        - one
+        - zero
+      blend_equation: func add
     apply_colormap:
       info:
         A second pass fragment shader used to apply a colormap to the result of
@@ -243,9 +250,9 @@ component_shaders:
       description: Constant Color
       first_vertex: grid_position
       first_geometry: grid_expand
-      first_fragment: constant
+      first_fragment: constant_rgba_no_blend
       second_vertex: passthrough
-      second_fragment: apply_colormap
+      second_fragment: passthrough
       coordinate_systems: [cartesian, spherical]
   octree_block_rendering:
     default_value: max_intensity
