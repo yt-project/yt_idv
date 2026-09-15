@@ -65,7 +65,7 @@ To set up your local development environment:
    ```
    $ mkvirtualenv yt_idv
    $ cd yt_idv/
-   $ python -m pip install -e .[dev,test,gui]
+   $ python -m pip install -e ".[test,gui]"
    ```
 
 4. (optional) Initialize pre-commit if you want to catch linting errors throughout development. When you submit a pull request, the pre-commit.ci bot will run a number of checks so it can be easier to catch errors along the way.
@@ -154,7 +154,7 @@ To create a release, follow these steps:
 
 ### prep for release
 
-First make sure the version specified in `setup.cfg` and `yt_idv/__init__.py`
+First make sure the version specified in `yt_idv/__init__.py`
 match the upcoming release and that there is an entry in `HISTORY.md`. Push up
 any updates to the version or history and then move on to the next step.
 
@@ -187,4 +187,4 @@ match the release notes in `HISTORY.md` for this version.
 ### cleanup from release
 
 While not strictly necessary, it helps to bump the active development version
-in `setup.cfg` and `yt_idv/__init__.py` and add a blank entry in `HISTORY.md`.
+in `yt_idv/__init__.py` and add a blank entry in `HISTORY.md`.
