@@ -15,13 +15,13 @@ To install yt_idv without GUI support, run this command in your terminal:
 
 .. code-block:: console
 
-    $ pip install yt_idv
+    $ python -m pip install yt_idv
 
 To install yt_idv with the GUI, run this command in your terminal:
 
 .. code-block:: console
 
-    $ pip install "yt_idv[gui]"
+    $ python -m pip install "yt_idv[gui]"
 
 This is the preferred method to install yt_idv, as it will always install the most recent stable release.
 
@@ -39,7 +39,7 @@ To use the GUI, install ``yt_idv`` with the ``gui`` extra:
 
 .. code-block:: console
 
-    $ pip install yt_idv[gui]
+    $ python -m pip install "yt_idv[gui]"
 
 Without the extra, ``yt_idv`` can still render offscreen with the ``osmesa``
 or ``egl`` contexts, or in a hidden ``pyglet`` window with
@@ -76,7 +76,7 @@ Once you have a copy of the source, you can install it with:
 
 .. code-block:: console
 
-    $ pip install .
+    $ python -m pip install .
 
 
 Extra steps for linux
