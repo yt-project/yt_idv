@@ -65,7 +65,7 @@ To set up your local development environment:
    ```
    $ mkvirtualenv yt_idv
    $ cd yt_idv/
-   $ python -m pip install -e .[dev]
+   $ python -m pip install -e .[dev,test,gui]
    ```
 
 4. (optional) Initialize pre-commit if you want to catch linting errors throughout development. When you submit a pull request, the pre-commit.ci bot will run a number of checks so it can be easier to catch errors along the way.

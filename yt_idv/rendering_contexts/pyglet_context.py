@@ -2,8 +2,6 @@ import numpy as np
 import pyglet
 from yt import write_bitmap
 
-from yt_idv.simple_gui import SimpleGUI
-
 from .base_context import BaseContext
 from .base_offscreen import offscreen_render_to_scene
 
@@ -59,6 +57,9 @@ class PygletRenderingContext(pyglet.window.Window, BaseContext):
             self.set_location(*position)
 
         if gui:
+            # imgui is an optional dependency, so only import the GUI when asked for
+            from yt_idv.simple_gui import SimpleGUI
+
             gui = SimpleGUI(self)
         self.gui = gui
         self.scene = scene

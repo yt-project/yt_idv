@@ -4,6 +4,8 @@ import types
 
 import pytest
 
+pytest.importorskip("imgui")
+
 
 class _FakeWindow:
     """Stand-in for a pyglet window reporting the sizes we care about."""
