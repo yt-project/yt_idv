@@ -124,3 +124,7 @@ report.html
 
 *.DS_Store
 *.swp
+
+
+# uv -- remove if we start using uv in CI
+uv.lock
