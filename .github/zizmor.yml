@@ -1,0 +1,6 @@
+rules:
+  unpinned-uses:
+    config:
+      policies:
+        # Dependabot bumps tag pins weekly; hash pins are not required.
+        "*": ref-pin

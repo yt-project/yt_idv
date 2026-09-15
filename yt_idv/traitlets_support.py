@@ -22,8 +22,8 @@ def ndarray_shape(*dimensions):
     def validator(trait, value):
         if value.shape != dimensions:
             raise traitlets.TraitError(
-                "Expected an of shape %s and got and array with shape %s"
-                % (dimensions, value.shape)
+                f"Expected an array of shape {dimensions} "
+                f"and got an array with shape {value.shape}"
             )
         else:
             return value

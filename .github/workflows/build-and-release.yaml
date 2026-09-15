@@ -5,12 +5,17 @@ on:
     tags:
       - 'v*' # Push events to matching v*, i.e. v1.0, v20.15.10
 
+permissions:
+  contents: read
+
 jobs:
   build_and_publish:
     name: Build and Publish to PyPI
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v7
+      with:
+        persist-credentials: false
     - name: Set up Python 3.10
       uses: actions/setup-python@v7
       with:
@@ -28,7 +33,7 @@ jobs:
           --sdist
           --outdir dist/
           .
-    - name: Publish distribution to PyPI
+    - name: Publish distribution to PyPI  # zizmor: ignore[use-trusted-publishing]
       uses: pypa/gh-action-pypi-publish@release/v1
       with:
         password: ${{ secrets.PYPI_API_TOKEN }}
@@ -40,12 +45,12 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v7
-      - uses: ncipollo/release-action@v1
-        # https://github.com/ncipollo/release-action
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          draft: true
-          tag: ${{ github.ref }}
-          prerelease: false
-          name: Release ${{ github.ref }}
+      - name: Create draft release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+        run: >-
+          gh release create "$GITHUB_REF_NAME"
+          --verify-tag
+          --draft
+          --title "Release $GITHUB_REF_NAME"

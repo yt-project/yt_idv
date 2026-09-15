@@ -41,7 +41,7 @@ class TextCharacters(SceneData):
         chars = [ord(_) for _ in string.printable if _ == " " or not _.isspace()]
         tex_ids = GL.glGenTextures(len(chars))
         vert = []
-        for i, (tex_id, char_code) in enumerate(zip(tex_ids, chars)):
+        for i, (tex_id, char_code) in enumerate(zip(tex_ids, chars, strict=True)):
             self.font.clear()
             self.font.set_text(chr(char_code), flags=LOAD_FORCE_AUTOHINT)
             self.font.draw_glyphs_to_bitmap(antialiased=True)
