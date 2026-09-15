@@ -8,16 +8,48 @@ Installation
 Stable release
 --------------
 
-To install yt_idv, run this command in your terminal:
+yt_idv includes an optional interactive GUI but at present the GUI is limited to  python 3.12 and lower.
+For 3.13+ you can install without the GUI and run in headless mode.
+
+To install yt_idv without GUI support, run this command in your terminal:
 
 .. code-block:: console
 
     $ pip install yt_idv
 
+To install yt_idv with the GUI, run this command in your terminal:
+
+.. code-block:: console
+
+    $ pip install "yt_idv[gui]"
+
 This is the preferred method to install yt_idv, as it will always install the most recent stable release.
 
 If you don't have `pip`_ installed, this `Python installation guide`_ can guide
 you through the process.
+
+.. _gui-extra:
+
+Interactive GUI (optional)
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The interactive control panel drawn over the ``pyglet`` window is built on
+`imgui <https://pypi.org/project/imgui/>`_, which is an optional dependency.
+To use the GUI, install ``yt_idv`` with the ``gui`` extra:
+
+.. code-block:: console
+
+    $ pip install yt_idv[gui]
+
+Without the extra, ``yt_idv`` can still render offscreen with the ``osmesa``
+or ``egl`` contexts, or in a hidden ``pyglet`` window with
+``render_context("pyglet", visible=False, gui=False)`` (see :doc:`usage`).
+Requesting a GUI without ``imgui`` installed raises an ``ImportError``.
+
+.. note::
+
+   ``imgui`` does not currently build on python 3.13 or newer, so on those
+   versions only the headless install is available.
 
 .. _pip: https://pip.pypa.io
 .. _Python installation guide: http://docs.python-guide.org/en/latest/starting/installation/
@@ -91,7 +123,7 @@ install extra libraries for headless rendering.
 Headless rendering on macOS without window server
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-``OSMesa`` been deprecated on Mesa builds for macOS, so it is
+``OSMesa`` has been deprecated on Mesa builds for macOS, so it is
 recommended that you use ``egl`` installed through Mesa. The following
 should provide ``libEGL`` and ``libGL``:
 

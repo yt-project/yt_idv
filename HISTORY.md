@@ -2,6 +2,9 @@
 
 ## 0.5.4dev
 
+### Changes
+* `imgui` is now an optional dependency: install it with `pip install yt_idv[gui]` for the interactive GUI. A plain `pip install yt_idv` supports headless rendering only, which allows using `yt_idv` with python 3.13+ (see https://github.com/yt-project/yt_idv/issues/256).
+
 ## 0.5.4
 
 ### Bug Fixes

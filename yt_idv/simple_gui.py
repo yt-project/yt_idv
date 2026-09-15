@@ -1,6 +1,13 @@
 import math
 
-import imgui
+try:
+    import imgui
+except ImportError as err:
+    raise ImportError(
+        "The interactive GUI requires imgui, which is not installed. Install it "
+        "with `pip install yt_idv[gui]`, or request a rendering context without "
+        "a GUI (e.g. render_context('pyglet', gui=False), 'osmesa' or 'egl')."
+    ) from err
 import matplotlib.pyplot as plt
 import numpy as np
 from yt.visualization.image_writer import write_bitmap, write_image
