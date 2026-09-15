@@ -35,12 +35,12 @@ class SimpleGUI:
         self.snapshot_count = 0
         self.snapshot_format = r"snap_{count:04d}.png"
         data = plt.get_cmap("viridis")(np.mgrid[0.0:1.0:256j]).reshape((-1, 1, 4))
-        self.data = dict(
-            r=data[:, 0, 0].astype("f4"),
-            g=data[:, 0, 1].astype("f4"),
-            b=data[:, 0, 2].astype("f4"),
-            a=data[:, 0, 3].astype("f4"),
-        )
+        self.data = {
+            "r": data[:, 0, 0].astype("f4"),
+            "g": data[:, 0, 1].astype("f4"),
+            "b": data[:, 0, 2].astype("f4"),
+            "a": data[:, 0, 3].astype("f4"),
+        }
         data = (data[:, :, :4] * 255).astype("u1")
         self.colormap = Texture2D(data=data, boundary_x="clamp", boundary_y="clamp")
 

@@ -1,7 +1,6 @@
 """Containers and helpers for extracting data values from a rendered scene."""
 
 from dataclasses import dataclass
-from typing import Optional
 
 import numpy as np
 from unyt import unyt_array, unyt_quantity
@@ -37,7 +36,7 @@ class RenderedImagePlane:
     center: unyt_array
     right: np.ndarray
     up: np.ndarray
-    path_length: Optional[unyt_array] = None
+    path_length: unyt_array | None = None
 
     @property
     def width(self) -> unyt_quantity:

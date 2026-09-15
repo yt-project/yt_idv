@@ -20,7 +20,6 @@ bbox_options = {
 }
 
 if __name__ == "__main__":
-
     parser = argparse.ArgumentParser(
         prog="spherical_amr_rendering",
         description="Loads an example spherical dataset in yt_idv",

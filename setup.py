@@ -1,7 +1,8 @@
 import numpy
 from setuptools import setup
 
-from Cython.Build import cythonize  # isort:skip
+# isort: split
+from Cython.Build import cythonize
 
 _include_dirs = [numpy.get_include()]
 

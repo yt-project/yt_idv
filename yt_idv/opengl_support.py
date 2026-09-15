@@ -225,8 +225,8 @@ class ColormapTexture(Texture1D):
             plt.get_cmap(validate_cmyt_name(proposal["value"]))
         except ValueError:
             raise traitlets.TraitError(
-                "Colormap name needs to be known by" "matplotlib"
-            )
+                "Colormap name needs to be known by matplotlib"
+            ) from None
         return proposal["value"]
 
     @traitlets.observe("colormap_name")

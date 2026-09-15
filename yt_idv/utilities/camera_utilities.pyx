@@ -1,6 +1,5 @@
 import numpy as np
 
-cimport libc.math as math
 cimport numpy as np
 
 

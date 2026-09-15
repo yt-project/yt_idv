@@ -7,7 +7,6 @@ import contextlib
 import ctypes
 import os
 from collections import OrderedDict
-from typing import List, Optional, Tuple
 
 import numpy as np
 import traitlets
@@ -446,7 +445,6 @@ class ShaderTrait(traitlets.TraitType):
 
 
 class PreprocessorDefinitionState:
-
     _valid_shader_types = ("vertex", "geometry", "fragment")
 
     def __init__(self):
@@ -458,19 +456,19 @@ class PreprocessorDefinitionState:
         """return the dict of definitions for specifed shader_type"""
         return getattr(self, shader_type)
 
-    def add_definition(self, shader_type: str, value: Tuple[str, str]):
+    def add_definition(self, shader_type: str, value: tuple[str, str]):
         """add a definition for specified shader_type, will overwrite
         existing definitions.
         """
         self._validate_shader_type(shader_type)
         self._get_dict(shader_type)[value[0]] = value[1]
 
-    def clear_definition(self, shader_type: str, value: Tuple[str, str]):
+    def clear_definition(self, shader_type: str, value: tuple[str, str]):
         """remove the definition of value for specified shader_type"""
         self._validate_shader_type(shader_type)
         self._get_dict(shader_type).pop(value[0])
 
-    def get_shader_defs(self, shader_type: str) -> List[Tuple[str, str]]:
+    def get_shader_defs(self, shader_type: str) -> list[tuple[str, str]]:
         """return the preprocessor definition list for specified shader_type"""
         self._validate_shader_type(shader_type)
         return list(self._get_dict(shader_type).items())
@@ -482,10 +480,10 @@ class PreprocessorDefinitionState:
                 f"but found {shader_type}"
             )
 
-    def __getitem__(self, item: str) -> List[Tuple[str, str]]:
+    def __getitem__(self, item: str) -> list[tuple[str, str]]:
         return self.get_shader_defs(item)
 
-    def reset(self, shader_type: Optional[str] = None):
+    def reset(self, shader_type: str | None = None):
         if shader_type is None:
             self.vertex = {}
             self.geometry = {}
@@ -512,7 +510,7 @@ if os.path.exists(_shlist_fn):
 
 
 def get_shader_combos(component_name, coord_system="cartesian"):
-    shader_combos = list(sorted(component_shaders[component_name]))
+    shader_combos = sorted(component_shaders[component_name])
     if coord_system == "cartesian":
         return shader_combos
 

@@ -45,7 +45,6 @@ def _build_ds(bbox_key):
     sz_i = sz_0.copy()
     grids = []
     for lev in range(max_lev):
-
         box_wid_factor = 2.0 * int(lev > 0) + int(lev == 0) * 1.0
         bbox_wid = bbox_wid / box_wid_factor
         le_i = bbox_c - bbox_wid / 2.0
@@ -86,7 +85,6 @@ def _build_ds(bbox_key):
 
 
 if __name__ == "__main__":
-
     parser = argparse.ArgumentParser(
         prog="spherical_amr_rendering_with_refinement",
         description="Loads an example spherical dataset with grid refinement in yt_idv",

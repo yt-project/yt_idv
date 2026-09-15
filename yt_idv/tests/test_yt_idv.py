@@ -212,7 +212,6 @@ def test_bad_shader(empty_scene_rc, set_very_bad_shader):
 @pytest.mark.parametrize("shader_name", list(shader_objects.component_shaders.keys()))
 def test_shader_programs(empty_scene_rc, shader_name):
     for program in shader_objects.component_shaders[shader_name].values():
-
         vertex_shader = shader_objects._validate_shader(
             "vertex", program["first_vertex"], allow_null=False
         )
