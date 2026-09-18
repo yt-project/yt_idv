@@ -111,3 +111,11 @@ combine-as-imports = true
 
 [tool.pytest.ini_options]
 offscreen_backend = "osmesa"
+
+[tool.cibuildwheel]
+build = ["cp310-*", "cp311-*", "cp312-*", "cp313-*", "cp314-*"]
+skip = "*-musllinux_*"
+test-command = "python -c 'import yt_idv.utilities.camera_utilities, yt_idv.utilities.coordinate_utilities'"
+# yt ships no aarch64 wheels, so installing the test dependencies there
+# would compile yt from source
+test-skip = "*-manylinux_aarch64"
