@@ -12,6 +12,10 @@ jobs:
   build_and_publish:
     name: Build and Publish to PyPI
     runs-on: ubuntu-latest
+    environment: pypi-idv-publishing
+    permissions:
+      contents: read
+      id-token: write
     steps:
     - uses: actions/checkout@v7
       with:
@@ -33,10 +37,8 @@ jobs:
           --sdist
           --outdir dist/
           .
-    - name: Publish distribution to PyPI  # zizmor: ignore[use-trusted-publishing]
+    - name: Publish distribution to PyPI
       uses: pypa/gh-action-pypi-publish@release/v1
-      with:
-        password: ${{ secrets.PYPI_API_TOKEN }}
 
   create_gh_release:
     name: Create Github release
