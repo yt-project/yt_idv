@@ -23,6 +23,19 @@ shader_definitions:
         - src alpha
         - dst alpha
       blend_equation: func add
+    apply_colormap_alpha:
+      info:
+        Real feature addition (cycles-volume-override) -- identical to
+        apply_colormap EXCEPT it keeps the colormap texture's OWN alpha
+        channel instead of overriding it with the incoming binary
+        presence/absence flag, so a colormap with a real alpha gradient
+        genuinely controls per-pixel opacity by value. See
+        apply_colormap_alpha.frag.glsl for the full story.
+      source: apply_colormap_alpha.frag.glsl
+      blend_func:
+        - src alpha
+        - dst alpha
+      blend_equation: func add
     expand_1d:
       info: This expands a 1D texture along the y dimension
       source: expand_1d.frag.glsl
@@ -75,6 +88,18 @@ shader_definitions:
         A first pass fragment shader that performs no operation. Used for debug
         puproses. It's distinct from NoOpFragmentShader, because of the number of uniforms
       source: passthrough.frag.glsl
+      blend_func:
+        - src alpha
+        - dst alpha
+      blend_equation: func add
+    passthrough_alpha:
+      info:
+        Real bug fix (cycles-volume-override) -- identical to passthrough
+        EXCEPT it preserves the first pass's own real alpha instead of
+        forcing color.a = 1.0. Used ONLY as block_rendering.
+        transfer_function's second_fragment; see passthrough_alpha.frag.glsl
+        for why passthrough itself couldn't just be changed in place.
+      source: passthrough_alpha.frag.glsl
       blend_func:
         - src alpha
         - dst alpha
@@ -209,6 +234,17 @@ component_shaders:
       second_vertex: passthrough
       second_fragment: apply_colormap
       coordinate_systems: [cartesian, spherical]
+    max_intensity_alpha:
+      description:
+        Maximum Intensity with a value-driven (not presence-driven) alpha --
+        real feature addition (cycles-volume-override), see
+        apply_colormap_alpha.frag.glsl
+      first_vertex: grid_position
+      first_geometry: grid_expand
+      first_fragment: max_intensity
+      second_vertex: passthrough
+      second_fragment: apply_colormap_alpha
+      coordinate_systems: [cartesian, spherical]
     projection:
       description: Projective integration
       first_vertex: grid_position
@@ -223,7 +259,7 @@ component_shaders:
       first_geometry: grid_expand
       first_fragment: transfer_function
       second_vertex: passthrough
-      second_fragment: passthrough
+      second_fragment: passthrough_alpha
       coordinate_systems: [cartesian, spherical]
     isocontours:
       description: Isocontours
@@ -266,7 +302,7 @@ component_shaders:
       first_vertex: octree_position
       first_fragment: transfer_function
       second_vertex: passthrough
-      second_fragment: passthrough
+      second_fragment: passthrough_alpha
   block_outline:
     default_value: default
     default:
