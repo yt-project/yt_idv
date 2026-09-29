@@ -62,8 +62,9 @@ void main()
     output_color = vec4(0.);
 
     // Five samples
-    vec3 dir = -normalize(camera_pos.xyz - ray_position);
-    dir = max(abs(dir), 0.0001) * sign(dir);
+    vec3 ray_origin;
+    vec3 dir;
+    get_ray_origin_and_dir(ray_position, ray_origin, dir);
     vec4 curr_color = vec4(0.0);
 
     // We need to figure out where the ray intersects the box, if it intersects the box.
@@ -73,12 +74,12 @@ void main()
     vec3 tl, tr;
     vec3 dx_effective;
     #ifdef NONCARTESIAN_GEOM
-    tl = (left_edge_cart - camera_pos)*idir;
-    tr = (right_edge_cart - camera_pos)*idir;
+    tl = (left_edge_cart - ray_origin)*idir;
+    tr = (right_edge_cart - ray_origin)*idir;
     dx_effective = dx_cart;
     #else
-    tl = (left_edge - camera_pos)*idir;
-    tr = (right_edge - camera_pos)*idir;
+    tl = (left_edge - ray_origin)*idir;
+    tr = (right_edge - ray_origin)*idir;
     dx_effective = dx;
     #endif
     vec3 step_size = dx_effective/ sample_factor;
@@ -101,8 +102,8 @@ void main()
     // Some more discussion of this here:
     //  http://prideout.net/blog/?p=64
 
-    vec3 p0 = camera_pos.xyz + dir * t0;
-    vec3 p1 = camera_pos.xyz + dir * t1;
+    vec3 p0 = ray_origin + dir * t0;
+    vec3 p1 = ray_origin + dir * t1;
 
     vec3 dxidir = abs(idir)  * step_size;
 

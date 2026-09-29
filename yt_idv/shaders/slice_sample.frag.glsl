@@ -25,7 +25,11 @@ void main()
     // blocks disagree about where a ray crosses the face they share.
     vec3 ray_position = v_model.xyz;
 
-    vec3 dir = normalize(camera_pos.xyz - ray_position);
+    // note: dir points toward the camera here, hence -camera_view_dir for
+    // the parallel rays of an orthographic projection
+    vec3 dir = (projection_type == 1)
+        ? -camera_view_dir
+        : normalize(camera_pos.xyz - ray_position);
     vec4 curr_color = vec4(0.0);
 
     // We'll compute the t at which this ray intersects the slice. If that t
