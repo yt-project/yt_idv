@@ -125,9 +125,22 @@ void main()
     float f_ndc_depth;
     float depth = 1.0;
 
+    float external_max_depth = 1.0;
+    if (use_external_depth_clip > 0.5) {
+        vec2 screen_uv = (gl_FragCoord.xy - viewport.xy) / viewport.zw;
+        external_max_depth = texture(external_depth_tex, screen_uv).r;
+    }
+
     ray_position = p0;
 
     while(t <= t1) {
+
+        if (use_external_depth_clip > 0.5) {
+            v_clip_coord = projection * modelview * vec4(ray_position, 1.0);
+            f_ndc_depth = v_clip_coord.z / v_clip_coord.w;
+            float current_depth = 0.5 * f_ndc_depth + 0.5;
+            if (current_depth >= external_max_depth) break;
+        }
 
         // texture position
         #ifdef SPHERICAL_GEOM
