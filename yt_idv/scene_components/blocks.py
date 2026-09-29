@@ -31,14 +31,7 @@ class BlockRendering(SceneComponent):
     tf_log = traitlets.Bool(True)
     slice_position = traitlets.Tuple((0.5, 0.5, 0.5)).tag(trait=traitlets.CFloat())
     slice_normal = traitlets.Tuple((1.0, 0.0, 0.0)).tag(trait=traitlets.CFloat())
-    # External depth clip (cycles-volume-override addition -- see
-    # ray_tracing.frag.glsl's own comment on the shader-side half of this):
-    # lets a caller stop each ray's integration early at a per-pixel max
-    # window-space depth, e.g. from an already-rendered opaque occluder.
-    # `external_depth_texture` is a single-channel (H, W) float32 Texture2D
-    # in the SAME window-space-depth convention `gl_FragDepth` already uses
-    # in this shader (0..1); None/`use_external_depth_clip=False` (the
-    # default) is a complete no-op, identical to upstream behavior.
+    # External depth clip used in ray_tracing.frag.glsl for truncating ray integration early based on view
     external_depth_texture = traitlets.Instance(
         Texture2D, allow_none=True, default_value=None
     )
