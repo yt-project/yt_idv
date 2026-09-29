@@ -76,11 +76,6 @@ class BaseCamera(traitlets.HasTraits):
     @traitlets.observe("position", "fov", "near_plane", "far_plane", "aspect_ratio")
     def compute_matrices(self, change=None):
         """Rebuild the projection matrix when a trait that feeds it changes.
-
-        The view matrix and orientation are deliberately left alone here:
-        rebuilding them from position/focus/up would clobber trackball
-        rotations applied through update_orientation. Use update_matrices
-        or set_orientation to rebuild the view explicitly.
         """
         if self.held:
             return
