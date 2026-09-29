@@ -22,10 +22,52 @@ class BlockCollection(SceneData):
     always_normalize = traitlets.Bool(False)
     field = traitlets.Any(default_value=None, allow_none=True)
     field_units = traitlets.Unicode(default_value=None, allow_none=True)
+    applied_scale_ratio = traitlets.CFloat(read_only = True)
+    applied_scale_offset = traitlets.Tuple(
+        traitlets.CFloat(), traitlets.CFloat(), traitlets.CFloat(),
+        default_value = (0.0, 0.0, 0.0),
+        read_only = True,
+    )
 
     @traitlets.default("vertex_array")
     def _default_vertex_array(self):
         return VertexArray(name="block_info", each=1)
+
+    @traitlets.observe("scale")
+    def toggle_scale(self, change):
+        # We are going to update the attributes that would be changed.
+        # Note that this modifies *in place* the block attributes.  This isn't
+        # great, but it works, and the tiles shouldn't be used elsewhere.
+        if change["new"]:
+            # If this is the case, then the previous values were unscaled.  We
+            # now want to scale them the correct way.
+            left_min = np.ones(3, "f8") * np.inf
+            right_max = np.ones(3, "f8") * -np.inf
+            for block in self.data_source.tiles.traverse():
+                np.minimum(left_min, block.LeftEdge, left_min)
+                np.maximum(right_max, block.LeftEdge, right_max)
+            offset = left_min[:]
+            ratio = right_max.max() - left_min.min()
+            self.set_trait("applied_scale_ratio", ratio)
+            self.set_trait("applied_scale_offset", tuple(offset))
+        else:
+            # Now we want to scale back...
+            ratio = 1.0/np.array(self.applied_scale_ratio)
+            self.set_trait("applied_scale_ratio", 1.0)
+            offset = -np.array(self.applied_scale_offset)*ratio
+            self.set_trait("applied_scale_offset", (0.0, 0.0, 0.0))
+        for block in self.data_source.tiles.traverse():
+            block.LeftEdge -= offset
+            block.LeftEdge /= ratio
+            block.RightEdge -= offset
+            block.RightEdge /= ratio
+        self.diagonal *= ratio
+
+        for att in ["model_vertex", "in_left_edge", "in_right_edge"]:
+            v = self.vertex_array[att].data.copy()
+            v[:,:3] = (v[:,:3][:,:3] - offset)/ratio
+            self.vertex_array[att].data = v[:]
+        self.vertex_array["in_dx"].data /= ratio
 
     def add_data(self, field, no_ghost=False):
         r"""Adds a source of data for the block collection.

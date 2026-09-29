@@ -381,6 +381,11 @@ class VertexArray(traitlets.HasTraits):
     def _id_default(self):
         return GL.glGenVertexArrays(1)
 
+    def __getitem__(self, key):
+        for att in self.attributes:
+            if att.name == key: return att
+        raise KeyError(key)
+
     @contextmanager
     def bind(self, program=None):
         GL.glBindVertexArray(self.id)
