@@ -173,7 +173,7 @@ class SimpleGUI:
                 scene.camera.up = np.array([0.0, 0.0, 1.0])
                 changed = True
         if changed:
-            scene.camera._update_matrices()
+            scene.camera.update_matrices()
 
         if imgui.button("print camera to console"):
             import json

@@ -125,10 +125,13 @@ def test_projection_path_length_and_units(uniform_rc):
     # look down an axis with a narrow field of view, so that rays are close to
     # parallel and pass through the full depth of the domain exactly once
     camera = uniform_rc.scene.camera
-    camera.update(position=[0.5, 0.5, 20.0], focus=[0.5, 0.5, 0.5], up=[0.0, 1.0, 0.0])
-    camera.fov = 3.0
-    camera.far_plane = 100.0
-    camera._update_matrices()
+    camera.update(
+        position=[0.5, 0.5, 20.0],
+        focus=[0.5, 0.5, 0.5],
+        up=[0.0, 1.0, 0.0],
+        fov=3.0,
+        far_plane=100.0,
+    )
     uniform_rc.scene.render()
 
     frb = component.rendered_image_plane()
@@ -157,10 +160,13 @@ def test_frb_geometry(uniform_rc):
     component.render_method = "slice"
 
     camera = uniform_rc.scene.camera
-    camera.update(position=[0.5, 0.5, 2.5], focus=[0.5, 0.5, 0.5], up=[0.0, 1.0, 0.0])
-    camera.fov = 45.0
-    camera.aspect_ratio = 1.0
-    camera._update_matrices()
+    camera.update(
+        position=[0.5, 0.5, 2.5],
+        focus=[0.5, 0.5, 0.5],
+        up=[0.0, 1.0, 0.0],
+        fov=45.0,
+        aspect_ratio=1.0,
+    )
     uniform_rc.scene.render()
 
     frb = component.rendered_image_plane()
@@ -211,11 +217,14 @@ def test_integrate_constant(constant_rc):
     # view narrow enough that it still fills a good fraction of the image. the
     # rays then diverge by at most fov / 2 = 1 degree.
     camera = constant_rc.scene.camera
-    camera.update(position=[0.5, 0.5, 60.0], focus=[0.5, 0.5, 0.5], up=[0.0, 1.0, 0.0])
-    camera.fov = 2.0
-    camera.aspect_ratio = 1.0
-    camera.far_plane = 100.0
-    camera._update_matrices()
+    camera.update(
+        position=[0.5, 0.5, 60.0],
+        focus=[0.5, 0.5, 0.5],
+        up=[0.0, 1.0, 0.0],
+        fov=2.0,
+        aspect_ratio=1.0,
+        far_plane=100.0,
+    )
     # the ray marcher overshoots the exit point by up to one step, which is a
     # 1 / (2 * 32 * sample_factor) error on a path of one code_length
     component.sample_factor = 8.0

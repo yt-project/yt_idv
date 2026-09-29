@@ -18,5 +18,5 @@ ds = (sc.camera.focus - sc.camera.position) / N
 for _ in range(N):
     sc.components[0].cmap_min = sc.components[0].cmap_max = None
     sc.camera.position = sc.camera.position + ds
-    sc.camera._update_matrices()
+    sc.camera.update_matrices()
     rc.snap()

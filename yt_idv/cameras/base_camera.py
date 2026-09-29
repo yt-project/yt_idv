@@ -58,35 +58,48 @@ class BaseCamera(traitlets.HasTraits):
 
     @contextlib.contextmanager
     def hold_traits(self, func):
-        # for some reason, hold_trait_notifications doesn't seem to work here.
-        # So, we use this to block.  We also do not want to pass the
-        # notifications once completed.
-        if not self.held:
-            self.held = True
-            func()
+        """Suppress per-trait matrix rebuilds inside the block, then call func once."""
+        if self.held:
+            yield
+            return
+        self.held = True
+        try:
+            yield
+        finally:
             self.held = False
-        yield
+        func()
 
     @traitlets.default("up")
     def _default_up(self):
         return np.array([0.0, 1.0, 0.0])
 
-    @traitlets.observe(
-        "position",
-        "focus",
-        "up",
-        "fov",
-        "near_plane",
-        "far_plane",
-        "aspect_ratio",
-        "orientation",
-    )
+    @traitlets.observe("position", "fov", "near_plane", "far_plane", "aspect_ratio")
     def compute_matrices(self, change=None):
-        """Regenerate all position, view and projection matrices of the camera."""
-        with self.hold_traits(self._compute_matrices):
-            pass
+        """Rebuild the projection matrix when a trait that feeds it changes."""
+        if self.held:
+            return
+        self._compute_matrices()
+
+    def _compute_matrices(self):
+        pass
+
+    def update_matrices(self):
+        """Rebuild the view matrix from position, focus and up, then the projection.
+
+        Call this after setting position, focus or up directly. The orientation
+        quaternion is re-derived from the new view matrix.
+        """
+        pass
 
     def _update_matrices(self):
+        self.update_matrices()
+
+    def set_orientation(self, orientation):
+        """Set the orientation quaternion and re-derive position, up and the view.
+
+        The camera keeps its focus and its distance from the focus; position and
+        up are rotated to match the new orientation.
+        """
         pass
 
     def update_orientation(self, start_x, start_y, end_x, end_y):
@@ -142,7 +155,42 @@ class BaseCamera(traitlets.HasTraits):
 
         return cdict
 
-    def update(self, **kwargs):
-        with self.hold_traits(self._compute_matrices):
-            for ky, val in kwargs.items():
-                setattr(self, ky, val)
+    def update(
+        self,
+        position=None,
+        focus=None,
+        up=None,
+        fov=None,
+        near_plane=None,
+        far_plane=None,
+        aspect_ratio=None,
+    ):
+        """Set several traits at once, then rebuild the view and projection.
+
+        Traits left as None are untouched. The view matrix is rebuilt from
+        position, focus and up and the orientation quaternion is re-derived
+        from it (see update_matrices). To set the orientation directly, use
+        set_orientation instead.
+        """
+        values = {
+            "position": position,
+            "focus": focus,
+            "up": up,
+            "fov": fov,
+            "near_plane": near_plane,
+            "far_plane": far_plane,
+            "aspect_ratio": aspect_ratio,
+        }
+        with self.hold_traits(self.update_matrices):
+            for name, val in values.items():
+                if val is not None:
+                    setattr(self, name, val)
+
+    def update_from_dict(self, cdict):
+        """Restore the camera from a snapshot produced by dict().
+
+        The orientation entry is dropped: it is derived from position, focus
+        and up, and update re-derives it.
+        """
+        cdict = {ky: val for ky, val in cdict.items() if ky != "orientation"}
+        self.update(**cdict)

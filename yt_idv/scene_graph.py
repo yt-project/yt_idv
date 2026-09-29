@@ -283,4 +283,3 @@ def _update_scene_camera_for_geometry(ds, scene):
 
             camera: TrackballCamera = scene.camera
             camera.update(focus=center, position=pos, near_plane=near_plane)
-            camera._update_matrices()

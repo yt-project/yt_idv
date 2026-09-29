@@ -85,7 +85,6 @@ class PygletRenderingContext(pyglet.window.Window, BaseContext):
         super().on_resize(width, height)
         self.scene.reset_framebuffers()
         self.scene.camera.aspect_ratio = width / height
-        self.scene.camera._update_matrices()
         self._do_update = True
 
     def set_position(self, xpos, ypos):
