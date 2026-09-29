@@ -75,8 +75,7 @@ class BaseCamera(traitlets.HasTraits):
 
     @traitlets.observe("position", "fov", "near_plane", "far_plane", "aspect_ratio")
     def compute_matrices(self, change=None):
-        """Rebuild the projection matrix when a trait that feeds it changes.
-        """
+        """Rebuild the projection matrix when a trait that feeds it changes."""
         if self.held:
             return
         self._compute_matrices()
