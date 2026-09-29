@@ -89,7 +89,7 @@ shader_definitions:
       blend_equation: func add
     passthrough_alpha:
       info:
-        passthrough shader that preserves the first pass alpha 
+        passthrough shader that preserves the first pass alpha
       source: passthrough_alpha.frag.glsl
       blend_func:
         - src alpha

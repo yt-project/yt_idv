@@ -20,7 +20,7 @@ void main(){
        cp = log(cp);
    }
    color = texture(cm_tex, (scaled - cm) / (cp - cm));
-   // color.a is left as cm_tex's own alpha at this position 
+   // color.a is left as cm_tex's own alpha at this position
 
    gl_FragDepth = texture(db_tex, UV).r;
 }

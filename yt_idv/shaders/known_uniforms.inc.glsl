@@ -54,7 +54,7 @@ uniform float sample_factor;
 // external depth clip -- lets a ray's integration be stopped early at a
 // per-pixel max window-space depth supplied by the caller (e.g. an opaque
 // occluder rendered elsewhere), rather than always integrating out to the
-// block's own bounding-box exit. 
+// block's own bounding-box exit.
 uniform sampler2D external_depth_tex;
 uniform float use_external_depth_clip;
 
