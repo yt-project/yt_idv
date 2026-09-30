@@ -137,6 +137,12 @@ class SceneComponent(traitlets.HasTraits):
         if old_width != new_width or old_height != new_height:
             self.fb = Framebuffer()
 
+    @traitlets.observe("fb")
+    def _release_old_fb(self, change):
+        old = change["old"]
+        if isinstance(old, Framebuffer) and old is not change["new"]:
+            old.release()
+
     def render_gui(self, imgui, renderer, scene):
         changed, self.visible = imgui.checkbox("Visible", self.visible)
         _, self.use_db = imgui.checkbox("Depth Buffer", self.use_db)

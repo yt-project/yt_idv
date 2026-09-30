@@ -181,6 +181,11 @@ class Texture(traitlets.HasTraits):
         _ = GL.glActiveTexture(TEX_TARGETS[target])
         GL.glBindTexture(self.dim_enum, 0)
 
+    def release(self):
+        if self.trait_has_value("texture_name") and self.texture_name != -1:
+            GL.glDeleteTextures(1, [self.texture_name])
+            self.texture_name = -1
+
 
 class Texture1D(Texture):
     boundary_x = TextureBoundary()
@@ -368,6 +373,10 @@ class VertexAttribute(traitlets.HasTraits):
         with self.bind():
             GL.glBufferData(GL.GL_ARRAY_BUFFER, arr.nbytes, arr, GL.GL_STATIC_DRAW)
 
+    def release(self):
+        if self.trait_has_value("id") and self.id != -1:
+            GL.glDeleteBuffers(1, [self.id])
+            self.id = -1
 
 class VertexArray(traitlets.HasTraits):
     name = traitlets.CUnicode("vertex")
@@ -380,6 +389,24 @@ class VertexArray(traitlets.HasTraits):
     @traitlets.default("id")
     def _id_default(self):
         return GL.glGenVertexArrays(1)
+
+    def __getitem__(self, key):
+        for att in self.attributes:
+            if att.name == key: return att
+        raise KeyError(key)
+
+    def keys(self):
+        return list(_.name for _ in self.attributes)
+
+    def release(self):
+        for att in self.attributes:
+            att.release()
+        if self.index_id != -1:
+            GL.glDeleteBuffers(1, [self.index_id])
+            self.index_id = -1
+        if self.trait_has_value("id") and self.id != -1:
+            GL.glDeleteVertexArrays(1, [self.id])
+            self.id = -1
 
     @contextmanager
     def bind(self, program=None):
@@ -401,6 +428,9 @@ class VertexArray(traitlets.HasTraits):
     @traitlets.observe("indices")
     def _set_indices(self, change):
         arr = change["new"]
+        if self.index_id != -1:
+            GL.glDeleteBuffers(1, self.index_id)
+            self.index_id = -1  # In case of error
         self.index_id = GL.glGenBuffers(1)
         GL.glBindBuffer(GL.GL_ELEMENT_ARRAY_BUFFER, self.index_id)
         GL.glBufferData(GL.GL_ELEMENT_ARRAY_BUFFER, arr.nbytes, arr, GL.GL_STATIC_DRAW)
@@ -509,6 +539,19 @@ class Framebuffer(traitlets.HasTraits):
         with self.fb_tex.bind(fb_target):
             with self.db_tex.bind(db_target):
                 yield
+
+    def release(self):
+        if self.trait_has_value("fb_tex"):
+            self.fb_tex.release()
+        if self.trait_has_value("db_tex"):
+            self.db_tex.release()
+        if self.trait_has_value("fb_id") and self.fb_id != -1:
+            GL.glDeleteFramebuffers(1, [self.fb_id])
+            self.fb_id = -1
+        if self.trait_has_value("rb_id") and self.rb_id != -1:
+            GL.glDeleteRenderbuffers(1, [self.rb_id])
+            self.rb_id = -1
+        self.initialized = False
 
 
 class Texture3DIterator(traitlets.HasTraits):
