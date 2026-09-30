@@ -15,6 +15,7 @@ class BlockCollection(SceneData):
     bitmap_objects = traitlets.Dict(value_trait=traitlets.Instance(Texture3D))
     blocks = traitlets.Dict(default_value=())
     scale = traitlets.Bool(False)
+    _compute_bbox = traitlets.Bool(False) # Useful only if you want a manual bbox calculation
     blocks_by_grid = traitlets.Instance(defaultdict, (list,))
     grids_by_block = traitlets.Dict(default_value=())
     _yt_geom_str = traitlets.Unicode("cartesian")
@@ -41,13 +42,13 @@ class BlockCollection(SceneData):
         # Note that this modifies *in place* the block attributes.  This isn't
         # great, but it works, and the tiles shouldn't be used elsewhere.
         if change["new"]:
-            # If this is the case, then the previous values were unscaled.  We
-            # now want to scale them the correct way.
-            left_min = np.ones(3, "f8") * np.inf
-            right_max = np.ones(3, "f8") * -np.inf
-            for block in self.data_source.tiles.traverse():
-                np.minimum(left_min, block.LeftEdge, left_min)
-                np.maximum(right_max, block.RightEdge, right_max)
+            if self._compute_bbox:
+                left_min = self.vertex_array["in_left_edge"].data.min(axis=0)[:3]
+                right_max = self.vertex_array["in_left_edge"].data.max(axis=0)[:3]
+            else:
+                left_min, right_max = self.data_source.get_bbox()
+                left_min = left_min.in_units("unitary").d
+                right_max = right_max.in_units("unitary").d
             offset = left_min[:]
             ratio = (right_max - left_min).max()
             self.set_trait("applied_scale_ratio", ratio)
@@ -102,18 +103,6 @@ class BlockCollection(SceneData):
 
         min_val = +np.inf
         max_val = -np.inf
-        if self.scale and self._yt_geom_str == "cartesian":
-            left_min = np.ones(3, "f8") * np.inf
-            right_max = np.ones(3, "f8") * -np.inf
-            for block in self.data_source.tiles.traverse():
-                np.minimum(left_min, block.LeftEdge, left_min)
-                np.maximum(right_max, block.RightEdge, right_max)
-            scale = (right_max - left_min).max()
-            for block in self.data_source.tiles.traverse():
-                block.LeftEdge -= left_min
-                block.LeftEdge /= scale
-                block.RightEdge -= left_min
-                block.RightEdge /= scale
         for i, block in enumerate(self.data_source.tiles.traverse()):
             if self.field_units is None:
                 self.field_units = str(getattr(block.my_data[0], "units", ""))
@@ -173,6 +162,9 @@ class BlockCollection(SceneData):
         self.vertex_array.attributes.append(
             VertexAttribute(name="in_right_edge", data=re.astype("f4"))
         )
+
+        if self.scale and self._yt_geom_str == "cartesian":
+            self.toggle_scale({"new": True})
 
         # Now we set up our textures
         self._load_textures()
