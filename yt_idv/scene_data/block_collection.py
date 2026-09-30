@@ -22,7 +22,7 @@ class BlockCollection(SceneData):
     always_normalize = traitlets.Bool(False)
     field = traitlets.Any(default_value=None, allow_none=True)
     field_units = traitlets.Unicode(default_value=None, allow_none=True)
-    applied_scale_ratio = traitlets.CFloat(read_only = True)
+    applied_scale_ratio = traitlets.CFloat(1.0, read_only = True)
     applied_scale_offset = traitlets.Tuple(
         traitlets.CFloat(), traitlets.CFloat(), traitlets.CFloat(),
         default_value = (0.0, 0.0, 0.0),
@@ -45,7 +45,7 @@ class BlockCollection(SceneData):
             right_max = np.ones(3, "f8") * -np.inf
             for block in self.data_source.tiles.traverse():
                 np.minimum(left_min, block.LeftEdge, left_min)
-                np.maximum(right_max, block.LeftEdge, right_max)
+                np.maximum(right_max, block.RightEdge, right_max)
             offset = left_min[:]
             ratio = right_max.max() - left_min.min()
             self.set_trait("applied_scale_ratio", ratio)
@@ -61,13 +61,15 @@ class BlockCollection(SceneData):
             block.LeftEdge /= ratio
             block.RightEdge -= offset
             block.RightEdge /= ratio
-        self.diagonal *= ratio
+        self.diagonal /= ratio
 
         for att in ["model_vertex", "in_left_edge", "in_right_edge"]:
             v = self.vertex_array[att].data.copy()
-            v[:,:3] = (v[:,:3][:,:3] - offset)/ratio
+            v[:,:3] = (v[:,:3] - offset)/ratio
             self.vertex_array[att].data = v[:]
-        self.vertex_array["in_dx"].data /= ratio
+        self.vertex_array["in_dx"].data = (
+            self.vertex_array["in_dx"].data / ratio
+        ).astype("f4") # needed because ratio upcasts
 
     def add_data(self, field, no_ghost=False):
         r"""Adds a source of data for the block collection.
@@ -103,7 +105,7 @@ class BlockCollection(SceneData):
             right_max = np.ones(3, "f8") * -np.inf
             for block in self.data_source.tiles.traverse():
                 np.minimum(left_min, block.LeftEdge, left_min)
-                np.maximum(right_max, block.LeftEdge, right_max)
+                np.maximum(right_max, block.RightEdge, right_max)
             scale = right_max.max() - left_min.min()
             for block in self.data_source.tiles.traverse():
                 block.LeftEdge -= left_min
