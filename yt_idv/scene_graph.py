@@ -17,6 +17,7 @@ from yt_idv.scene_data.base_data import SceneData
 from yt_idv.scene_data.block_collection import BlockCollection
 from yt_idv.scene_data.box import BoxData
 from yt_idv.scene_data.text_characters import TextCharacters
+from yt_idv.utilities.spherical_mapping import render_geometry
 
 
 class SceneGraph(traitlets.HasTraits):
@@ -39,7 +40,9 @@ class SceneGraph(traitlets.HasTraits):
     input_captured_mouse = traitlets.Bool(False)
     input_captured_keyboard = traitlets.Bool(False)
 
-    def add_volume(self, data_source, field_name, no_ghost=False):
+    def add_volume(
+        self, data_source, field_name, no_ghost=False, reference_height=None
+    ):
         """
         Add a BlockRendering component to volume render.
 
@@ -51,6 +54,11 @@ class SceneGraph(traitlets.HasTraits):
         data_source: yt data container such as a sphere, region, etc
         field_name: The field to volume render
         no_ghost: Should we save time by skipping ghost zone generation
+        reference_height: Only for geographic and internal_geographic datasets:
+            the surface height (geographic) or outer radius (internal_geographic)
+            to use in place of the dataset's own value when converting the native
+            radial coordinate to a radius. See
+            :class:`~yt_idv.scene_data.block_collection.BlockCollection`.
 
         Returns
         -------
@@ -58,7 +66,9 @@ class SceneGraph(traitlets.HasTraits):
         component: BlockRendering
 
         """
-        self.data_objects.append(BlockCollection(data_source=data_source))
+        self.data_objects.append(
+            BlockCollection(data_source=data_source, reference_height=reference_height)
+        )
         self.data_objects[-1].add_data(field_name, no_ghost=no_ghost)
         self.components.append(BlockRendering(data=self.data_objects[-1]))
         return self.components[-1]  # Only the rendering object
@@ -288,7 +298,7 @@ class SceneGraph(traitlets.HasTraits):
         return _pixels_by_row(arr, width, height)[::-1, :]
 
     @staticmethod
-    def from_ds(ds, field, no_ghost=True):
+    def from_ds(ds, field, no_ghost=True, reference_height=None):
         """
         Return a SceneGraph made from some best-guess values from a dataset and
         a field.
@@ -302,6 +312,10 @@ class SceneGraph(traitlets.HasTraits):
         ds: A yt Dataset or Data Object to use as a source
         field: The field to render
         no_ghost: Should we save time by skipping ghost zones?
+        reference_height: Only for geographic and internal_geographic datasets:
+            the surface height (geographic) or outer radius (internal_geographic)
+            to use in place of the dataset's own value. See
+            :class:`~yt_idv.scene_data.block_collection.BlockCollection`.
 
         Returns
         -------
@@ -331,7 +345,9 @@ class SceneGraph(traitlets.HasTraits):
         scene = SceneGraph(camera=c)
 
         if field is not None:
-            scene.add_volume(data_source, field, no_ghost=no_ghost)
+            scene.add_volume(
+                data_source, field, no_ghost=no_ghost, reference_height=reference_height
+            )
             _update_scene_camera_for_geometry(ds, scene)
 
         return scene
@@ -340,7 +356,7 @@ class SceneGraph(traitlets.HasTraits):
 def _update_scene_camera_for_geometry(ds, scene):
     # for non-cartesian geometries, the cartesian bounds may not
     # be available until after the data is loaded and processed.
-    if str(ds.geometry) == "spherical":
+    if render_geometry(ds) == "spherical":
         data = scene.components[-1].data
         if hasattr(data, "cart_bbox_center"):
             center = data.cart_bbox_center

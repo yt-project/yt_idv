@@ -233,3 +233,48 @@ def test_spherical_boxes_edges():
 
     assert np.allclose(centers, x_y_z)
     assert np.allclose(widths, d_x_y_z)
+
+
+@pytest.mark.parametrize(
+    "phi_range",
+    [
+        (-0.3, 0.3),
+        (-np.pi, 0.0),
+        (-np.pi, np.pi),
+        (np.pi, 2 * np.pi),
+        (-np.pi / 2 - 0.1, -np.pi / 2 + 0.1),
+        (0.0, 2 * np.pi),
+        (1.5 * np.pi, 2.5 * np.pi),
+        (-0.05, 0.1),
+        (-np.pi / 2 - 0.03, -np.pi / 2 + 0.12),
+        (-np.pi - 0.03, -np.pi + 0.12),
+        (2 * np.pi - 0.03, 2 * np.pi + 0.12),
+    ],
+)
+def test_bboxes_arbitrary_phi_range(phi_range):
+    # phi is not restricted to (0, 2pi): the bounding box must match the extent
+    # of densely sampled points within the element. theta does not span the
+    # equator here, where the corner-based bounds are only approximate.
+    r_range = (1.0, 1.5)
+    theta_range = (np.pi / 6, np.pi / 3)
+
+    le, re = cartesian_bboxes_edges(
+        SphericalMixedCoordBBox(),
+        *[np.array([v[0]]) for v in (r_range, theta_range, phi_range)],
+        *[np.array([v[1]]) for v in (r_range, theta_range, phi_range)],
+    )
+    le = np.array(le).ravel()
+    re = np.array(re).ravel()
+
+    r, theta, phi = np.meshgrid(
+        np.linspace(*r_range, 5),
+        np.linspace(*theta_range, 201),
+        np.linspace(*phi_range, 801),
+        indexing="ij",
+    )
+    xyz = np.array(spherical_to_cartesian(r, theta, phi)).reshape(3, -1)
+
+    assert np.all(xyz.min(axis=1) >= le - 1e-12)
+    assert np.all(xyz.max(axis=1) <= re + 1e-12)
+    assert np.allclose(xyz.min(axis=1), le, atol=1e-4)
+    assert np.allclose(xyz.max(axis=1), re, atol=1e-4)

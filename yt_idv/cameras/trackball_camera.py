@@ -9,6 +9,7 @@ from yt.utilities.math_utils import (
 
 from yt_idv.cameras.base_camera import BaseCamera
 from yt_idv.utilities.camera_utilities import update_orientation
+from yt_idv.utilities.spherical_mapping import render_geometry
 
 
 def get_perspective_matrix(fovy, aspect, z_near, z_far):
@@ -146,7 +147,8 @@ class TrackballCamera(BaseCamera):
 
 def _get_camera_for_ds_geometry(ds):
 
-    if str(ds.geometry) == "spherical":
+    geom = render_geometry(ds)
+    if geom == "spherical":
         # dummy values here, will get updated after data is loaded
         # and the cartesian bounds are available
         center = np.array([0.5, 0.5, 0.5])
@@ -155,13 +157,14 @@ def _get_camera_for_ds_geometry(ds):
         dx_aprox = wid[0] / np.max(ds.domain_dimensions)
         near_plane = 3.0 * dx_aprox
         near_plane = max(near_plane, 1e-5)
-    elif str(ds.geometry) == "cartesian":
+    elif geom == "cartesian":
         center = ds.domain_center
         pos = center + 1.5 * ds.domain_width.in_units("unitary")
         near_plane = 3.0 * ds.index.get_smallest_dx().min().in_units("unitary").d
         near_plane = max(near_plane, 1e-5)
     else:
         raise NotImplementedError(
-            "Only cartesian and spherical geometries are supported at present."
+            "Only cartesian, spherical and geographic geometries are supported "
+            "at present."
         )
     return center, pos, near_plane
