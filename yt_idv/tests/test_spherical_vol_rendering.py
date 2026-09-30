@@ -52,6 +52,7 @@ def _get_sph_yt_ds(bbox_option: str):
 
 
 @pytest.mark.parametrize("bbox_option", bbox_options.keys())
+@pytest.mark.image_test
 def test_spherical_bounds(empty_rc, image_store, bbox_option):
 
     ds = _get_sph_yt_ds(bbox_option)
@@ -69,6 +70,7 @@ def test_spherical_bounds(empty_rc, image_store, bbox_option):
 
 
 @pytest.mark.parametrize("nprocs", [1, 2, 4, 16])
+@pytest.mark.image_test
 def test_spherical_nprocs(empty_rc, image_store, nprocs):
 
     bbox_option = "whole"
@@ -88,6 +90,7 @@ def test_spherical_nprocs(empty_rc, image_store, nprocs):
 
 
 @pytest.mark.parametrize("bbox_option", ["partial", "big_r"])
+@pytest.mark.image_test
 def test_block_collection_outlines(empty_rc, image_store, bbox_option):
 
     ds = _get_sph_yt_ds(bbox_option)
