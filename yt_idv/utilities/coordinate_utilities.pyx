@@ -3,7 +3,7 @@ cimport cython
 import numpy as np
 
 cimport numpy as np
-from libc.math cimport INFINITY, M_PI, acos, atan2, cos, sin, sqrt
+from libc.math cimport INFINITY, M_PI, acos, atan2, ceil, cos, floor, sin, sqrt
 
 
 @cython.cdivision(True)
@@ -278,11 +278,10 @@ cdef class SphericalMixedCoordBBox(MixedCoordBBox):
         cdef np.float64_t xi, yi, zi, r_lr, theta_lr, phi_lr, phi_lr2, theta_lr2
         cdef np.float64_t xli, yli, zli, xri, yri, zri, r_xy, r_xy2
         cdef int isign_r, isign_ph, isign_th
+        cdef int k, k_lo, k_hi, quadrant
         cdef np.float64_t sign_r, sign_th, sign_ph
 
         cdef np.float64_t M_PI_2 = M_PI / 2.0
-        cdef np.float64_t M_PI_3_2 = 3. * M_PI / 2.0
-        cdef np.float64_t NPY_2xPI = 2. * M_PI
 
         r_i = pos0
         theta_i = pos1
@@ -324,18 +323,15 @@ cdef class SphericalMixedCoordBBox(MixedCoordBBox):
                     zri = fmax(zri, zi)
 
         # need to correct for special cases:
-        # if polar angle, phi, spans pi/2, pi or 3pi/2 then just
+        # if polar angle, phi, spans a multiple of pi/2 then just
         # taking the min/max of the corners will miss the cusp of the
         # element. When this condition is met, the x/y min/max will
         # equal +/- the projection of the max r in the xy plane -- in this case,
         # the theta angle that gives the max projection of r in
         # the x-y plane will change depending on the whether theta < or > pi/2,
         # so the following calculates for the min/max theta value of the element
-        # and takes the max.
-        # ALSO note, that the following does check for when an edge aligns with the
-        # phi=0/2pi, it does not handle an element spanning the periodic boundary.
-        # Oh and this may break down for large elements that span whole
-        # quadrants...
+        # and takes the max. phi is not restricted to (0, 2pi), so elements
+        # with negative phi or spanning phi=0 are handled.
         phi_lr =  phi_i - h_dphi
         phi_lr2 = phi_i + h_dphi
         theta_lr = theta_i - h_dtheta
@@ -348,15 +344,20 @@ cdef class SphericalMixedCoordBBox(MixedCoordBBox):
             r_xy2 = r_r * sin(theta_lr2)
             r_xy = fmax(r_xy, r_xy2)
 
-        if phi_lr == 0.0 or phi_lr2 == NPY_2xPI:
-            # need to re-check this, for when theta spans equator
-            xri = r_xy
-        elif phi_lr < M_PI_2 and phi_lr2  > M_PI_2:
-            yri = r_xy
-        elif phi_lr < M_PI and phi_lr2  > M_PI:
-            xli = -r_xy
-        elif phi_lr < M_PI_3_2 and phi_lr2  > M_PI_3_2:
-            yli = -r_xy
+        # the tolerance catches a multiple of pi/2 that falls on an element edge,
+        # which after recursive subdivision may be off by rounding error.
+        k_lo = <int> ceil(phi_lr / M_PI_2 - 1e-10)
+        k_hi = <int> floor(phi_lr2 / M_PI_2 + 1e-10)
+        for k in range(k_lo, k_hi + 1):
+            quadrant = ((k % 4) + 4) % 4
+            if quadrant == 0:
+                xri = r_xy
+            elif quadrant == 1:
+                yri = r_xy
+            elif quadrant == 2:
+                xli = -r_xy
+            else:
+                yli = -r_xy
 
         xyz_i[0] = (xri+xli)/2.
         xyz_i[1] = (yri+yli)/2.

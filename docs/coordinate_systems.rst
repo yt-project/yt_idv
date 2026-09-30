@@ -34,14 +34,51 @@ within the element and :math:`\eta` is a sampling factor. The ``sample_factor`` 
 cartesian data where ``sample_factor`` is the number of samples per cell width.
 
 At present, supported non-cartesian coordinate systems include Spherical Coordinates with (r, theta, phi), where r is radius, theta is co-latitude (between 0, pi)
-and phi is azimuth (between 0, 2pi), following yt conventions.
+and phi is azimuth, following yt conventions, as well as yt's geographic and internal
+geographic coordinates (see below).
+
+----------------------
+Geographic coordinates
+----------------------
+
+Datasets with yt's ``geographic`` (latitude, longitude, altitude) and ``internal_geographic``
+(latitude, longitude, depth) geometries are rendered with the same machinery as spherical
+data: when the data is loaded, the block edges are converted to spherical coordinates with
+:math:`\theta = 90^\circ - \mathrm{latitude}` and :math:`\phi = \mathrm{longitude}`
+(both in radians). Longitudes may be given in either (-180, 180) or (0, 360).
+
+The native radial coordinate is converted to a radius using a reference height,
+
+* ``geographic``: :math:`r = \mathrm{altitude} + h_{ref}`
+* ``internal_geographic``: :math:`r = h_{ref} - \mathrm{depth}`
+
+By default, :math:`h_{ref}` is the dataset's own value, ``surface_height`` for ``geographic``
+and ``outer_radius`` for ``internal_geographic`` (see the yt documentation for how these
+are set). Many geographic datasets do not set a ``surface_height``, in which case yt uses
+0 and altitudes are rendered as radii, which usually squashes a thin shell of data into a
+ball (yt_idv warns when this happens). The ``reference_height`` keyword argument sets
+:math:`h_{ref}` for rendering without modifying the dataset. It accepts a unyt quantity,
+a ``(value, unit)`` tuple or a float in code_length units:
+
+.. code-block:: python
+
+    import yt_idv
+
+    rc = yt_idv.render_context(height=800, width=800, gui=True)
+    # geographic: the radius of the altitude=0 surface
+    sg = rc.add_scene(ds, ("stream", "density"), reference_height=(6371.0, "km"))
+
+The same argument is available on ``SceneGraph.from_ds``, ``SceneGraph.add_volume`` and
+``BlockCollection``. For ``internal_geographic`` data it sets the outer radius instead. It
+raises a ``ValueError`` for any other geometry. See ``examples/geographic_rendering.py`` for
+a full example.
 
 ----------------------------
 Notes on further development
 ----------------------------
 
 Further contributions are welcome for adding support for the remaining 3d non-cartesian coordinate systems
-that yt supports that are not yet supported here (3d cylindrical, 3d geographic) as well as for adding
+that yt supports that are not yet supported here (3d cylindrical) as well as for adding
 support for non-cartesian coordinate systems in additional yt_idv components.
 
 To add support for additional non-cartesian coordinate systems requires two steps:

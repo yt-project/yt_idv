@@ -6,9 +6,35 @@ from yt.data_objects.data_containers import YTDataContainer
 
 from yt_idv.opengl_support import Texture3D, VertexArray, VertexAttribute
 from yt_idv.scene_data.base_data import SceneData
+from yt_idv.utilities.spherical_mapping import (
+    SphericalMapping,
+    render_geometry,
+    validate_reference_height,
+)
 
 
 class BlockCollection(SceneData):
+    """
+    A collection of the blocks of a yt data source, ready for volume rendering.
+
+    Parameters
+    ----------
+    reference_height : unyt quantity, (value, unit) tuple, float or None
+        Only for geographic and internal_geographic datasets, where it sets the
+        radius that the native radial coordinate is measured from:
+
+        * geographic: the radius of the altitude=0 surface, used in place of
+          the dataset's ``surface_height`` (radius = altitude + reference_height).
+        * internal_geographic: the outer radius, used in place of the dataset's
+          ``outer_radius`` (radius = reference_height - depth).
+
+        A float is interpreted in code_length units. If None (the default), the
+        dataset's own value is used. This only changes how the data is rendered,
+        the dataset itself is not modified. Setting it for any other geometry
+        raises a ValueError. It is read when data is added, so it must be set
+        before calling ``add_data``.
+    """
+
     name = "block_collection"
     data_source = traitlets.Instance(YTDataContainer)
     texture_objects = traitlets.Dict(value_trait=traitlets.Instance(Texture3D))
@@ -18,6 +44,9 @@ class BlockCollection(SceneData):
     blocks_by_grid = traitlets.Instance(defaultdict, (list,))
     grids_by_block = traitlets.Dict(default_value=())
     _yt_geom_str = traitlets.Unicode("cartesian")
+    _render_geom = traitlets.Unicode("cartesian")
+    _spherical_mapping = traitlets.Instance(SphericalMapping, allow_none=True)
+    reference_height = traitlets.Any(default_value=None, allow_none=True)
     compute_min_max = traitlets.Bool(True)
     always_normalize = traitlets.Bool(False)
     field = traitlets.Any(default_value=None, allow_none=True)
@@ -49,6 +78,8 @@ class BlockCollection(SceneData):
         # note: casting to string for compatibility with new and old geometry
         # attributes (now an enum member in latest yt),
         # see https://github.com/yt-project/yt/pull/4244
+        self._render_geom = render_geometry(self.data_source.ds)
+        validate_reference_height(self.data_source.ds, self.reference_height)
 
         # Every time we change our data source, we wipe all existing ones.
         # We now set up our vertices into our current data source.
@@ -109,12 +140,12 @@ class BlockCollection(SceneData):
             LE = np.array([b.LeftEdge for i, b in self.blocks.values()]).min(axis=0)
             RE = np.array([b.RightEdge for i, b in self.blocks.values()]).max(axis=0)
             self.diagonal = np.sqrt(((RE - LE) ** 2).sum())
-        elif self._yt_geom_str == "spherical":
-            rad_index = self.data_source.ds.coordinates.axis_id["r"]
-            max_r = self.data_source.ds.domain_right_edge[rad_index]
-            le[:, rad_index] = le[:, rad_index] / max_r
-            re[:, rad_index] = re[:, rad_index] / max_r
-            dx[:, rad_index] = dx[:, rad_index] / max_r
+        elif self._render_geom == "spherical":
+            self._spherical_mapping = SphericalMapping.from_data_source(
+                self.data_source, self.reference_height
+            )
+            le, re = self._spherical_mapping.edges(le, re)
+            dx = self._spherical_mapping.widths(dx).astype("f4")
 
         self._set_geometry_attributes(le, re, dx)
         self.vertex_array.attributes.append(
@@ -134,18 +165,18 @@ class BlockCollection(SceneData):
     def _set_geometry_attributes(self, le, re, dx):
         # set any vertex_array attributes that depend on the yt geometry type
         #
-        # for spherical coordinates, the radial component of le, re and dx
-        # should already be normalized in the range of (0, 1)
+        # for spherical coordinates, le, re and dx should already be mapped to
+        # normalized spherical coordinates by self._spherical_mapping
 
-        if self._yt_geom_str == "cartesian":
+        if self._render_geom == "cartesian":
             return
-        elif self._yt_geom_str == "spherical":
+        elif self._render_geom == "spherical":
             from yt_idv.utilities.coordinate_utilities import (
                 SphericalMixedCoordBBox,
                 cartesian_bboxes_edges,
             )
 
-            axis_id = self.data_source.ds.coordinates.axis_id
+            axis_id = self._spherical_mapping.axis_id
 
             # first, we need an approximation of the grid spacing
             # in cartesian coordinates. this is used by the
@@ -261,9 +292,9 @@ class BlockCollection(SceneData):
 
         Block edges and spacings are rescaled before being handed to the shaders
         (to unitary units for cartesian data, to fractions of the maximum radius
-        for spherical data), so any length measured in the rendered scene --
-        camera offsets, ray path lengths -- must be multiplied by this value to
-        get a physical length.
+        for spherical and geographic data), so any length measured in the
+        rendered scene -- camera offsets, ray path lengths -- must be multiplied
+        by this value to get a physical length.
         """
         ds = self.data_source.ds
         if self._yt_geom_str == "cartesian":
@@ -273,9 +304,8 @@ class BlockCollection(SceneData):
                     "collection is initialized with scale=True."
                 )
             return ds.quan(1.0, "unitary").in_units("code_length")
-        elif self._yt_geom_str == "spherical":
-            rad_index = ds.coordinates.axis_id["r"]
-            return ds.domain_right_edge[rad_index].in_units("code_length")
+        elif self._render_geom == "spherical":
+            return self._spherical_mapping.max_r
         raise NotImplementedError(
             f"{self.name} does not implement {self._yt_geom_str} geometries."
         )
@@ -310,7 +340,7 @@ def _block_collection_outlines(
         msg = f"outline_type must be blocks or grids, found {outline_type}"
         raise ValueError(msg)
 
-    if block_collection._yt_geom_str not in ("spherical",):
+    if block_collection._render_geom not in ("spherical",):
         msg = "_curves_from_block_data is not implemented for "
         msg += f"{block_collection._yt_geom_str} geometry."
         raise NotImplementedError(msg)
@@ -330,22 +360,19 @@ def _block_collection_outlines(
         ds = block_collection.data_source.ds
         block_iterator = [ds.index.grids[gid] for gid in gids]
 
-    if block_collection._yt_geom_str == "spherical":
+    if block_collection._render_geom == "spherical":
         from yt_idv.utilities.coordinate_utilities import spherical_to_cartesian
 
         # should move this down to cython to speed it up
-        axis_id = block_collection.data_source.ds.coordinates.axis_id
+        mapping = block_collection._spherical_mapping
+        axis_id = mapping.axis_id
         n_verts = segments_per_edge + 1
 
-        rad_index = axis_id["r"]
-        max_r = block_collection.data_source.ds.domain_right_edge[rad_index]
-
         for block in block_iterator:
-            le_i = block.LeftEdge
-            re_i = block.RightEdge
+            le_i, re_i = mapping.edges(block.LeftEdge, block.RightEdge)
 
-            r_min = le_i[axis_id["r"]] / max_r
-            r_max = re_i[axis_id["r"]] / max_r
+            r_min = le_i[axis_id["r"]]
+            r_max = re_i[axis_id["r"]]
 
             theta_min = le_i[axis_id["theta"]]
             theta_max = re_i[axis_id["theta"]]
