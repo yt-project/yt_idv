@@ -35,6 +35,8 @@ class BlockCollection(SceneData):
 
     @traitlets.observe("scale")
     def toggle_scale(self, change):
+        if self._yt_geom_str != "cartesian":
+            return
         # We are going to update the attributes that would be changed.
         # Note that this modifies *in place* the block attributes.  This isn't
         # great, but it works, and the tiles shouldn't be used elsewhere.
@@ -47,7 +49,7 @@ class BlockCollection(SceneData):
                 np.minimum(left_min, block.LeftEdge, left_min)
                 np.maximum(right_max, block.RightEdge, right_max)
             offset = left_min[:]
-            ratio = right_max.max() - left_min.min()
+            ratio = (right_max - left_min).max()
             self.set_trait("applied_scale_ratio", ratio)
             self.set_trait("applied_scale_offset", tuple(offset))
         else:
@@ -106,7 +108,7 @@ class BlockCollection(SceneData):
             for block in self.data_source.tiles.traverse():
                 np.minimum(left_min, block.LeftEdge, left_min)
                 np.maximum(right_max, block.RightEdge, right_max)
-            scale = right_max.max() - left_min.min()
+            scale = (right_max - left_min).max()
             for block in self.data_source.tiles.traverse():
                 block.LeftEdge -= left_min
                 block.LeftEdge /= scale
