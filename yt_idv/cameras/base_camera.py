@@ -21,13 +21,20 @@ class BaseCamera(traitlets.HasTraits):
     up : :obj:`!iterable`, or 3 element array in code_length
         The 'up' direction for the camera.
     fov : float, optional
-        An angle defining field of view in degrees.
+        An angle defining field of view in degrees. For an orthographic
+        projection, this sets the half-height of the view volume to
+        tan(fov/2) * |position - focus|, matching the perspective frustum's
+        extent at the focal plane.
     near_plane : float, optional
         The distance to the near plane of the perspective camera.
     far_plane : float, optional
         The distance to the far plane of the perspective camera.
     aspect_ratio: float, optional
         The ratio between the height and the width of the camera's fov.
+    projection_type : str, optional
+        The projection used to map 3D space onto the image plane, either
+        "perspective" (default, rays diverge from the camera position) or
+        "orthographic" (parallel rays along the view direction).
 
     """
 
@@ -45,6 +52,9 @@ class BaseCamera(traitlets.HasTraits):
     aspect_ratio = traitlets.Float(
         1.0
     )  # This was 8.0/6.0 for a long time. I don't know why.
+    projection_type = traitlets.CaselessStrEnum(
+        ("perspective", "orthographic"), default_value="perspective"
+    )
 
     projection_matrix = traittypes.Array(np.zeros((4, 4))).valid(
         ndarray_shape(4, 4), ndarray_ro()
@@ -73,7 +83,9 @@ class BaseCamera(traitlets.HasTraits):
     def _default_up(self):
         return np.array([0.0, 1.0, 0.0])
 
-    @traitlets.observe("position", "fov", "near_plane", "far_plane", "aspect_ratio")
+    @traitlets.observe(
+        "position", "fov", "near_plane", "far_plane", "aspect_ratio", "projection_type"
+    )
     def compute_matrices(self, change=None):
         """Rebuild the projection matrix when a trait that feeds it changes."""
         if self.held:
@@ -133,6 +145,12 @@ class BaseCamera(traitlets.HasTraits):
         shader_program._set_uniform("near_plane", self.near_plane)
         shader_program._set_uniform("far_plane", self.far_plane)
         shader_program._set_uniform("camera_pos", self.position)
+        view_dir = np.asarray(self.focus - self.position, dtype="f4")
+        view_dir = view_dir / np.linalg.norm(view_dir)
+        shader_program._set_uniform("camera_view_dir", view_dir)
+        shader_program._set_uniform(
+            "projection_type", int(self.projection_type == "orthographic")
+        )
 
     def dict(self):
         # array attributes
@@ -149,6 +167,7 @@ class BaseCamera(traitlets.HasTraits):
             "near_plane",
             "far_plane",
             "aspect_ratio",
+            "projection_type",
         ]
         for ky in attrs:
             cdict[ky] = getattr(self, ky)
@@ -164,6 +183,7 @@ class BaseCamera(traitlets.HasTraits):
         near_plane=None,
         far_plane=None,
         aspect_ratio=None,
+        projection_type=None,
     ):
         """Set several traits at once, then rebuild the view and projection.
 
@@ -180,6 +200,7 @@ class BaseCamera(traitlets.HasTraits):
             "near_plane": near_plane,
             "far_plane": far_plane,
             "aspect_ratio": aspect_ratio,
+            "projection_type": projection_type,
         }
         with self.hold_traits(self.update_matrices):
             for name, val in values.items():

@@ -17,6 +17,7 @@ def ds_yt_ugrid():
     return ds
 
 
+@pytest.mark.image_test
 def test_block_collection_normalization(empty_rc, ds_yt_ugrid):
 
     block_coll: BlockCollection = BlockCollection(
@@ -31,6 +32,7 @@ def test_block_collection_normalization(empty_rc, ds_yt_ugrid):
     assert np.allclose(block_coll.texture_objects[0].data, 0.5)
 
 
+@pytest.mark.image_test
 def test_block_rendering_cmap_norms(empty_rc, ds_yt_ugrid, image_store):
 
     block_coll: BlockCollection = BlockCollection(

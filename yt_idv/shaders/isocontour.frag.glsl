@@ -45,16 +45,17 @@ void main()
 
     // Five samples
     vec3 step_size = dx/sample_factor;
-    vec3 dir = -normalize(camera_pos.xyz - ray_position);
-    dir = max(abs(dir), 0.0001) * sign(dir);
+    vec3 ray_origin;
+    vec3 dir;
+    get_ray_origin_and_dir(ray_position, ray_origin, dir);
     vec4 curr_color = vec4(0.0);
 
     // We need to figure out where the ray intersects the box, if it intersects the box.
     // This will help solve the left/right edge issues.
 
     vec3 idir = 1.0/dir;
-    vec3 tl = (left_edge - camera_pos)*idir;
-    vec3 tr = (right_edge - camera_pos)*idir;
+    vec3 tl = (left_edge - ray_origin)*idir;
+    vec3 tr = (right_edge - ray_origin)*idir;
     vec3 tmin, tmax;
     bvec3 temp_x, temp_y;
     // These 't' prefixes actually mean 'parameter', as we use in grid_traversal.pyx.
@@ -73,8 +74,8 @@ void main()
     // Some more discussion of this here:
     //  http://prideout.net/blog/?p=64
 
-    vec3 p0 = camera_pos.xyz + dir * t0;
-    vec3 p1 = camera_pos.xyz + dir * t1;
+    vec3 p0 = ray_origin + dir * t0;
+    vec3 p1 = ray_origin + dir * t1;
 
     vec3 dxidir = abs(idir)  * step_size;
 
