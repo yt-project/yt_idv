@@ -50,7 +50,9 @@ void main()
     // left_edge - dx/2 to right_edge + dx/2; texel k's center is vertex k.
     vec3 tex_curr_pos = (ray_position - left_edge) / range + ndx / 2.0;
 
-    float map_sample = texture(bitmap_tex, tex_curr_pos).r;
+    // the bitmap has one texel per cell, so it spans exactly left_edge to right_edge
+    vec3 bitmap_pos = (ray_position - left_edge) / (right_edge - left_edge);
+    float map_sample = texture(bitmap_tex, bitmap_pos).r;
     if (!(map_sample > 0.0)) discard;
 
     output_color = texture(ds_tex[0], tex_curr_pos);

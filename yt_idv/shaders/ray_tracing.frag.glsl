@@ -219,6 +219,20 @@ vec3 get_offset_texture_position(sampler3D tex, vec3 tex_curr_pos)
     return (tex_curr_pos * texsize + texture_offset) / texsize;
 }
 
+vec3 get_bitmap_texture_position(vec3 tex_curr_pos)
+{
+    // tex_curr_pos addresses the data texture, whose n + 1 texel centers are the
+    // block's vertices, but the bitmap of a grid block has one texel per cell,
+    // spanning left_edge to right_edge. Other bitmaps (octree blocks share one
+    // bitmap that isn't sized per cell) keep the data texture's coordinate.
+    ivec3 n_vertices = textureSize(ds_tex[0], 0);
+    ivec3 n_cells = textureSize(bitmap_tex, 0);
+    if (n_cells != n_vertices - ivec3(1)) {
+        return get_offset_texture_position(bitmap_tex, tex_curr_pos);
+    }
+    return (tex_curr_pos * vec3(n_vertices) - 0.5) / vec3(n_cells);
+}
+
 bool sample_texture(vec3 tex_curr_pos, inout vec4 curr_color, float tdelta,
                     float t, vec3 dir);
 vec4 cleanup_phase(in vec4 curr_color, in vec3 dir, in float t0, in float t1);
