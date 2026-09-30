@@ -72,6 +72,8 @@ uniform float iso_alphas[32];
 uniform int id_theta;  // azimuthal angle (0 to pi) index in the yt dataset
 uniform int id_r;  // radial index in the yt dataset
 uniform int id_phi;  // polar angle (0 to 2pi) indexi n the yt dataset
+uniform float phi_min;  // phi is wrapped into (phi_min, phi_min + 2pi)
+uniform vec3 tex_axis_flip;  // 1.0 for native axes that run opposite to r, theta, phi
 
 // draw outline control
 uniform float draw_boundary;
