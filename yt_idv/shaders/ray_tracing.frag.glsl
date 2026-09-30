@@ -131,9 +131,11 @@ void main()
         external_max_depth = texture(external_depth_tex, screen_uv).r;
     }
 
-    ray_position = p0;
-
-    while(t <= t1) {
+    while(t < t1) {
+        // The last step is shortened so the samples cover exactly [t0, t1],
+        // and each sample sits at the midpoint of its step.
+        float dt_step = min(tdelta, t1 - t);
+        ray_position = camera_pos.xyz + dir * (t + 0.5 * dt_step);
 
         if (use_external_depth_clip > 0.5) {
             v_clip_coord = projection * modelview * vec4(ray_position, 1.0);
@@ -151,10 +153,10 @@ void main()
         #endif
 
         if (within_el) {
-            tex_curr_pos = (ray_position_native - left_edge) / range;  // Scale from 0 .. 1
-            // But, we actually need it to be 0 + normalized dx/2 to 1 - normalized dx/2
-            tex_curr_pos = (tex_curr_pos * (1.0 - ndx)) + ndx/2.0;
-            sampled = sample_texture(tex_curr_pos, curr_color, tdelta, t, dir);
+            // The texture holds n + 1 vertex-centered values, so it spans
+            // left_edge - dx/2 to right_edge + dx/2; texel k's center is vertex k.
+            tex_curr_pos = (ray_position_native - left_edge) / range + ndx / 2.0;
+            sampled = sample_texture(tex_curr_pos, curr_color, dt_step, t, dir);
         }
 
         if (sampled) {
@@ -164,9 +166,8 @@ void main()
             depth = min(depth, (1.0 - 0.0) * 0.5 * f_ndc_depth + (1.0 + 0.0) * 0.5);
         }
 
-        t += tdelta;
-        ray_position += tdelta * dir;
-
+        t += dt_step;
+        if (dt_step < tdelta) break;
     }
 
     output_color = cleanup_phase(curr_color, dir, t0, t1);

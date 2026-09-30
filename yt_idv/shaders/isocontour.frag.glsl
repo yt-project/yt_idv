@@ -101,9 +101,9 @@ void main()
     bool is_layer = false;
 
     while(t <= t1) {
-        tex_curr_pos = (ray_position - left_edge) / range;  // Scale from 0 .. 1
-        // But, we actually need it to be 0 + normalized dx/2 to 1 - normalized dx/2
-        tex_curr_pos = (tex_curr_pos * (1.0 - ndx)) + ndx/2.0;
+        // The texture holds n + 1 vertex-centered values, so it spans
+        // left_edge - dx/2 to right_edge + dx/2; texel k's center is vertex k.
+        tex_curr_pos = (ray_position - left_edge) / range + ndx / 2.0;
 
         sampled = sample_texture(tex_curr_pos, curr_color, tdelta, t, dir);
 
