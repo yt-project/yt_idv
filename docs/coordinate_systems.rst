@@ -14,16 +14,24 @@ transfer functions without any pre-interpolation or re-gridding.
     :align: center
 
 The approach for handling data defined in non-cartesian coordinates is to pre-calculate cartesian
-bounding boxes of the data blocks. The rendering pipeline then uses the cartesian bounding boxes
-to calculate ray entry/exit points during ray tracing. Between the entry/exit points, the
-cartesian coordinates of the ray position are converted to the native coordinates of the data,
-which is used to sample the texture maps (which are stored in native coordinates). The initial
-implementaiton of the algorithm uses the ray entry/exit points of the cartesian bounding boxes,
-and so not all points along the ray are gauranteed to lie within the bounds of the data -- though
-these data points will be discarded during ray tracing, it does mean that a larger number of samples
-along the ray may be required to ensure the underlying non-cartesian element is properly sampled compared
-to the standard cartesian data ray tracing (this is controlled by the ``sample_factor`` attribute of
-the ``BlockRendering`` component).
+bounding boxes of the data blocks. The rendering pipeline uses those cartesian bounding boxes for a
+first cut at discarding blocks that a ray misses. For blocks that are not discarded, the true ray
+entry/exit points are then found analytically from the surfaces bounding the volume element: for
+spherical coordinates, the inner and outer spherical surfaces at constant radius, the conical
+surfaces at constant co-latitude and the planes at constant azimuth. A ray may enter and exit a
+single element more than once, so each entry/exit pair is sampled separately. Between an entry/exit
+pair, the cartesian coordinates of the ray position are converted to the native coordinates of the
+data, which is used to sample the texture maps (which are stored in native coordinates). The step
+size taken between an entry/exit pair is set by the characteristic lengths of the volume element,
+
+.. math::
+
+    \Delta s = \eta \, \mathrm{min}(\Delta r, r \Delta \theta, r \sin \theta \Delta \phi)
+
+where :math:`r` and :math:`\theta` are evaluated at the closest approach of the ray to the origin
+within the element and :math:`\eta` is a sampling factor. The ``sample_factor`` attribute of the
+``BlockRendering`` component stores :math:`\log_{10} \eta` for spherical data, in contrast to
+cartesian data where ``sample_factor`` is the number of samples per cell width.
 
 At present, supported non-cartesian coordinate systems include Spherical Coordinates with (r, theta, phi), where r is radius, theta is co-latitude (between 0, pi)
 and phi is azimuth (between 0, 2pi), following yt conventions.
