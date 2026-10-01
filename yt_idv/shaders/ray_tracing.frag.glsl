@@ -219,6 +219,20 @@ vec3 get_offset_texture_position(sampler3D tex, vec3 tex_curr_pos)
     return (tex_curr_pos * texsize + texture_offset) / texsize;
 }
 
+vec3 get_bitmap_texture_position(vec3 tex_curr_pos)
+{
+    // tex_curr_pos addresses the data texture, whose n + 1 texel centers are the
+    // block's vertices, but the bitmap of a grid block has one texel per cell,
+    // spanning left_edge to right_edge. Other bitmaps (octree blocks share one
+    // bitmap that isn't sized per cell) keep the data texture's coordinate.
+    ivec3 n_vertices = textureSize(ds_tex[0], 0);
+    ivec3 n_cells = textureSize(bitmap_tex, 0);
+    if (n_cells != n_vertices - ivec3(1)) {
+        return get_offset_texture_position(bitmap_tex, tex_curr_pos);
+    }
+    return (tex_curr_pos * vec3(n_vertices) - 0.5) / vec3(n_cells);
+}
+
 bool sample_texture(vec3 tex_curr_pos, inout vec4 curr_color, float tdelta,
                     float t, vec3 dir);
 vec4 cleanup_phase(in vec4 curr_color, in vec3 dir, in float t0, in float t1);
@@ -350,9 +364,9 @@ void main()
 
             ray_position_native = cart_to_sphere_vec3(ray_position);
 
-            tex_curr_pos = (ray_position_native - left_edge) / range;  // Scale from 0 .. 1
-            // But, we actually need it to be 0 + normalized dx/2 to 1 - normalized dx/2
-            tex_curr_pos = (tex_curr_pos * (1.0 - ndx)) + ndx/2.0;
+            // The texture holds n + 1 vertex-centered values, so it spans
+            // left_edge - dx/2 to right_edge + dx/2; texel k's center is vertex k.
+            tex_curr_pos = (ray_position_native - left_edge) / range + ndx / 2.0;
             sampled = sample_texture(tex_curr_pos, curr_color, tdelta, t, dir);
 
             if (sampled) {
@@ -369,7 +383,11 @@ void main()
 
     #else
 
-    while(t <= t1) {
+    while(t < t1) {
+        // The last step is shortened so the samples cover exactly [t0, t1],
+        // and each sample sits at the midpoint of its step.
+        float dt_step = min(tdelta, t1 - t);
+        ray_position = ray_origin + dir * (t + 0.5 * dt_step);
 
         if (use_external_depth_clip > 0.5) {
             v_clip_coord = projection * modelview * vec4(ray_position, 1.0);
@@ -380,10 +398,10 @@ void main()
 
         ray_position_native = ray_position;
 
-        tex_curr_pos = (ray_position_native - left_edge) / range;  // Scale from 0 .. 1
-        // But, we actually need it to be 0 + normalized dx/2 to 1 - normalized dx/2
-        tex_curr_pos = (tex_curr_pos * (1.0 - ndx)) + ndx/2.0;
-        sampled = sample_texture(tex_curr_pos, curr_color, tdelta, t, dir);
+        // The texture holds n + 1 vertex-centered values, so it spans
+        // left_edge - dx/2 to right_edge + dx/2; texel k's center is vertex k.
+        tex_curr_pos = (ray_position_native - left_edge) / range + ndx / 2.0;
+        sampled = sample_texture(tex_curr_pos, curr_color, dt_step, t, dir);
 
         if (sampled) {
             ever_sampled = true;
@@ -392,9 +410,8 @@ void main()
             depth = min(depth, (1.0 - 0.0) * 0.5 * f_ndc_depth + (1.0 + 0.0) * 0.5);
         }
 
-        t += tdelta;
-        ray_position += tdelta * dir;
-
+        t += dt_step;
+        if (dt_step < tdelta) break;
     }
 
     #endif

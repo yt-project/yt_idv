@@ -14,12 +14,26 @@ vec3 get_offset_texture_position(sampler3D tex, vec3 tex_curr_pos)
     return (tex_curr_pos * texsize + texture_offset) / texsize;
 }
 
+vec3 get_bitmap_texture_position(vec3 tex_curr_pos)
+{
+    // tex_curr_pos addresses the data texture, whose n + 1 texel centers are the
+    // block's vertices, but the bitmap of a grid block has one texel per cell,
+    // spanning left_edge to right_edge. Other bitmaps (octree blocks share one
+    // bitmap that isn't sized per cell) keep the data texture's coordinate.
+    ivec3 n_vertices = textureSize(ds_tex[0], 0);
+    ivec3 n_cells = textureSize(bitmap_tex, 0);
+    if (n_cells != n_vertices - ivec3(1)) {
+        return get_offset_texture_position(bitmap_tex, tex_curr_pos);
+    }
+    return (tex_curr_pos * vec3(n_vertices) - 0.5) / vec3(n_cells);
+}
+
 bool sample_texture(vec3 tex_curr_pos, inout vec4 curr_color, float tdelta,
                     float t, vec3 dir)
 {
     vec3 offset_pos = get_offset_texture_position(ds_tex[0], tex_curr_pos);
     vec3 tex_sample = texture(ds_tex[0], offset_pos).rgb;
-    vec3 offset_bmap_pos = get_offset_texture_position(bitmap_tex, tex_curr_pos);
+    vec3 offset_bmap_pos = get_bitmap_texture_position(tex_curr_pos);
     float map_sample = texture(bitmap_tex, offset_bmap_pos).r;
     if ((map_sample > 0.0) && (length(curr_color.rgb) < length(tex_sample))) {
         curr_color = vec4(tex_sample, 1.0);
@@ -102,9 +116,9 @@ void main()
     bool is_layer = false;
 
     while(t <= t1) {
-        tex_curr_pos = (ray_position - left_edge) / range;  // Scale from 0 .. 1
-        // But, we actually need it to be 0 + normalized dx/2 to 1 - normalized dx/2
-        tex_curr_pos = (tex_curr_pos * (1.0 - ndx)) + ndx/2.0;
+        // The texture holds n + 1 vertex-centered values, so it spans
+        // left_edge - dx/2 to right_edge + dx/2; texel k's center is vertex k.
+        tex_curr_pos = (ray_position - left_edge) / range + ndx / 2.0;
 
         sampled = sample_texture(tex_curr_pos, curr_color, tdelta, t, dir);
 

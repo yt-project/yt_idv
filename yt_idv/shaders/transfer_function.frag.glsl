@@ -5,7 +5,7 @@ bool sample_texture(vec3 tex_curr_pos, inout vec4 curr_color, float tdelta,
     float tp = tf_max;
     vec4 tf_sample;
 
-    vec3 offset_bmap_pos = get_offset_texture_position(bitmap_tex, tex_curr_pos);
+    vec3 offset_bmap_pos = get_bitmap_texture_position(tex_curr_pos);
     float map_sample = texture(bitmap_tex, offset_bmap_pos).r;
     if (!(map_sample > 0.0)) return false;
 

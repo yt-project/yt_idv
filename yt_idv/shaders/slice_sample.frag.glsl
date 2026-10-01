@@ -46,11 +46,13 @@ void main()
     vec3 nzones = range / dx;
     vec3 ndx = 1.0/nzones;
 
-    vec3 tex_curr_pos = (ray_position - left_edge) / range;  // Scale from 0 .. 1
-    // But, we actually need it to be 0 + normalized dx/2 to 1 - normalized dx/2
-    tex_curr_pos = (tex_curr_pos * (1.0 - ndx)) + ndx/2.0;
+    // The texture holds n + 1 vertex-centered values, so it spans
+    // left_edge - dx/2 to right_edge + dx/2; texel k's center is vertex k.
+    vec3 tex_curr_pos = (ray_position - left_edge) / range + ndx / 2.0;
 
-    float map_sample = texture(bitmap_tex, tex_curr_pos).r;
+    // the bitmap has one texel per cell, so it spans exactly left_edge to right_edge
+    vec3 bitmap_pos = (ray_position - left_edge) / (right_edge - left_edge);
+    float map_sample = texture(bitmap_tex, bitmap_pos).r;
     if (!(map_sample > 0.0)) discard;
 
     output_color = texture(ds_tex[0], tex_curr_pos);
