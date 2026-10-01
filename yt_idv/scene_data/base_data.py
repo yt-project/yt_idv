@@ -1,9 +1,10 @@
 import traitlets
 
 from yt_idv.opengl_support import Texture, VertexArray
+from yt_idv.serialization import SerializableMixin
 
 
-class SceneData(traitlets.HasTraits):
+class SceneData(SerializableMixin, traitlets.HasTraits):
     """A class that defines a collection of GPU-managed data.
 
     This class contains the largest common set of features that can be used
@@ -17,8 +18,10 @@ class SceneData(traitlets.HasTraits):
     vertex_array = traitlets.Instance(VertexArray)
     textures = traitlets.List(trait=traitlets.Instance(Texture))
 
-    min_val = traitlets.CFloat(0.0)
-    max_val = traitlets.CFloat(1.0)
+    min_val = traitlets.CFloat(0.0).tag(config=True)
+    max_val = traitlets.CFloat(1.0).tag(config=True)
+
+    _saved_attributes = ("vertex_array", "textures")
 
     def _normalize_by_min_max(self, data):
         # linear normalization of data across full data range

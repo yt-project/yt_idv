@@ -8,8 +8,8 @@ from yt_idv.traitlets_support import YTPositionTrait
 
 class BoxData(SceneData):
     name = "box_data"
-    left_edge = YTPositionTrait([0.0, 0.0, 0.0])
-    right_edge = YTPositionTrait([1.0, 1.0, 1.0])
+    left_edge = YTPositionTrait([0.0, 0.0, 0.0]).tag(config=True)
+    right_edge = YTPositionTrait([1.0, 1.0, 1.0]).tag(config=True)
 
     @traitlets.default("vertex_array")
     def _default_vertex_array(self):

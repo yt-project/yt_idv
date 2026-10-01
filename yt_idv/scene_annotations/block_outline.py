@@ -13,9 +13,11 @@ class BlockOutline(SceneAnnotation):
 
     name = "block_outline"
     data = traitlets.Instance(BlockCollection)
-    box_width = traitlets.CFloat(0.1)
-    box_color = traitlets.Tuple((1.0, 1.0, 1.0), trait=traitlets.CFloat())
-    box_alpha = traitlets.CFloat(1.0)
+    box_width = traitlets.CFloat(0.1).tag(config=True)
+    box_color = traitlets.Tuple((1.0, 1.0, 1.0), trait=traitlets.CFloat()).tag(
+        config=True
+    )
+    box_alpha = traitlets.CFloat(1.0).tag(config=True)
 
     def draw(self, scene, program):
         GL.glDisable(GL.GL_CULL_FACE)

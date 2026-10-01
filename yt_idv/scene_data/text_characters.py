@@ -27,7 +27,14 @@ class TextCharacters(SceneData):
     characters = traitlets.Dict(value_trait=traitlets.Instance(Character))
     name = "text_overlay"
     font = FontTrait("DejaVu Sans")
-    font_size = traitlets.CInt(32)
+    font_size = traitlets.CInt(32).tag(config=True)
+
+    # glyphs are rebuilt on load
+    _saved_attributes = ()
+
+    def _set_state(self, state, reader):
+        super()._set_state(state, reader)
+        self.build_textures()
 
     @traitlets.default("vertex_array")
     def _default_vertex_array(self):

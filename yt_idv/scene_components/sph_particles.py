@@ -24,9 +24,9 @@ KERNEL_TYPES = [
 class SPHRendering(SceneComponent):
     name = "sph_rendering"
     data = traitlets.Instance(ParticlePositions)
-    scale = traitlets.CFloat(1.0)
-    max_particle_size = traitlets.CFloat(1e-3)
-    kernel_name = traitlets.Unicode("cubic")
+    scale = traitlets.CFloat(1.0).tag(config=True)
+    max_particle_size = traitlets.CFloat(1e-3).tag(config=True)
+    kernel_name = traitlets.Unicode("cubic").tag(config=True)
     kernel_table = traitlets.Instance(SPHKernelInterpolationTable, allow_none=True)
     interpolation_texture = traitlets.Instance(Texture1D)
 

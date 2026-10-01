@@ -12,12 +12,12 @@ from yt_idv.scene_data.text_characters import TextCharacters
 class TextAnnotation(SceneAnnotation):
     name = "text_annotation"
     data = traitlets.Instance(TextCharacters)
-    text = traitlets.CUnicode()
+    text = traitlets.CUnicode().tag(config=True)
     draw_instructions = traitlets.List()
     origin = traitlets.Tuple(
         traitlets.CFloat(), traitlets.CFloat(), default_value=(-1, -1)
-    )
-    scale = traitlets.CFloat(1.0)
+    ).tag(config=True)
+    scale = traitlets.CFloat(1.0).tag(config=True)
 
     @traitlets.observe("text")
     def _observe_text(self, change):
