@@ -10,18 +10,36 @@ from yt_idv.scene_data.base_data import SceneData
 
 class BlockCollection(SceneData):
     name = "block_collection"
-    data_source = traitlets.Instance(YTDataContainer)
+    data_source = traitlets.Instance(YTDataContainer, allow_none=True)
     texture_objects = traitlets.Dict(value_trait=traitlets.Instance(Texture3D))
     bitmap_objects = traitlets.Dict(value_trait=traitlets.Instance(Texture3D))
     blocks = traitlets.Dict(default_value=())
-    scale = traitlets.Bool(False)
+    scale = traitlets.Bool(False).tag(config=True)
     blocks_by_grid = traitlets.Instance(defaultdict, (list,))
     grids_by_block = traitlets.Dict(default_value=())
-    _yt_geom_str = traitlets.Unicode("cartesian")
-    compute_min_max = traitlets.Bool(True)
-    always_normalize = traitlets.Bool(False)
-    field = traitlets.Any(default_value=None, allow_none=True)
-    field_units = traitlets.Unicode(default_value=None, allow_none=True)
+    _yt_geom_str = traitlets.Unicode("cartesian").tag(config=True)
+    compute_min_max = traitlets.Bool(True).tag(config=True)
+    always_normalize = traitlets.Bool(False).tag(config=True)
+    field = traitlets.Any(default_value=None, allow_none=True).tag(config=True)
+    field_units = traitlets.Unicode(default_value=None, allow_none=True).tag(
+        config=True
+    )
+
+    # saved copies of data_source state, used when data_source is None
+    _kd_tree = None
+    _axis_id = None
+
+    _saved_attributes = SceneData._saved_attributes + (
+        "texture_objects",
+        "bitmap_objects",
+        "_kd_tree",
+        "_axis_id",
+        "diagonal",
+        "cart_bbox_max_width",
+        "cart_bbox_le",
+        "cart_bbox_center",
+        "cart_min_dx",
+    )
 
     @traitlets.default("vertex_array")
     def _default_vertex_array(self):
@@ -212,11 +230,47 @@ class BlockCollection(SceneData):
             )
 
     def viewpoint_iter(self, camera):
-        for block in self.data_source.tiles.traverse(viewpoint=camera.position):
-            vbo_i, _ = self.blocks[id(block)]
+        if self.data_source is None:
+            order = _kd_viewpoint_order(self._kd_tree, camera.position)
+        else:
+            order = (
+                self.blocks[id(block)][0]
+                for block in self.data_source.tiles.traverse(viewpoint=camera.position)
+            )
+        for vbo_i in order:
             yield (vbo_i, self.texture_objects[vbo_i], self.bitmap_objects[vbo_i])
 
+    @property
+    def axis_id(self):
+        """The mapping from coordinate axis names to indices."""
+        if self.data_source is None:
+            return self._axis_id
+        return self.data_source.ds.coordinates.axis_id
+
+    def _get_state(self, writer):
+        if self.data_source is not None:
+            self._kd_tree = _flatten_kd_tree(self.data_source.tiles.tree.trunk)
+            if self._yt_geom_str != "cartesian":
+                self._axis_id = {
+                    ax: self.axis_id[ax]
+                    for ax in self.data_source.ds.coordinates.axis_order
+                }
+        return super()._get_state(writer)
+
+    def _set_state(self, state, reader):
+        super()._set_state(state, reader)
+        if isinstance(self.field, list):
+            self.field = tuple(self.field)
+
+    def _require_data_source(self, what):
+        if self.data_source is None:
+            raise RuntimeError(
+                f"{what} requires the yt data source, which is not available "
+                "for a block collection loaded from a saved scene."
+            )
+
     def filter_callback(self, callback):
+        self._require_data_source("filter_callback")
         # This is not efficient.  It calls it once for each node in a grid.
         # We do this the slow way because of the problem of ordering the way we
         # iterate over the grids and nodes.  This can be fixed at some point.
@@ -265,6 +319,7 @@ class BlockCollection(SceneData):
         camera offsets, ray path lengths -- must be multiplied by this value to
         get a physical length.
         """
+        self._require_data_source("internal_length_unit")
         ds = self.data_source.ds
         if self._yt_geom_str == "cartesian":
             if self.scale:
@@ -292,7 +347,66 @@ class BlockCollection(SceneData):
 
     @property
     def intersected_grids(self):
+        self._require_data_source("intersected_grids")
         return [self.data_source.ds.index.grids[gid] for gid in self.grid_id_list]
+
+
+def _flatten_kd_tree(trunk):
+    """
+    Flatten a yt kd-tree into arrays of depth-first ordered nodes. ``block``
+    is the vertex buffer index of each leaf's block, or -1.
+    """
+    nodes = list(trunk.depth_traverse())
+    index = {id(node): i for i, node in enumerate(nodes)}
+    n = len(nodes)
+    left = np.full(n, -1, dtype="int64")
+    right = np.full(n, -1, dtype="int64")
+    split_dim = np.full(n, -1, dtype="int64")
+    split_pos = np.full(n, np.nan, dtype="float64")
+    block = np.full(n, -1, dtype="int64")
+    n_blocks = 0
+    for i, node in enumerate(nodes):
+        if node.kd_is_leaf():
+            if node.grid != -1:
+                block[i] = n_blocks
+                n_blocks += 1
+            continue
+        left[i] = index[id(node.left)]
+        right[i] = index[id(node.right)]
+        split_dim[i] = node.get_split_dim()
+        split_pos[i] = node.get_split_pos()
+    return {
+        "left": left,
+        "right": right,
+        "split_dim": split_dim,
+        "split_pos": split_pos,
+        "block": block,
+    }
+
+
+def _kd_viewpoint_order(kd_tree, viewpoint):
+    """
+    Order the blocks of a flattened kd-tree from furthest to nearest a
+    viewpoint, matching ``AMRKDTree.traverse(viewpoint=...)``.
+    """
+    left = kd_tree["left"]
+    right = kd_tree["right"]
+    split_dim = kd_tree["split_dim"]
+    split_pos = kd_tree["split_pos"]
+    block = kd_tree["block"]
+    order = []
+    stack = [0]
+    while stack:
+        i = stack.pop()
+        if left[i] == -1:
+            if block[i] != -1:
+                order.append(int(block[i]))
+            continue
+        if viewpoint[split_dim[i]] <= split_pos[i]:
+            stack.extend((left[i], right[i]))
+        else:
+            stack.extend((right[i], left[i]))
+    return order
 
 
 def _block_collection_outlines(

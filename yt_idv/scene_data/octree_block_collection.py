@@ -14,7 +14,12 @@ class OctreeBlockCollection(SceneData):
     data_source = traitlets.Instance(YTDataContainer)
     data_textures = traitlets.List(value_trait=traitlets.Instance(Texture3D))
     bitmap_textures = traitlets.List(value_trait=traitlets.Instance(Texture3D))
-    shapes = traitlets.List(value_trait=traitlets.CInt())
+    shapes = traitlets.List(value_trait=traitlets.CInt()).tag(config=True)
+
+    _saved_attributes = SceneData._saved_attributes + (
+        "data_textures",
+        "bitmap_textures",
+    )
 
     @traitlets.default("vertex_array")
     def _default_vertex_array(self):

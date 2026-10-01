@@ -34,14 +34,18 @@ class BlockRendering(SceneComponent):
 
     name = "block_rendering"
     data = traitlets.Instance(BlockCollection)
-    box_width = traitlets.CFloat(0.1)
-    sample_factor = traitlets.CFloat()
+    box_width = traitlets.CFloat(0.1).tag(config=True)
+    sample_factor = traitlets.CFloat().tag(config=True)
     transfer_function = traitlets.Instance(TransferFunctionTexture)
-    tf_min = traitlets.CFloat(0.0)
-    tf_max = traitlets.CFloat(1.0)
-    tf_log = traitlets.Bool(True)
-    slice_position = traitlets.Tuple((0.5, 0.5, 0.5)).tag(trait=traitlets.CFloat())
-    slice_normal = traitlets.Tuple((1.0, 0.0, 0.0)).tag(trait=traitlets.CFloat())
+    tf_min = traitlets.CFloat(0.0).tag(config=True)
+    tf_max = traitlets.CFloat(1.0).tag(config=True)
+    tf_log = traitlets.Bool(True).tag(config=True)
+    slice_position = traitlets.Tuple((0.5, 0.5, 0.5)).tag(
+        trait=traitlets.CFloat(), config=True
+    )
+    slice_normal = traitlets.Tuple((1.0, 0.0, 0.0)).tag(
+        trait=traitlets.CFloat(), config=True
+    )
     # External depth clip used in ray_tracing.frag.glsl for truncating ray integration early based on view
     external_depth_texture = traitlets.Instance(
         Texture2D, allow_none=True, default_value=None
@@ -49,6 +53,8 @@ class BlockRendering(SceneComponent):
     use_external_depth_clip = traitlets.Bool(False)
 
     priority = 10
+
+    _saved_attributes = SceneComponent._saved_attributes + ("transfer_function",)
 
     def render_gui(self, imgui, renderer, scene):
         changed = super().render_gui(imgui, renderer, scene)
@@ -222,7 +228,7 @@ class BlockRendering(SceneComponent):
 
     def _set_uniforms(self, scene, shader_program):
         if self.data._yt_geom_str == "spherical":
-            axis_id = self.data.data_source.ds.coordinates.axis_id
+            axis_id = self.data.axis_id
             shader_program._set_uniform("id_theta", axis_id["theta"])
             shader_program._set_uniform("id_r", axis_id["r"])
             shader_program._set_uniform("id_phi", axis_id["phi"])

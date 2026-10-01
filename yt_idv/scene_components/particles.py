@@ -11,8 +11,8 @@ from yt_idv.scene_data.particle_positions import ParticlePositions
 class ParticleRendering(SceneComponent):
     name = "particle_rendering"
     data = traitlets.Instance(ParticlePositions)
-    scale = traitlets.CFloat(1e-3)
-    max_particle_size = traitlets.CFloat(1e-3)
+    scale = traitlets.CFloat(1e-3).tag(config=True)
+    max_particle_size = traitlets.CFloat(1e-3).tag(config=True)
 
     def render_gui(self, imgui, renderer, scene):
         changed = super().render_gui(imgui, renderer, scene)

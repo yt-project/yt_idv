@@ -8,6 +8,7 @@ from yt_idv.scene_data.base_data import SceneData
 class GridPositions(SceneData):
     name = "grid_positions"
     grid_list = traitlets.List()
+    n_grids = traitlets.CInt(0).tag(config=True)
 
     @traitlets.default("vertex_array")
     def _default_vertex_array(self):
@@ -20,7 +21,8 @@ class GridPositions(SceneData):
             dx.append(g.dds.in_units("unitary").tolist())
             le.append(g.LeftEdge.in_units("unitary").tolist())
             re.append(g.RightEdge.in_units("unitary").tolist())
-        positions = np.ones((len(self.grid_list), 4), dtype="f4")
+        self.n_grids = len(self.grid_list)
+        positions = np.ones((self.n_grids, 4), dtype="f4")
         dx = np.array(dx).astype("f4")
         le = np.array(le).astype("f4")
         re = np.array(re).astype("f4")
