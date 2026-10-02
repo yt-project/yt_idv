@@ -345,6 +345,16 @@ class BlockCollection(SceneData):
             self.texture_objects[vbo_i] = data_tex
             self.bitmap_objects[vbo_i] = bitmap_tex
 
+    def release(self):
+        for tex in self.texture_objects.values():
+            # Doesn't matter too much which order we go in...
+            tex.release()
+        self.texture_objects.clear()
+        for tex in self.bitmap_objects.values():
+            tex.release()
+        self.bitmap_objects.clear()
+        self.vertex_array.release()
+
     @property
     def _textures_are_normalized(self) -> bool:
         # whether or not _load_textures min/max normalized the 3D textures
