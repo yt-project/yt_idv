@@ -398,7 +398,7 @@ class VertexArray(traitlets.HasTraits):
         raise KeyError(key)
 
     def keys(self):
-        return list(_.name for _ in self.attributes)
+        return [_.name for _ in self.attributes]
 
     def release(self):
         for att in self.attributes:
