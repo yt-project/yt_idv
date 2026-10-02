@@ -40,7 +40,7 @@ class OSMesaRenderingContext(OffscreenRenderingContext):
         self.context = osmesa.OSMesaCreateContextAttribs(config_attribs, None)
         self._buffer = np.zeros((self.height, self.width, 4), dtype="u1")
         osmesa.OSMesaMakeCurrent(
-            self.context, self._buffer, GL.GL_UNSIGNED_BYTE, self.height, self.width
+            self.context, self._buffer, GL.GL_UNSIGNED_BYTE, self.width, self.height
         )
 
         GL.glClearColor(0.0, 0.0, 0.0, 0.0)

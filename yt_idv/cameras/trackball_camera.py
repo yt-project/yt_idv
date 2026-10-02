@@ -3,13 +3,32 @@ import traitlets
 from yt.utilities.math_utils import (
     get_lookat_matrix,
     get_orthographic_matrix,
-    get_perspective_matrix,
     quaternion_to_rotation_matrix,
     rotation_matrix_to_quaternion,
 )
 
 from yt_idv.cameras.base_camera import BaseCamera
 from yt_idv.utilities.camera_utilities import update_orientation
+
+
+def get_perspective_matrix(fovy, aspect, z_near, z_far):
+    """
+    The perspective projection of a symmetric frustum with a vertical field of
+    view of fovy degrees, in the same row-major layout as
+    yt.utilities.math_utils.get_perspective_matrix.
+
+    yt's version scales the bottom of the frustum by the aspect ratio along
+    with its sides, which squashes and shifts the image vertically whenever
+    aspect != 1, so the matrix is built here instead.
+    """
+    f = 1.0 / np.tan(np.radians(fovy) / 2.0)
+    result = np.zeros((4, 4), dtype="float32")
+    result[0][0] = f / aspect
+    result[1][1] = f
+    result[2][2] = -(z_far + z_near) / (z_far - z_near)
+    result[2][3] = -2.0 * z_far * z_near / (z_far - z_near)
+    result[3][2] = -1.0
+    return result
 
 
 class TrackballCamera(BaseCamera):
@@ -31,7 +50,7 @@ class TrackballCamera(BaseCamera):
         # half-height of the orthographic view volume, chosen to match the
         # perspective frustum's half-height at the focal plane so that
         # toggling projection_type preserves the apparent size at the focus
-        # (exact for aspect_ratio == 1) and moving the camera still zooms
+        # and moving the camera still zooms
         return np.tan(np.radians(self.fov) / 2.0) * np.linalg.norm(
             self.position - self.focus
         )
