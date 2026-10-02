@@ -99,6 +99,9 @@ class BlockRendering(SceneComponent):
         if _:
             self.render_method = valid_shaders[shader_ind]
         changed = changed or _
+        if self.data._yt_geom_str == "cartesian":
+            _, self.data.scale = imgui.checkbox("Scale Positions", self.data.scale)
+            changed = changed or _
         if imgui.button("Add Block Outline"):
             if self.data._yt_geom_str == "cartesian":
                 from ..scene_annotations.block_outline import BlockOutline
