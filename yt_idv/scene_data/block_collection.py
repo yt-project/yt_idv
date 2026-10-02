@@ -27,14 +27,14 @@ class BlockCollection(SceneData):
     field_units = traitlets.Unicode(default_value=None, allow_none=True).tag(
         config=True
     )
-    applied_scale_ratio = traitlets.CFloat(1.0, read_only=True).tag(config=True)
+    applied_scale_ratio = traitlets.CFloat(1.0, read_only=True)
     applied_scale_offset = traitlets.Tuple(
         traitlets.CFloat(),
         traitlets.CFloat(),
         traitlets.CFloat(),
         default_value=(0.0, 0.0, 0.0),
         read_only=True,
-    ).tag(config=True)
+    )
 
     # saved copies of data_source state, used when data_source is None
     _kd_tree = None
