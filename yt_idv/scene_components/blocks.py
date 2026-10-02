@@ -222,12 +222,37 @@ class BlockRendering(SceneComponent):
             if depth_clip_active
             else contextlib.nullcontext()
         )
+        if self._draw_order_matters:
+            blocks = self.data.viewpoint_iter(scene.camera)
+        else:
+            blocks = (
+                (vbo_i, tex, self.data.bitmap_objects[vbo_i])
+                for vbo_i, tex in self.data.texture_objects.items()
+            )
         with self.transfer_function.bind(target=2):
             with depth_ctx:
-                for tex_ind, tex, bitmap_tex in self.data.viewpoint_iter(scene.camera):
+                for tex_ind, tex, bitmap_tex in blocks:
                     with tex.bind(target=0):
                         with bitmap_tex.bind(target=1):
                             GL.glDrawArrays(GL.GL_POINTS, tex_ind * each, each)
+
+    @property
+    def _draw_order_matters(self):
+        # Blocks have to be drawn furthest first unless the first pass blends
+        # them commutatively (a max, a min, or a plain sum) with no depth
+        # test, as max_intensity and projection do. Then any order gives the
+        # same image, and the kd-tree walk can be skipped.
+        shader = self.fragment_shader
+        if shader is None:
+            return True
+        if shader.use_separate_blend or shader.depth_test != GL.GL_ALWAYS:
+            return True
+        if shader.blend_equation in (GL.GL_MAX, GL.GL_MIN):
+            return False
+        return not (
+            shader.blend_equation == GL.GL_FUNC_ADD
+            and tuple(shader.blend_func) == (GL.GL_ONE, GL.GL_ONE)
+        )
 
     def _set_uniforms(self, scene, shader_program):
         if self.data._yt_geom_str == "spherical":
