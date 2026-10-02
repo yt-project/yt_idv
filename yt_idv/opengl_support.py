@@ -378,6 +378,7 @@ class VertexAttribute(traitlets.HasTraits):
             GL.glDeleteBuffers(1, [self.id])
             self.id = -1
 
+
 class VertexArray(traitlets.HasTraits):
     name = traitlets.CUnicode("vertex")
     id = traitlets.CInt(-1)
@@ -392,7 +393,8 @@ class VertexArray(traitlets.HasTraits):
 
     def __getitem__(self, key):
         for att in self.attributes:
-            if att.name == key: return att
+            if att.name == key:
+                return att
         raise KeyError(key)
 
     def keys(self):
