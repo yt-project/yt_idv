@@ -15,7 +15,9 @@ class BlockCollection(SceneData):
     bitmap_objects = traitlets.Dict(value_trait=traitlets.Instance(Texture3D))
     blocks = traitlets.Dict(default_value=())
     scale = traitlets.Bool(False)
-    _compute_bbox = traitlets.Bool(False) # Useful only if you want a manual bbox calculation
+    _compute_bbox = traitlets.Bool(
+        False
+    )  # Useful only if you want a manual bbox calculation
     blocks_by_grid = traitlets.Instance(defaultdict, (list,))
     grids_by_block = traitlets.Dict(default_value=())
     _yt_geom_str = traitlets.Unicode("cartesian")
@@ -23,11 +25,13 @@ class BlockCollection(SceneData):
     always_normalize = traitlets.Bool(False)
     field = traitlets.Any(default_value=None, allow_none=True)
     field_units = traitlets.Unicode(default_value=None, allow_none=True)
-    applied_scale_ratio = traitlets.CFloat(1.0, read_only = True)
+    applied_scale_ratio = traitlets.CFloat(1.0, read_only=True)
     applied_scale_offset = traitlets.Tuple(
-        traitlets.CFloat(), traitlets.CFloat(), traitlets.CFloat(),
-        default_value = (0.0, 0.0, 0.0),
-        read_only = True,
+        traitlets.CFloat(),
+        traitlets.CFloat(),
+        traitlets.CFloat(),
+        default_value=(0.0, 0.0, 0.0),
+        read_only=True,
     )
 
     @traitlets.default("vertex_array")
@@ -55,9 +59,9 @@ class BlockCollection(SceneData):
             self.set_trait("applied_scale_offset", tuple(offset))
         else:
             # Now we want to scale back...
-            ratio = 1.0/np.array(self.applied_scale_ratio)
+            ratio = 1.0 / np.array(self.applied_scale_ratio)
             self.set_trait("applied_scale_ratio", 1.0)
-            offset = -np.array(self.applied_scale_offset)*ratio
+            offset = -np.array(self.applied_scale_offset) * ratio
             self.set_trait("applied_scale_offset", (0.0, 0.0, 0.0))
         for block in self.data_source.tiles.traverse():
             block.LeftEdge -= offset
@@ -68,11 +72,11 @@ class BlockCollection(SceneData):
 
         for att in ["model_vertex", "in_left_edge", "in_right_edge"]:
             v = self.vertex_array[att].data.copy()
-            v[:,:3] = (v[:,:3] - offset)/ratio
+            v[:, :3] = (v[:, :3] - offset) / ratio
             self.vertex_array[att].data = v[:]
         self.vertex_array["in_dx"].data = (
             self.vertex_array["in_dx"].data / ratio
-        ).astype("f4") # needed because ratio upcasts
+        ).astype("f4")  # needed because ratio upcasts
 
     def add_data(self, field, no_ghost=False):
         r"""Adds a source of data for the block collection.

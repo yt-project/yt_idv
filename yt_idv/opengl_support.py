@@ -383,7 +383,8 @@ class VertexArray(traitlets.HasTraits):
 
     def __getitem__(self, key):
         for att in self.attributes:
-            if att.name == key: return att
+            if att.name == key:
+                return att
         raise KeyError(key)
 
     @contextmanager
