@@ -19,18 +19,33 @@ class BlockRendering(SceneComponent):
     including mesh outline.  This allows us to render a single collection of
     blocks multiple times in a single scene and to separate out the memory
     handling from the display.
+
+    Note that the meaning of ``sample_factor`` depends on the coordinate system
+    of the data. For cartesian data, it is the number of samples taken per cell
+    width along a ray. For spherical data, the step size along a ray within a
+    volume element is
+
+        ds = eta * min(dr, r * dtheta, r * sin(theta) * dphi)
+
+    and ``sample_factor`` stores log10(eta), so that a ``sample_factor`` of 0
+    (the default for spherical data) samples at the smallest characteristic
+    length of the element and smaller values sample more finely.
     """
 
     name = "block_rendering"
     data = traitlets.Instance(BlockCollection)
-    box_width = traitlets.CFloat(0.1)
-    sample_factor = traitlets.CFloat(1.0)
+    box_width = traitlets.CFloat(0.1).tag(config=True)
+    sample_factor = traitlets.CFloat().tag(config=True)
     transfer_function = traitlets.Instance(TransferFunctionTexture)
-    tf_min = traitlets.CFloat(0.0)
-    tf_max = traitlets.CFloat(1.0)
-    tf_log = traitlets.Bool(True)
-    slice_position = traitlets.Tuple((0.5, 0.5, 0.5)).tag(trait=traitlets.CFloat())
-    slice_normal = traitlets.Tuple((1.0, 0.0, 0.0)).tag(trait=traitlets.CFloat())
+    tf_min = traitlets.CFloat(0.0).tag(config=True)
+    tf_max = traitlets.CFloat(1.0).tag(config=True)
+    tf_log = traitlets.Bool(True).tag(config=True)
+    slice_position = traitlets.Tuple((0.5, 0.5, 0.5)).tag(
+        trait=traitlets.CFloat(), config=True
+    )
+    slice_normal = traitlets.Tuple((1.0, 0.0, 0.0)).tag(
+        trait=traitlets.CFloat(), config=True
+    )
     # External depth clip used in ray_tracing.frag.glsl for truncating ray integration early based on view
     external_depth_texture = traitlets.Instance(
         Texture2D, allow_none=True, default_value=None
@@ -39,17 +54,39 @@ class BlockRendering(SceneComponent):
 
     priority = 10
 
+    _saved_attributes = SceneComponent._saved_attributes + ("transfer_function",)
+
     def render_gui(self, imgui, renderer, scene):
         changed = super().render_gui(imgui, renderer, scene)
 
-        _, sample_factor = imgui.slider_float(
-            "Sample Factor",
-            self.sample_factor,
-            1.0,
-            20.0,
-        )
-        if _:
-            self.sample_factor = sample_factor
+        if self.data._yt_geom_str == "spherical":
+            _, sample_factor = imgui.slider_float(
+                "log10(Sample Factor)",
+                self.sample_factor,
+                -1.0,
+                1.0,
+            )
+            if _:
+                self.sample_factor = sample_factor
+                changed = True
+            _ = add_popup_help(
+                imgui,
+                "log10 of the sampling factor, eta. The step size along a ray "
+                "within a spherical volume element is eta times the smallest "
+                "of the element's characteristic lengths, dr, r * dtheta and "
+                "r * sin(theta) * dphi. Smaller values sample more finely.",
+            )
+            changed = changed or _
+        else:
+            _, sample_factor = imgui.slider_float(
+                "Sample Factor",
+                self.sample_factor,
+                1.0,
+                20.0,
+            )
+            if _:
+                self.sample_factor = sample_factor
+
         # Now, shaders
         valid_shaders = get_shader_combos(
             self.name, coord_system=self.data._yt_geom_str
@@ -158,6 +195,16 @@ class BlockRendering(SceneComponent):
 
         return changed
 
+    @traitlets.default("sample_factor")
+    def _default_sample_factor(self):
+        # in spherical coordinates, sample_factor stores log10 of the sampling
+        # factor eta (so the default of 0.0 corresponds to eta of 1), while in
+        # cartesian coordinates it is the number of samples per cell width.
+        data = self._trait_values.get("data", None)
+        if data is not None and data._yt_geom_str == "spherical":
+            return 0.0
+        return 1.0
+
     @traitlets.default("transfer_function")
     def _default_transfer_function(self):
         tf = TransferFunctionTexture(data=np.ones((256, 1, 4), dtype="u1") * 255)
@@ -184,7 +231,7 @@ class BlockRendering(SceneComponent):
 
     def _set_uniforms(self, scene, shader_program):
         if self.data._yt_geom_str == "spherical":
-            axis_id = self.data.data_source.ds.coordinates.axis_id
+            axis_id = self.data.axis_id
             shader_program._set_uniform("id_theta", axis_id["theta"])
             shader_program._set_uniform("id_r", axis_id["r"])
             shader_program._set_uniform("id_phi", axis_id["phi"])
@@ -233,6 +280,14 @@ class BlockRendering(SceneComponent):
         vertex-centered data used to build the 3D textures, so they can fall
         slightly outside the range of the cell-centered field (particularly with
         ``no_ghost=True``).
+
+        For ``projection``, values are path integrals along the rays cast by
+        the camera. With the default perspective camera the rays diverge, so
+        the integrals only approximate a yt projection; setting
+        ``camera.projection_type = "orthographic"`` before rendering casts
+        parallel rays, making them true parallel-ray path integrals (and
+        ``RenderedImagePlane.integrate`` then recovers the total up to
+        discretization error).
         """
         if self.first_pass_fb_rgba is None:
             raise RuntimeError(

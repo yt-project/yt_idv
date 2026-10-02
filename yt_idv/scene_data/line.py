@@ -9,6 +9,8 @@ class LineData(SceneData):
     name = "line_data"
     n_values = traitlets.CInt()
 
+    _saved_attributes = SceneData._saved_attributes + ("n_vertices",)
+
     @traitlets.default("vertex_array")
     def _default_vertex_array(self):
         return VertexArray(name="vertices", each=6)

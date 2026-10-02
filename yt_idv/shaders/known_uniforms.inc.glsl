@@ -32,9 +32,10 @@ uniform vec3 slice_position;
 uniform vec3 slice_normal;
 
 // Matrices for projection and positions
+// Note: some additional camera-related uniforms are declared in
+// header.inc.glsl instead due to compilation assembly order.
 uniform mat4 modelview;
 uniform mat4 projection;
-uniform vec3 camera_pos;
 uniform vec4 viewport; // (offset_x, offset_y, 1 / screen_x, 1 / screen_y)
 uniform mat4 inv_pmvm;
 uniform float near_plane;

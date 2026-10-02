@@ -110,6 +110,49 @@ class SceneGraph(traitlets.HasTraits):
         self.data_objects.append(data)
         self.annotations.append(BoxAnnotation(data=data))
 
+    def save(self, filename, compress=False):
+        """
+        Save the scene, including its textures and vertex data, to a file.
+
+        Parameters
+        ----------
+        filename: The file to write
+        compress: Should the file be compressed (slower, but often smaller)
+
+        Examples
+        --------
+
+        >>> sg.save("galaxy_scene.zip")
+        >>> sg2 = SceneGraph.load("galaxy_scene.zip")
+        """
+        from yt_idv.serialization import save_scene
+
+        save_scene(self, filename, compress=compress)
+
+    @staticmethod
+    def load(filename, ds=None):
+        """
+        Load a scene written by :meth:`SceneGraph.save`.
+
+        An OpenGL context must already exist, as the textures are uploaded
+        to the GPU. The original dataset is not needed to render the scene,
+        but operations that read from it (e.g., ``rendered_image_plane``) are
+        not available.
+
+        Parameters
+        ----------
+        filename: The file to read
+        ds: An optional yt Dataset to attach to the scene
+
+        Returns
+        -------
+
+        scene: SceneGraph
+        """
+        from yt_idv.serialization import load_scene
+
+        return load_scene(filename, ds=ds)
+
     def __iter__(self):
         """
         Iterate over all of the scene elements, first the components and then

@@ -9,6 +9,8 @@ class RGBAData(SceneData):
     name = "rgba_data"
     colormap_texture = traitlets.Instance(Texture1D)
 
+    _saved_attributes = SceneData._saved_attributes + ("colormap_texture",)
+
     @traitlets.default("vertex_array")
     def _default_vertex_array(self):
         va = VertexArray(name="tri", each=6)

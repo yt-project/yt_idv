@@ -10,11 +10,11 @@ from yt_idv.scene_data.base_data import SceneData
 class ParticlePositions(SceneData):
     name = "particle_positions"
     data_source = traitlets.Instance(YTDataContainer)
-    particle_type = traitlets.Unicode("all")
-    radius_field = traitlets.Unicode(None, allow_none=True)
-    color_field = traitlets.Unicode(None, allow_none=True)
-    position_field = traitlets.Unicode("particle_position")
-    size = traitlets.CInt(-1)
+    particle_type = traitlets.Unicode("all").tag(config=True)
+    radius_field = traitlets.Unicode(None, allow_none=True).tag(config=True)
+    color_field = traitlets.Unicode(None, allow_none=True).tag(config=True)
+    position_field = traitlets.Unicode("particle_position").tag(config=True)
+    size = traitlets.CInt(-1).tag(config=True)
 
     @traitlets.default("vertex_array")
     def _default_vertex_array(self):
