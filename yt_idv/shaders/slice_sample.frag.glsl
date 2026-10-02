@@ -5,6 +5,9 @@ flat in vec3 right_edge;
 flat in mat4 inverse_proj;
 flat in mat4 inverse_mvm;
 flat in mat4 inverse_pmvm;
+
+// this block's data_tex and bitmap_tex, see known_uniforms.inc.glsl
+BLOCK_TEXTURE_INPUTS
 out vec4 output_color;
 
 bool sample_texture(vec3 tex_curr_pos, inout vec4 curr_color, float tdelta,
@@ -55,5 +58,5 @@ void main()
     float map_sample = texture(bitmap_tex, bitmap_pos).r;
     if (!(map_sample > 0.0)) discard;
 
-    output_color = texture(ds_tex[0], tex_curr_pos);
+    output_color = texture(data_tex, tex_curr_pos);
 }

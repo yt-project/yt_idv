@@ -30,6 +30,13 @@ flat in vec4 vv_model[];
 
 flat out ivec3 texture_offset;
 
+#ifdef BINDLESS_TEXTURES
+flat in uvec2 vdata_tex[];
+flat in uvec2 vbitmap_tex[];
+flat out uvec2 data_tex_handle;
+flat out uvec2 bitmap_tex_handle;
+#endif
+
 // https://stackoverflow.com/questions/28375338/cube-using-single-gl-triangle-strip
 // suggests that the triangle strip we want for the cube is
 
@@ -83,6 +90,10 @@ void main() {
         dx = vdx[0];
         v_model = newPos;
         texture_offset = ivec3(0);
+        #ifdef BINDLESS_TEXTURES
+        data_tex_handle = vdata_tex[0];
+        bitmap_tex_handle = vbitmap_tex[0];
+        #endif
         EmitVertex();
     }
 

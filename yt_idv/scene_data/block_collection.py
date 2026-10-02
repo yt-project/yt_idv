@@ -7,6 +7,13 @@ from yt.data_objects.data_containers import YTDataContainer
 from yt_idv.opengl_support import Texture3D, VertexArray, VertexAttribute
 from yt_idv.scene_data.base_data import SceneData
 
+try:
+    from yt.utilities.lib.amr_kdtools import viewpoint_node_ids
+except ImportError:
+    # yt versions without the array-filling kd-tree walk fall back to
+    # AMRKDTree.traverse(viewpoint=...)
+    viewpoint_node_ids = None
+
 
 class BlockCollection(SceneData):
     name = "block_collection"
@@ -39,6 +46,12 @@ class BlockCollection(SceneData):
     # saved copies of data_source state, used when data_source is None
     _kd_tree = None
     _axis_id = None
+
+    # buffers for viewpoint_node_ids
+    _order_node_ids = None
+    _order_node_inds = None
+    # bindless handles of the blocks' textures, see texture_handles
+    _texture_handles = None
 
     _saved_attributes = SceneData._saved_attributes + (
         "texture_objects",
@@ -140,6 +153,7 @@ class BlockCollection(SceneData):
             block = node.data
             self.blocks_by_grid[g.id - g._id_offset].append((id(block), gi))
             self.grids_by_block[id(node.data)] = (g.id - g._id_offset, sl)
+        self._tag_kd_leaves()
 
         if self.compute_min_max:
             if hasattr(min_val, "in_units"):
@@ -271,16 +285,58 @@ class BlockCollection(SceneData):
                 f"{self.name} does not implement {self._yt_geom_str} geometries."
             )
 
-    def viewpoint_iter(self, camera):
+    def _tag_kd_leaves(self):
+        # viewpoint_node_ids reports each leaf's node_ind, so store the leaf's
+        # block index there. add_data numbers the blocks in the order
+        # tiles.traverse() yields them, which is kd_traverse() order.
+        for vbo_i, node in enumerate(self.data_source.tiles.tree.trunk.kd_traverse()):
+            node.node_ind = vbo_i
+        self._order_node_ids = np.empty(len(self.blocks), dtype="int64")
+        self._order_node_inds = np.empty(len(self.blocks), dtype="int64")
+
+    def viewpoint_order(self, camera):
+        """
+        The block indices, ordered from furthest to nearest the camera.
+
+        Returns a uint32 array that can be used directly as an index buffer.
+        """
+        viewpoint = camera.position
         if self.data_source is None:
-            order = _kd_viewpoint_order(self._kd_tree, camera.position)
-        else:
-            order = (
+            order = _kd_viewpoint_order(self._kd_tree, viewpoint)
+            return np.asarray(order, dtype="uint32")
+        if viewpoint_node_ids is None:
+            order = [
                 self.blocks[id(block)][0]
-                for block in self.data_source.tiles.traverse(viewpoint=camera.position)
-            )
-        for vbo_i in order:
+                for block in self.data_source.tiles.traverse(viewpoint=viewpoint)
+            ]
+            return np.asarray(order, dtype="uint32")
+        n = viewpoint_node_ids(
+            self.data_source.tiles.tree.trunk,
+            viewpoint,
+            self._order_node_ids,
+            self._order_node_inds,
+        )
+        return self._order_node_inds[:n].astype("uint32")
+
+    def viewpoint_iter(self, camera):
+        for vbo_i in self.viewpoint_order(camera).tolist():
             yield (vbo_i, self.texture_objects[vbo_i], self.bitmap_objects[vbo_i])
+
+    def texture_handles(self):
+        """
+        Bindless texture handles for each block, as a (2, n_blocks) uint64
+        array: the data textures' handles, then the bitmap textures'. Column i
+        is block i. The textures are made resident the first time this is
+        called.
+        """
+        if self._texture_handles is None:
+            n_blocks = len(self.texture_objects)
+            handles = np.zeros((2, n_blocks), dtype="uint64")
+            for vbo_i in range(n_blocks):
+                handles[0, vbo_i] = self.texture_objects[vbo_i].make_resident()
+                handles[1, vbo_i] = self.bitmap_objects[vbo_i].make_resident()
+            self._texture_handles = handles
+        return self._texture_handles
 
     @property
     def axis_id(self):
@@ -346,6 +402,7 @@ class BlockCollection(SceneData):
             self.bitmap_objects[vbo_i] = bitmap_tex
 
     def release(self):
+        # Texture.release makes any bindless handle non-resident first
         for tex in self.texture_objects.values():
             # Doesn't matter too much which order we go in...
             tex.release()
@@ -353,6 +410,7 @@ class BlockCollection(SceneData):
         for tex in self.bitmap_objects.values():
             tex.release()
         self.bitmap_objects.clear()
+        self._texture_handles = None
         self.vertex_array.release()
 
     @property

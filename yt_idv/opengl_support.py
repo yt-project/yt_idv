@@ -20,6 +20,7 @@ import numpy as np
 import traitlets
 import traittypes
 from OpenGL import GL
+from OpenGL.GL.ARB import bindless_texture
 
 # Set up a mapping from numbers to names
 from yt.utilities.math_utils import get_scale_matrix, get_translate_matrix
@@ -162,12 +163,19 @@ class GLValue(traitlets.TraitType):
 TEX_TARGETS = {i: getattr(GL, f"GL_TEXTURE{i}") for i in range(10)}
 
 
+def bindless_textures_supported():
+    """Whether the current context supports GL_ARB_bindless_texture."""
+    return bool(bindless_texture.glInitBindlessTextureARB())
+
+
 class Texture(traitlets.HasTraits):
     texture_name = traitlets.CInt(-1)
     data = traittypes.Array(None, allow_none=True)
     channels = GLValue("r32f")
     min_filter = GLValue("linear")
     mag_filter = GLValue("linear")
+    # bindless handle, 0 until make_resident is called
+    handle = traitlets.Int(0)
 
     @traitlets.default("texture_name")
     def _default_texture_name(self):
@@ -181,7 +189,22 @@ class Texture(traitlets.HasTraits):
         _ = GL.glActiveTexture(TEX_TARGETS[target])
         GL.glBindTexture(self.dim_enum, 0)
 
+    def make_resident(self):
+        """Create a bindless handle for this texture and make it resident.
+
+        Requires GL_ARB_bindless_texture. The texture's sampling state (filters
+        and wrap modes) can't change once it has a handle; its data can still
+        be updated.
+        """
+        if self.handle == 0:
+            self.handle = int(bindless_texture.glGetTextureHandleARB(self.texture_name))
+            bindless_texture.glMakeTextureHandleResidentARB(self.handle)
+        return self.handle
+
     def release(self):
+        if self.handle != 0:
+            bindless_texture.glMakeTextureHandleNonResidentARB(self.handle)
+            self.handle = 0
         if self.trait_has_value("texture_name") and self.texture_name != -1:
             GL.glDeleteTextures(1, [self.texture_name])
             self.texture_name = -1
@@ -320,19 +343,28 @@ class Texture3D(Texture):
             dx, dy, dz = data.shape[:3]
             gl_type, type1, type2 = TEX_CHANNELS[data.dtype.name][channels]
             GL.glPixelStorei(GL.GL_UNPACK_ALIGNMENT, 1)
-            GL.glTexParameterf(GL.GL_TEXTURE_3D, GL.GL_TEXTURE_WRAP_S, self.boundary_x)
-            GL.glTexParameterf(GL.GL_TEXTURE_3D, GL.GL_TEXTURE_WRAP_T, self.boundary_y)
-            GL.glTexParameterf(GL.GL_TEXTURE_3D, GL.GL_TEXTURE_WRAP_R, self.boundary_z)
             if not isinstance(change["old"], np.ndarray):
+                # the sampling state can't change once the texture has a
+                # bindless handle (see make_resident), so it's only set when
+                # the storage is allocated
+                GL.glTexParameterf(
+                    GL.GL_TEXTURE_3D, GL.GL_TEXTURE_WRAP_S, self.boundary_x
+                )
+                GL.glTexParameterf(
+                    GL.GL_TEXTURE_3D, GL.GL_TEXTURE_WRAP_T, self.boundary_y
+                )
+                GL.glTexParameterf(
+                    GL.GL_TEXTURE_3D, GL.GL_TEXTURE_WRAP_R, self.boundary_z
+                )
+                GL.glTexParameteri(
+                    GL.GL_TEXTURE_3D, GL.GL_TEXTURE_MIN_FILTER, self.min_filter
+                )
+                GL.glTexParameteri(
+                    GL.GL_TEXTURE_3D, GL.GL_TEXTURE_MAG_FILTER, self.mag_filter
+                )
                 GL.glTexStorage3D(GL.GL_TEXTURE_3D, 1, type1, dx, dy, dz)
             GL.glTexSubImage3D(
                 GL.GL_TEXTURE_3D, 0, 0, 0, 0, dx, dy, dz, type2, gl_type, data.T
-            )
-            GL.glTexParameteri(
-                GL.GL_TEXTURE_3D, GL.GL_TEXTURE_MIN_FILTER, self.min_filter
-            )
-            GL.glTexParameteri(
-                GL.GL_TEXTURE_3D, GL.GL_TEXTURE_MAG_FILTER, self.mag_filter
             )
             GL.glGenerateMipmap(GL.GL_TEXTURE_3D)
 
@@ -344,6 +376,9 @@ class VertexAttribute(traitlets.HasTraits):
     each = traitlets.CInt(-1)
     opengl_type = traitlets.CInt(GL.GL_FLOAT)
     divisor = traitlets.CInt(0)
+    # integer attributes (declared ivec/uvec in the shader) keep their values
+    # exactly; otherwise they are converted to float
+    integer = traitlets.Bool(False)
 
     @traitlets.default("id")
     def _id_default(self):
@@ -359,7 +394,12 @@ class VertexAttribute(traitlets.HasTraits):
                 _ = GL.glEnableVertexAttribArray(loc)
         _ = GL.glBindBuffer(GL.GL_ARRAY_BUFFER, self.id)
         if loc >= 0:
-            GL.glVertexAttribPointer(loc, self.each, self.opengl_type, False, 0, None)
+            if self.integer:
+                GL.glVertexAttribIPointer(loc, self.each, self.opengl_type, 0, None)
+            else:
+                GL.glVertexAttribPointer(
+                    loc, self.each, self.opengl_type, False, 0, None
+                )
         yield
         if loc >= 0:
             GL.glDisableVertexAttribArray(loc)
