@@ -44,6 +44,9 @@ def _first_pass(rc, scene):
         far_plane=20.0,
         aspect_ratio=1.0,
     )
+    # the first frame can differ, as some components leave GL state behind
+    # (see test_serialization._render)
+    rc.run()
     rc.run()
     return np.array(component.first_pass_fb_rgba)
 
