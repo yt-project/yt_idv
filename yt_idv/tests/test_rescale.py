@@ -18,6 +18,7 @@ def region_rc(make_rc):
     component.render_method = "max_intensity"
     component.store_first_pass_fb = True
     rc.scene.camera.update(position=[1.5, 1.2, 2.0], focus=[0.5, 0.5, 0.5])
+    rc.ds = ds
     return rc
 
 
