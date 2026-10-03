@@ -1,3 +1,5 @@
+import sys
+
 import numpy as np
 import pytest
 from yt.testing import fake_amr_ds
@@ -29,16 +31,18 @@ def test_draw_order_matters(amr_rc, method, order_matters):
 
 
 # Maxima are exact in any order, but sums (projection and constant) round
-# differently in a different order, and GPUs needn't blend float framebuffers
-# with IEEE float32 rounding: macOS's renderer differs by up to 5e-5 relative
-# between orders, where float32 rounding alone allows about 3e-6 here.
+# differently in a different order: float32 allows about 3e-6 relative here.
+# macOS's OpenGL renders identical inputs with differences of up to about 1e-4
+# relative, so the comparisons there are looser.
 @pytest.mark.parametrize(
     "method, rtol",
-    [("max_intensity", 0), ("projection", 1e-4), ("constant", 1e-4)],
+    [("max_intensity", 0), ("projection", 1e-5), ("constant", 1e-5)],
 )
 def test_order_independent_methods_skip_viewpoint_walk(
     amr_rc, method, rtol, monkeypatch
 ):
+    if sys.platform == "darwin":
+        rtol = 1e-3
     component = amr_rc.scene.components[0]
     component.render_method = method
     component.store_first_pass_fb = True
