@@ -1,5 +1,9 @@
 #version 330 core
 
+// used by the BINDLESS_TEXTURES block shaders; "enable" only warns where the
+// extension is unsupported
+#extension GL_ARB_bindless_texture : enable
+
 const float INFINITY = 1. / 0.;
 const float PI = 3.1415926535897932384626433832795;
 

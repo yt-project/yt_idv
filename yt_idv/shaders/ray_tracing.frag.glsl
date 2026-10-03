@@ -7,6 +7,9 @@ flat in mat4 inverse_mvm;
 flat in mat4 inverse_pmvm;
 flat in ivec3 texture_offset;
 
+// this block's data_tex and bitmap_tex, see known_uniforms.inc.glsl
+BLOCK_TEXTURE_INPUTS
+
 #ifdef NONCARTESIAN_GEOM
 flat in vec3 left_edge_cart;
 flat in vec3 right_edge_cart;
@@ -225,7 +228,7 @@ vec3 get_bitmap_texture_position(vec3 tex_curr_pos)
     // block's vertices, but the bitmap of a grid block has one texel per cell,
     // spanning left_edge to right_edge. Other bitmaps (octree blocks share one
     // bitmap that isn't sized per cell) keep the data texture's coordinate.
-    ivec3 n_vertices = textureSize(ds_tex[0], 0);
+    ivec3 n_vertices = textureSize(data_tex, 0);
     ivec3 n_cells = textureSize(bitmap_tex, 0);
     if (n_cells != n_vertices - ivec3(1)) {
         return get_offset_texture_position(bitmap_tex, tex_curr_pos);
