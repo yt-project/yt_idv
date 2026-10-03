@@ -75,3 +75,42 @@ def test_export_loads_and_renders(live, region, tmp_path, float64):
     image = _first_pass(live, loaded)
     assert np.any(expected != 0)
     assert_allclose(image, expected, rtol=1e-5, atol=1e-7)
+
+
+def _differences(name, live_arr, loaded_arr):
+    a = np.asarray(live_arr, dtype="f4")
+    b = np.asarray(loaded_arr, dtype="f4")
+    if a.shape != b.shape:
+        return [f"{name}: shapes differ, {a.shape} vs {b.shape}"]
+    differ = a != b
+    if not differ.any():
+        return []
+    ulp = np.abs(a - b) / np.spacing(np.maximum(np.abs(a), np.abs(b)))
+    return [
+        f"{name}: {differ.sum()} of {a.size} values differ, at most "
+        f"{np.abs(a - b).max():.2e} ({ulp.max():.0f} ulp)"
+    ]
+
+
+def test_tmp_diagnostic_gpu_inputs_match_live(live, region, tmp_path):
+    # TEMPORARY diagnostic for the macOS-only failure of
+    # test_export_loads_and_renders[False]: are the arrays sent to the GPU
+    # identical for the live scene and the float32 export? (They are on Linux.)
+    live_data = live.scene.components[0].data
+    filename = tmp_path / "scene.zip"
+    export_block_scene(region, "Density", filename, no_ghost=True, float64=False)
+    data = SceneGraph.load(filename).components[0].data
+
+    report = []
+    for a in live_data.vertex_array.attributes:
+        report += _differences(a.name, a.data, _attribute(data, a.name).data)
+    for kind in ("texture_objects", "bitmap_objects"):
+        live_tex, loaded_tex = getattr(live_data, kind), getattr(data, kind)
+        if sorted(live_tex) != sorted(loaded_tex):
+            report.append(f"{kind}: different blocks")
+            continue
+        for vbo_i in live_tex:
+            report += _differences(
+                f"{kind}[{vbo_i}]", live_tex[vbo_i].data, loaded_tex[vbo_i].data
+            )
+    assert not report, "GPU inputs differ:\n" + "\n".join(report[:40])
