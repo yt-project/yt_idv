@@ -162,6 +162,14 @@ class GLValue(traitlets.TraitType):
 TEX_TARGETS = {i: getattr(GL, f"GL_TEXTURE{i}") for i in range(10)}
 
 
+def _for_gpu(arr):
+    # Float64 data (e.g. from a scene saved at full precision) is kept as it is
+    # on the CPU side, and cast down for OpenGL, which takes float32.
+    if arr.dtype == np.float64:
+        return arr.astype("float32")
+    return arr
+
+
 class Texture(traitlets.HasTraits):
     texture_name = traitlets.CInt(-1)
     data = traittypes.Array(None, allow_none=True)
@@ -312,7 +320,7 @@ class Texture3D(Texture):
     @traitlets.observe("data")
     def _set_data(self, change):
         with self.bind():
-            data = change["new"]
+            data = _for_gpu(change["new"])
             if len(data.shape) == 4:
                 channels = data.shape[-1]
             else:
@@ -367,7 +375,7 @@ class VertexAttribute(traitlets.HasTraits):
 
     @traitlets.observe("data")
     def _set_data(self, change):
-        arr = change["new"]
+        arr = _for_gpu(change["new"])
         self.each = arr.shape[-1]
         self.opengl_type = np_to_gl[arr.dtype.name]
         with self.bind():
@@ -438,6 +446,14 @@ class VertexArray(traitlets.HasTraits):
         GL.glBufferData(GL.GL_ELEMENT_ARRAY_BUFFER, arr.nbytes, arr, GL.GL_STATIC_DRAW)
 
 
+def _pixels_by_row(arr, width, height):
+    # glReadPixels fills its result one row of width pixels at a time, but
+    # PyOpenGL shapes it (width, height, ...), so it is reshaped to be indexed
+    # [y, x, ...]. (The two agree only for square viewports.)
+    arr = np.asarray(arr)
+    return arr.reshape((height, width) + arr.shape[2:])
+
+
 class Framebuffer(traitlets.HasTraits):
     fb_id = traitlets.CInt(-1)
     rb_id = traitlets.CInt(-1)
@@ -450,19 +466,21 @@ class Framebuffer(traitlets.HasTraits):
 
     @property
     def data(self):
+        """The color buffer, indexed [y, x, channel] with row 0 at the bottom."""
         origin_x, origin_y, width, height = self.viewport
         with self.bind(clear=False):
             arr = GL.glReadPixels(0, 0, width, height, GL.GL_RGBA, GL.GL_FLOAT)
-        return arr
+        return _pixels_by_row(arr, width, height)
 
     @property
     def depth_data(self):
+        """The depth buffer, indexed [y, x] with row 0 at the bottom."""
         origin_x, origin_y, width, height = self.viewport
         with self.bind(clear=False):
             arr = GL.glReadPixels(
                 0, 0, width, height, GL.GL_DEPTH_COMPONENT, GL.GL_FLOAT
             )
-        return arr
+        return _pixels_by_row(arr, width, height)
 
     @traitlets.default("viewport")
     def _viewport_default(self):
