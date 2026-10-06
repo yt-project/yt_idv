@@ -555,6 +555,12 @@ class BlockCollection(SceneData):
         self._require_data_source("internal_length_unit")
         ds = self.data_source.ds
         if self._yt_geom_str == "cartesian":
+            if any(self.applied_scale_offset):
+                raise NotImplementedError(
+                    "Physical lengths cannot be recovered when the block "
+                    "collection's scale has a nonzero offset (scale=True, or "
+                    "a rescale about a point other than the origin)."
+                )
             return ds.quan(self.applied_scale_ratio, "unitary").in_units("code_length")
         elif self._yt_geom_str == "spherical":
             rad_index = ds.coordinates.axis_id["r"]
