@@ -2,6 +2,8 @@ import numpy as np
 import pyglet
 from yt import write_bitmap
 
+from yt_idv.utilities.logger import ytidv_log
+
 from .base_context import BaseContext
 from .base_offscreen import offscreen_render_to_scene
 
@@ -101,7 +103,7 @@ class PygletRenderingContext(pyglet.window.Window, BaseContext):
             # We're being fed relative coords.  We offset these for the window
             # center.
             ypos = max(self.screen.y + ypos * max_height - 0.5 * win_height, 0)
-        print("Setting position", xpos, ypos)
+        ytidv_log.debug("Setting position %s %s", xpos, ypos)
         self.set_location(int(xpos), int(ypos))
 
     def center_window(self):

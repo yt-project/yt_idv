@@ -20,6 +20,7 @@ from yt_idv.shader_objects import (
     component_shaders,
     default_shader_combos,
 )
+from yt_idv.utilities.logger import ytidv_log
 
 _cmaps = ["arbre", "viridis", "magma", "doom", "cividis", "plasma", "RdBu", "coolwarm"]
 _cmaps += [f"{_}_r" for _ in _cmaps]
@@ -679,6 +680,8 @@ class SceneComponent(SerializableMixin, traitlets.HasTraits):
             self.cmap_min = self.fixed_cmap_min
 
         if print_new_bounds:
-            print(f"Computed new cmap values {self.cmap_min} - {self.cmap_max}")
+            ytidv_log.info(
+                "Computed new cmap values %s - %s", self.cmap_min, self.cmap_max
+            )
 
         self._cmap_bounds_invalid = False

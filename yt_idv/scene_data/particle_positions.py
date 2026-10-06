@@ -5,6 +5,7 @@ from yt.units.dimensions import length
 
 from yt_idv.opengl_support import VertexArray, VertexAttribute
 from yt_idv.scene_data.base_data import SceneData
+from yt_idv.utilities.logger import ytidv_log
 
 
 class ParticlePositions(SceneData):
@@ -36,7 +37,7 @@ class ParticlePositions(SceneData):
                 field.shape = (field.size, 1)
             else:
                 self.size = field.shape[0]  # for positions
-            print(f"Setting {attr} to a field of shape {field.shape}")
+            ytidv_log.debug("Setting %s to a field of shape %s", attr, field.shape)
             va.attributes.append(VertexAttribute(name=attr, data=field, divisor=1))
-        print(f"Size is now: {self.size}")
+        ytidv_log.debug("Size is now: %s", self.size)
         return va
