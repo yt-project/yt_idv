@@ -70,7 +70,7 @@ def test_export_loads_and_renders(live, region, tmp_path, float64):
     dtype = np.float64 if float64 else np.float32
     for name in ("in_left_edge", "in_right_edge", "in_dx"):
         assert _attribute(data, name).data.dtype == dtype
-    assert next(iter(data.texture_objects.values())).data.dtype == dtype
+    assert next(iter(data.block_data.values())).dtype == dtype
     if float64:
         # the live scene keeps its edges in float64 too
         for name in ("in_left_edge", "in_right_edge", "in_dx"):

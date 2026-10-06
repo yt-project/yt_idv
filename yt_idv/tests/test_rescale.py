@@ -173,7 +173,7 @@ def test_viewpoint_order_in_tree_coordinates(make_rc, tmp_path, saved):
         scene.save(filename)
         rc.scene = scene = SceneGraph.load(filename)
         data = scene.components[0].data
-    order = [vbo_i for vbo_i, _, _ in data.viewpoint_iter(scene.camera)]
+    order = data.viewpoint_order(scene.camera).tolist()
     assert order == expected
 
 
