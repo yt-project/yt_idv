@@ -38,6 +38,9 @@ class BlockCollection(SceneData):
     field_units = traitlets.Unicode(default_value=None, allow_none=True).tag(
         config=True
     )
+    # The transform from unitary coordinates to the model coordinates of the
+    # vertex edges: model = (unitary - offset) / ratio. scale=True sets it from
+    # the bounding box, and SceneGraph.rescale composes more onto it.
     applied_scale_ratio = traitlets.CFloat(1.0, read_only=True)
     applied_scale_offset = traitlets.Tuple(
         traitlets.CFloat(),
@@ -51,6 +54,14 @@ class BlockCollection(SceneData):
     _kd_tree = None
     _axis_id = None
     _bbox = None
+    # the blocks' (left_edge, right_edge, dx) in unitary coordinates, in
+    # float64; the vertex edges are recomputed from these on every rescale
+    _unscaled_edges = None
+    # unitary units per code_length, to put the camera in the kd-tree's units
+    _unitary_per_code_length = None
+    # (offset x, y, z, ratio), saved because the transform traits are read-only
+    _saved_scale = None
+    _restoring = False
 
     # buffers for viewpoint_node_ids
     _order_node_ids = None
@@ -62,6 +73,9 @@ class BlockCollection(SceneData):
         "_kd_tree",
         "_axis_id",
         "_bbox",
+        "_unscaled_edges",
+        "_unitary_per_code_length",
+        "_saved_scale",
         "diagonal",
         "cart_bbox_max_width",
         "cart_bbox_le",
@@ -75,43 +89,89 @@ class BlockCollection(SceneData):
 
     @traitlets.observe("scale")
     def toggle_scale(self, change):
-        if self._yt_geom_str != "cartesian":
+        # a loaded scene's vertex edges are already scaled, and add_data
+        # applies scale itself once there are edges
+        if (
+            self._yt_geom_str != "cartesian"
+            or self._restoring
+            or self._unscaled_edges is None
+        ):
             return
-        # We are going to update the attributes that would be changed.
-        # Note that this modifies *in place* the block attributes.  This isn't
-        # great, but it works, and the tiles shouldn't be used elsewhere.
-        if change["new"]:
-            if self._compute_bbox:
-                left_min = self.vertex_array["in_left_edge"].data.min(axis=0)[:3]
-                right_max = self.vertex_array["in_left_edge"].data.max(axis=0)[:3]
-            else:
-                left_min, right_max = self.data_source.get_bbox()
-                left_min = left_min.in_units("unitary").d
-                right_max = right_max.in_units("unitary").d
-            offset = left_min[:]
-            ratio = (right_max - left_min).max()
-            self.set_trait("applied_scale_ratio", ratio)
-            self.set_trait("applied_scale_offset", tuple(offset))
+        if not change["new"]:
+            self._set_scale((0.0, 0.0, 0.0), 1.0)
+            return
+        if self._compute_bbox:
+            left_edge, right_edge, _ = self._get_unscaled_edges()
+            left_min = left_edge.min(axis=0)
+            right_max = right_edge.max(axis=0)
         else:
-            # Now we want to scale back...
-            ratio = 1.0 / np.array(self.applied_scale_ratio)
-            self.set_trait("applied_scale_ratio", 1.0)
-            offset = -np.array(self.applied_scale_offset) * ratio
-            self.set_trait("applied_scale_offset", (0.0, 0.0, 0.0))
-        for block in self.data_source.tiles.traverse():
-            block.LeftEdge -= offset
-            block.LeftEdge /= ratio
-            block.RightEdge -= offset
-            block.RightEdge /= ratio
-        self.diagonal /= ratio
+            # the data source's bounding box, also saved with the scene
+            bbox = self.bbox
+            if bbox is None:
+                raise RuntimeError(
+                    "Scaling needs the data source's bounding box, which this "
+                    "block collection doesn't have (it was loaded from a scene "
+                    "saved without one). Set _compute_bbox to scale by the "
+                    "blocks' extent instead."
+                )
+            left_min, right_max = bbox
+        self._set_scale(left_min, (right_max - left_min).max())
 
-        for att in ["model_vertex", "in_left_edge", "in_right_edge"]:
-            v = self.vertex_array[att].data.copy()
-            v[:, :3] = (v[:, :3] - offset) / ratio
-            self.vertex_array[att].data = v[:]
-        self.vertex_array["in_dx"].data = (
-            self.vertex_array["in_dx"].data / ratio
-        ).astype("f4")  # needed because ratio upcasts
+    def apply_scale(self, offset, ratio):
+        """
+        Compose a further transform onto the current one, mapping model
+        coordinates x to (x - offset) / ratio. The vertex edges are recomputed
+        from the unscaled float64 edges, so repeated calls don't lose precision.
+        See SceneGraph.rescale, which also moves the camera.
+        """
+        if self._yt_geom_str != "cartesian":
+            raise NotImplementedError(
+                f"{self.name} can only be rescaled for cartesian geometries."
+            )
+        current = self.applied_scale_ratio
+        offset = np.asarray(self.applied_scale_offset) + current * np.asarray(
+            offset, dtype="f8"
+        )
+        self._set_scale(offset, current * ratio)
+
+    def _set_scale(self, offset, ratio):
+        offset = np.asarray(offset, dtype="f8")
+        left_edge, right_edge, dx = self._get_unscaled_edges()
+        self.diagonal *= self.applied_scale_ratio / ratio
+        self.set_trait("applied_scale_ratio", ratio)
+        self.set_trait("applied_scale_offset", tuple(offset))
+        # float64, cast to float32 only for the GPU, so a saved scene keeps them
+        va = self.vertex_array
+        va["in_left_edge"].data = (left_edge - offset) / ratio
+        va["in_right_edge"].data = (right_edge - offset) / ratio
+        va["in_dx"].data = dx / ratio
+
+    def _get_unscaled_edges(self):
+        if self._unscaled_edges is None:
+            # a scene saved without them: undo the transform on the float32
+            # vertex edges
+            ratio = self.applied_scale_ratio
+            offset = np.asarray(self.applied_scale_offset)
+            va = self.vertex_array
+            self._unscaled_edges = np.array(
+                [
+                    va["in_left_edge"].data.astype("f8") * ratio + offset,
+                    va["in_right_edge"].data.astype("f8") * ratio + offset,
+                    va["in_dx"].data.astype("f8") * ratio,
+                ]
+            )
+        return self._unscaled_edges
+
+    def _tree_viewpoint(self, position):
+        # the camera is in model coordinates, but the kd-tree is in code_length
+        if self._yt_geom_str != "cartesian":
+            return position
+        unitary = np.asarray(position, dtype="f8") * self.applied_scale_ratio
+        unitary += np.asarray(self.applied_scale_offset)
+        if self._unitary_per_code_length is None:
+            # a scene saved without it
+            return unitary
+        return unitary / self._unitary_per_code_length
 
     def add_data(self, field, no_ghost=False):
         r"""Adds a source of data for the block collection.
@@ -139,6 +199,9 @@ class BlockCollection(SceneData):
         # Every time we change our data source, we wipe all existing ones.
         # We now set up our vertices into our current data source.
         vert, dx, le, re = [], [], [], []
+        self._unscaled_edges = None
+        self.set_trait("applied_scale_ratio", 1.0)
+        self.set_trait("applied_scale_offset", (0.0, 0.0, 0.0))
 
         min_val = +np.inf
         max_val = -np.inf
@@ -169,7 +232,7 @@ class BlockCollection(SceneData):
 
         # Now we set up our buffer
         vert = np.array(vert, dtype="f4")
-        dx = np.array(dx, dtype="f4")
+        dx = np.array(dx)
         le = np.array(le)
         re = np.array(re)
         if self._yt_geom_str == "cartesian":
@@ -181,6 +244,7 @@ class BlockCollection(SceneData):
             dx = dx * ratio
             le = le * ratio
             re = re * ratio
+            self._unitary_per_code_length = ratio
             LE = np.array([b.LeftEdge for i, b in self.blocks.values()]).min(axis=0)
             RE = np.array([b.RightEdge for i, b in self.blocks.values()]).max(axis=0)
             self.diagonal = np.sqrt(((RE - LE) ** 2).sum())
@@ -195,16 +259,20 @@ class BlockCollection(SceneData):
         self.vertex_array.attributes.append(
             VertexAttribute(name="model_vertex", data=vert)
         )
+        # the edges stay float64 (cast to float32 only for the GPU), so saved
+        # scenes keep their full precision
         self.vertex_array.attributes.append(VertexAttribute(name="in_dx", data=dx))
         self.vertex_array.attributes.append(
-            VertexAttribute(name="in_left_edge", data=le.astype("f4"))
+            VertexAttribute(name="in_left_edge", data=le)
         )
         self.vertex_array.attributes.append(
-            VertexAttribute(name="in_right_edge", data=re.astype("f4"))
+            VertexAttribute(name="in_right_edge", data=re)
         )
 
-        if self.scale and self._yt_geom_str == "cartesian":
-            self.toggle_scale({"new": True})
+        if self._yt_geom_str == "cartesian":
+            self._unscaled_edges = np.array([le, re, dx])
+            if self.scale:
+                self.toggle_scale({"new": True})
 
         # Now we set up our textures
         self._load_textures()
@@ -304,7 +372,7 @@ class BlockCollection(SceneData):
 
         Returns a uint32 array that can be used directly as an index buffer.
         """
-        viewpoint = camera.position
+        viewpoint = self._tree_viewpoint(camera.position)
         if self.data_source is None:
             order = _kd_viewpoint_order(self._kd_tree, viewpoint)
             return np.asarray(order, dtype="uint32")
@@ -347,6 +415,9 @@ class BlockCollection(SceneData):
         return left_edge.in_units("unitary").d, right_edge.in_units("unitary").d
 
     def _get_state(self, writer):
+        self._saved_scale = np.array(
+            [*self.applied_scale_offset, self.applied_scale_ratio]
+        )
         if self.data_source is not None:
             bbox = self.bbox
             self._bbox = None if bbox is None else np.array(bbox)
@@ -359,7 +430,16 @@ class BlockCollection(SceneData):
         return super()._get_state(writer)
 
     def _set_state(self, state, reader):
-        super()._set_state(state, reader)
+        # the saved vertex edges are already scaled, so restore the transform
+        # without letting the restored scale trait re-apply it
+        self._restoring = True
+        try:
+            super()._set_state(state, reader)
+        finally:
+            self._restoring = False
+        if self._saved_scale is not None:
+            self.set_trait("applied_scale_offset", tuple(self._saved_scale[:3]))
+            self.set_trait("applied_scale_ratio", float(self._saved_scale[3]))
         if isinstance(self.field, list):
             self.field = tuple(self.field)
         # scenes saved before the texture atlas have a texture per block
@@ -475,12 +555,7 @@ class BlockCollection(SceneData):
         self._require_data_source("internal_length_unit")
         ds = self.data_source.ds
         if self._yt_geom_str == "cartesian":
-            if self.scale:
-                raise NotImplementedError(
-                    "Physical lengths cannot be recovered when the block "
-                    "collection is initialized with scale=True."
-                )
-            return ds.quan(1.0, "unitary").in_units("code_length")
+            return ds.quan(self.applied_scale_ratio, "unitary").in_units("code_length")
         elif self._yt_geom_str == "spherical":
             rad_index = ds.coordinates.axis_id["r"]
             return ds.domain_right_edge[rad_index].in_units("code_length")

@@ -164,6 +164,14 @@ class GLValue(traitlets.TraitType):
 TEX_TARGETS = {i: getattr(GL, f"GL_TEXTURE{i}") for i in range(10)}
 
 
+def _for_gpu(arr):
+    # Float64 data (e.g. from a scene saved at full precision) is kept as it is
+    # on the CPU side, and cast down for OpenGL, which takes float32.
+    if arr.dtype == np.float64:
+        return arr.astype("float32")
+    return arr
+
+
 class Texture(traitlets.HasTraits):
     texture_name = traitlets.CInt(-1)
     data = traittypes.Array(None, allow_none=True)
@@ -314,7 +322,7 @@ class Texture3D(Texture):
     @traitlets.observe("data")
     def _set_data(self, change):
         with self.bind():
-            data = change["new"]
+            data = _for_gpu(change["new"])
             if len(data.shape) == 4:
                 channels = data.shape[-1]
             else:
@@ -415,7 +423,7 @@ class VertexAttribute(traitlets.HasTraits):
 
     @traitlets.observe("data")
     def _set_data(self, change):
-        arr = change["new"]
+        arr = _for_gpu(change["new"])
         self.each = arr.shape[-1]
         self.opengl_type = np_to_gl[arr.dtype.name]
         with self.bind():

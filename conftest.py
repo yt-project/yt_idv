@@ -3,6 +3,7 @@
 # before argument parsing, so the options and their hooks must live here
 # rather than next to the test-directory fixtures.
 import os
+import sys
 
 import pytest
 
@@ -68,6 +69,15 @@ def pytest_configure(config):
     # this will get run before all tests, before collection and
     # any opengl imports that happen within test files.
     config._offscreen_backend = _resolve_backend(config)
+
+    if config._offscreen_backend == "pyglet" and sys.platform == "darwin":
+        # macos retina displays end up with a 2x retina backing store,
+        # causing frame buffer image dimensions to be 2x the size of the
+        # context, causing some tests to fail.
+        import pyglet
+
+        pyglet.options.dpi_scaling = "real"
+
     config._canvas_size = (
         config.getoption("--canvas-width"),
         config.getoption("--canvas-height"),
