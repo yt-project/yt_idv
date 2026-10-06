@@ -585,6 +585,14 @@ class TextureAtlas(traitlets.HasTraits):
             self.texture = None
 
 
+def _pixels_by_row(arr, width, height):
+    # glReadPixels fills its result one row of width pixels at a time, but
+    # PyOpenGL shapes it (width, height, ...), so it is reshaped to be indexed
+    # [y, x, ...]. (The two agree only for square viewports.)
+    arr = np.asarray(arr)
+    return arr.reshape((height, width) + arr.shape[2:])
+
+
 class Framebuffer(traitlets.HasTraits):
     fb_id = traitlets.CInt(-1)
     rb_id = traitlets.CInt(-1)
@@ -597,19 +605,21 @@ class Framebuffer(traitlets.HasTraits):
 
     @property
     def data(self):
+        """The color buffer, indexed [y, x, channel] with row 0 at the bottom."""
         origin_x, origin_y, width, height = self.viewport
         with self.bind(clear=False):
             arr = GL.glReadPixels(0, 0, width, height, GL.GL_RGBA, GL.GL_FLOAT)
-        return arr
+        return _pixels_by_row(arr, width, height)
 
     @property
     def depth_data(self):
+        """The depth buffer, indexed [y, x] with row 0 at the bottom."""
         origin_x, origin_y, width, height = self.viewport
         with self.bind(clear=False):
             arr = GL.glReadPixels(
                 0, 0, width, height, GL.GL_DEPTH_COMPONENT, GL.GL_FLOAT
             )
-        return arr
+        return _pixels_by_row(arr, width, height)
 
     @traitlets.default("viewport")
     def _viewport_default(self):

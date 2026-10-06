@@ -50,6 +50,7 @@ class BlockCollection(SceneData):
     # saved copies of data_source state, used when data_source is None
     _kd_tree = None
     _axis_id = None
+    _bbox = None
 
     # buffers for viewpoint_node_ids
     _order_node_ids = None
@@ -60,6 +61,7 @@ class BlockCollection(SceneData):
         "block_bitmaps",
         "_kd_tree",
         "_axis_id",
+        "_bbox",
         "diagonal",
         "cart_bbox_max_width",
         "cart_bbox_le",
@@ -327,8 +329,27 @@ class BlockCollection(SceneData):
             return self._axis_id
         return self.data_source.ds.coordinates.axis_id
 
+    @property
+    def bbox(self):
+        """
+        The data source's bounding box as (left_edge, right_edge) arrays in
+        unitary units, or None for non-cartesian data. It is saved with the
+        scene, so it is also available for a scene loaded from a file (None if
+        the file predates it).
+        """
+        if self.data_source is None:
+            if self._bbox is None:
+                return None
+            return self._bbox[0], self._bbox[1]
+        if self._yt_geom_str != "cartesian":
+            return None
+        left_edge, right_edge = self.data_source.get_bbox()
+        return left_edge.in_units("unitary").d, right_edge.in_units("unitary").d
+
     def _get_state(self, writer):
         if self.data_source is not None:
+            bbox = self.bbox
+            self._bbox = None if bbox is None else np.array(bbox)
             self._kd_tree = _flatten_kd_tree(self.data_source.tiles.tree.trunk)
             if self._yt_geom_str != "cartesian":
                 self._axis_id = {

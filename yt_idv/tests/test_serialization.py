@@ -5,6 +5,7 @@ import numpy as np
 import pytest
 import yt
 import yt.testing
+from numpy.testing import assert_allclose
 
 from yt_idv.scene_data.block_collection import _flatten_kd_tree, _kd_viewpoint_order
 from yt_idv.scene_graph import SceneGraph
@@ -98,3 +99,34 @@ def test_save_load_spherical_scene(make_rc, tmp_path):
     assert loaded.components[0].data._yt_geom_str == "spherical"
     rc.scene = loaded
     np.testing.assert_allclose(_render(rc), original)
+
+
+def test_bbox_survives_save_and_load(make_rc, tmp_path):
+    ds = yt.testing.fake_amr_ds()
+    region = ds.region([0.5, 0.5, 0.5], [0.3, 0.35, 0.4], [0.6, 0.7, 0.8])
+    rc = make_rc()
+    scene = rc.add_scene(region, "Density", no_ghost=True)
+    left_edge, right_edge = scene.components[0].data.bbox
+    assert_allclose(left_edge, [0.3, 0.35, 0.4])
+    assert_allclose(right_edge, [0.6, 0.7, 0.8])
+
+    filename = tmp_path / "scene.zip"
+    scene.save(filename)
+    loaded = SceneGraph.load(filename)
+    data = loaded.components[0].data
+    assert data.data_source is None
+    assert_allclose(data.bbox[0], left_edge)
+    assert_allclose(data.bbox[1], right_edge)
+
+
+def test_standalone_export_saves_bbox(make_rc, tmp_path):
+    from yt_idv.standalone_export import export_block_scene
+
+    ds = yt.testing.fake_amr_ds()
+    region = ds.region([0.5, 0.5, 0.5], [0.3, 0.35, 0.4], [0.6, 0.7, 0.8])
+    make_rc()
+    filename = tmp_path / "exported.zip"
+    export_block_scene(region, "Density", filename, no_ghost=True)
+    data = SceneGraph.load(filename).components[0].data
+    assert_allclose(data.bbox[0], [0.3, 0.35, 0.4])
+    assert_allclose(data.bbox[1], [0.6, 0.7, 0.8])

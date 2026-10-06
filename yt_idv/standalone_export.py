@@ -202,6 +202,10 @@ def export_block_scene(
                 for k, v in _flatten_kd_tree(tiles.tree.trunk).items()
             },
             "diagonal": diagonal,
+            # the data source's bounding box (unitary), BlockCollection.bbox
+            "_bbox": archive.add_array(
+                np.array([edge.to("unitary").d for edge in data_source.get_bbox()])
+            ),
         },
     }
     component = {
