@@ -44,6 +44,15 @@ If you are proposing a feature:
 * Remember that this is a volunteer-driven project, and that contributions
   are welcome :)
 
+## Community Code of Conduct and Generative AI Policy
+
+`yt_idv` is part of the `yt` Project community and its code of conduct and policies all apply here. So please give those a read before contributing. The full text is available at [this link](https://github.com/yt-project/yt/blob/main/CONTRIBUTING.rst), but in particular make sure you read:
+
+* [Community Code of Conduct](https://github.com/yt-project/yt/blob/main/CONTRIBUTING.rst#yt-community-code-of-conduct)
+* [Generative AI Policy](https://github.com/yt-project/yt/blob/main/CONTRIBUTING.rst#generative-ai-policy)
+
+Note that while `yt_idv` does not have an AI disclosure form as in yt, we do expect a disclosure of how AI was used (if it was) in pull request and issues.
+
 ## Get Started!
 
 Ready to contribute? Here's how to set up `yt_idv` for local development.
