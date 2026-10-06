@@ -1,5 +1,6 @@
 import contextlib
 
+import numpy as np
 import traitlets
 from OpenGL import GL
 from yt.data_objects.static_output import Dataset
@@ -109,6 +110,37 @@ class SceneGraph(traitlets.HasTraits):
         data = BoxData(left_edge=left_edge, right_edge=right_edge)
         self.data_objects.append(data)
         self.annotations.append(BoxAnnotation(data=data))
+
+    def rescale(self, offset, ratio):
+        """
+        Map the scene's model coordinates x to (x - offset) / ratio, moving the
+        camera with them so the view doesn't change.
+
+        Calls compose with each other and with a block collection's scale.
+        Re-centering on a point while zooming in, for instance with
+        ``scene.rescale(target, 0.01)`` each time the camera gets 100 times
+        closer, keeps the coordinates near the camera of order one, where the
+        shaders' float32 arithmetic stays precise.
+
+        Only block collections (with cartesian geometry) are rescaled; other
+        data objects, such as boxes, are not moved.
+
+        Parameters
+        ----------
+        offset: Array-like, the point in model coordinates that becomes the origin
+        ratio: float, the length in model coordinates that becomes one
+        """
+        offset = np.asarray(offset, dtype="f8")
+        for data in self.data_objects:
+            if isinstance(data, BlockCollection):
+                data.apply_scale(offset, ratio)
+        camera = self.camera
+        camera.update(
+            position=(np.asarray(camera.position) - offset) / ratio,
+            focus=(np.asarray(camera.focus) - offset) / ratio,
+            near_plane=camera.near_plane / ratio,
+            far_plane=camera.far_plane / ratio,
+        )
 
     def save(self, filename, compress=False):
         """
