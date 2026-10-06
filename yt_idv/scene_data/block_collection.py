@@ -4,15 +4,26 @@ import numpy as np
 import traitlets
 from yt.data_objects.data_containers import YTDataContainer
 
-from yt_idv.opengl_support import Texture3D, VertexArray, VertexAttribute
+from yt_idv.opengl_support import TextureAtlas, VertexArray, VertexAttribute
 from yt_idv.scene_data.base_data import SceneData
+
+try:
+    from yt.utilities.lib.amr_kdtools import viewpoint_node_ids
+except ImportError:
+    # yt versions without the array-filling kd-tree walk fall back to
+    # AMRKDTree.traverse(viewpoint=...)
+    viewpoint_node_ids = None
 
 
 class BlockCollection(SceneData):
     name = "block_collection"
     data_source = traitlets.Instance(YTDataContainer, allow_none=True)
-    texture_objects = traitlets.Dict(value_trait=traitlets.Instance(Texture3D))
-    bitmap_objects = traitlets.Dict(value_trait=traitlets.Instance(Texture3D))
+    # each block's (normalized) data and bitmap, by vertex array index, which
+    # are uploaded to data_atlas and bitmap_atlas
+    block_data = traitlets.Dict()
+    block_bitmaps = traitlets.Dict()
+    data_atlas = traitlets.Instance(TextureAtlas, allow_none=True)
+    bitmap_atlas = traitlets.Instance(TextureAtlas, allow_none=True)
     blocks = traitlets.Dict(default_value=())
     scale = traitlets.Bool(False).tag(config=True)
     _compute_bbox = traitlets.Bool(False).tag(
@@ -52,9 +63,13 @@ class BlockCollection(SceneData):
     _saved_scale = None
     _restoring = False
 
+    # buffers for viewpoint_node_ids
+    _order_node_ids = None
+    _order_node_inds = None
+
     _saved_attributes = SceneData._saved_attributes + (
-        "texture_objects",
-        "bitmap_objects",
+        "block_data",
+        "block_bitmaps",
         "_kd_tree",
         "_axis_id",
         "_bbox",
@@ -205,6 +220,7 @@ class BlockCollection(SceneData):
             block = node.data
             self.blocks_by_grid[g.id - g._id_offset].append((id(block), gi))
             self.grids_by_block[id(node.data)] = (g.id - g._id_offset, sl)
+        self._tag_kd_leaves()
 
         if self.compute_min_max:
             if hasattr(min_val, "in_units"):
@@ -341,17 +357,38 @@ class BlockCollection(SceneData):
                 f"{self.name} does not implement {self._yt_geom_str} geometries."
             )
 
-    def viewpoint_iter(self, camera):
+    def _tag_kd_leaves(self):
+        # viewpoint_node_ids reports each leaf's node_ind, so store the leaf's
+        # block index there. add_data numbers the blocks in the order
+        # tiles.traverse() yields them, which is kd_traverse() order.
+        for vbo_i, node in enumerate(self.data_source.tiles.tree.trunk.kd_traverse()):
+            node.node_ind = vbo_i
+        self._order_node_ids = np.empty(len(self.blocks), dtype="int64")
+        self._order_node_inds = np.empty(len(self.blocks), dtype="int64")
+
+    def viewpoint_order(self, camera):
+        """
+        The block indices, ordered from furthest to nearest the camera.
+
+        Returns a uint32 array that can be used directly as an index buffer.
+        """
         viewpoint = self._tree_viewpoint(camera.position)
         if self.data_source is None:
             order = _kd_viewpoint_order(self._kd_tree, viewpoint)
-        else:
-            order = (
+            return np.asarray(order, dtype="uint32")
+        if viewpoint_node_ids is None:
+            order = [
                 self.blocks[id(block)][0]
                 for block in self.data_source.tiles.traverse(viewpoint=viewpoint)
-            )
-        for vbo_i in order:
-            yield (vbo_i, self.texture_objects[vbo_i], self.bitmap_objects[vbo_i])
+            ]
+            return np.asarray(order, dtype="uint32")
+        n = viewpoint_node_ids(
+            self.data_source.tiles.tree.trunk,
+            viewpoint,
+            self._order_node_ids,
+            self._order_node_inds,
+        )
+        return self._order_node_inds[:n].astype("uint32")
 
     @property
     def axis_id(self):
@@ -405,6 +442,17 @@ class BlockCollection(SceneData):
             self.set_trait("applied_scale_ratio", float(self._saved_scale[3]))
         if isinstance(self.field, list):
             self.field = tuple(self.field)
+        # scenes saved before the texture atlas have a texture per block
+        for old, new in (
+            ("texture_objects", "block_data"),
+            ("bitmap_objects", "block_bitmaps"),
+        ):
+            textures = self.__dict__.pop(old, None)
+            if textures is not None:
+                setattr(self, new, {i: tex.data for i, tex in textures.items()})
+                for tex in textures.values():
+                    tex.release()
+        self._build_atlases()
 
     def _require_data_source(self, what):
         if self.data_source is None:
@@ -426,9 +474,12 @@ class BlockCollection(SceneData):
             for b_id, _ in blocks:
                 _, sl = self.grids_by_block[b_id]
                 vbo_i, _ = self.blocks[b_id]
-                self.bitmap_objects[vbo_i].data = new_bitmap[sl]
+                self.block_bitmaps[vbo_i] = new_bitmap[sl]
+                self.bitmap_atlas[vbo_i] = new_bitmap[sl]
 
     def _load_textures(self):
+        self.block_data = {}
+        self.block_bitmaps = {}
         for block_id in sorted(self.blocks):
             vbo_i, block = self.blocks[block_id]
             n_data = np.abs(block.my_data[0]).copy(order="F").astype("float32").d
@@ -440,21 +491,49 @@ class BlockCollection(SceneData):
                 # see https://github.com/yt-project/yt_idv/issues/171
                 n_data[n_data == 0.0] += np.finfo(np.float32).eps
 
-            data_tex = Texture3D(data=n_data)
-            bitmap_tex = Texture3D(
-                data=block.source_mask * 255, min_filter="nearest", mag_filter="nearest"
+            self.block_data[vbo_i] = n_data
+            self.block_bitmaps[vbo_i] = (block.source_mask * 255).astype("uint8")
+        self._build_atlases()
+
+    def _build_atlases(self):
+        # Pack every block's data and bitmap into one texture each. The data
+        # holds n + 1 vertex-centered values and the bitmap n cells, so they're
+        # laid out separately. One texel of edge padding keeps interpolation
+        # (and the bitmap's half-texel shift) inside each block.
+        for atlas in (self.data_atlas, self.bitmap_atlas):
+            if atlas is not None:
+                atlas.release()
+        n_blocks = len(self.block_data)
+        atlases = {}
+        for name, arrays, kwargs in (
+            ("data", self.block_data, {}),
+            (
+                "bitmap",
+                self.block_bitmaps,
+                {"dtype": "uint8", "min_filter": "nearest", "mag_filter": "nearest"},
+            ),
+        ):
+            sizes = [arrays[i].shape[:3] for i in range(n_blocks)]
+            atlas = TextureAtlas(
+                sizes,
+                padding=1,
+                vertex_array=self.vertex_array,
+                offset_attribute_name=f"in_{name}_offset",
+                size_attribute_name=f"in_{name}_size",
+                **kwargs,
             )
-            self.texture_objects[vbo_i] = data_tex
-            self.bitmap_objects[vbo_i] = bitmap_tex
+            for i in range(n_blocks):
+                atlas[i] = arrays[i]
+            atlases[name] = atlas
+        self.data_atlas = atlases["data"]
+        self.bitmap_atlas = atlases["bitmap"]
 
     def release(self):
-        for tex in self.texture_objects.values():
-            # Doesn't matter too much which order we go in...
-            tex.release()
-        self.texture_objects.clear()
-        for tex in self.bitmap_objects.values():
-            tex.release()
-        self.bitmap_objects.clear()
+        for atlas in (self.data_atlas, self.bitmap_atlas):
+            if atlas is not None:
+                atlas.release()
+        self.data_atlas = None
+        self.bitmap_atlas = None
         self.vertex_array.release()
 
     @property
@@ -476,6 +555,12 @@ class BlockCollection(SceneData):
         self._require_data_source("internal_length_unit")
         ds = self.data_source.ds
         if self._yt_geom_str == "cartesian":
+            if any(self.applied_scale_offset):
+                raise NotImplementedError(
+                    "Physical lengths cannot be recovered when the block "
+                    "collection's scale has a nonzero offset (scale=True, or "
+                    "a rescale about a point other than the origin)."
+                )
             return ds.quan(self.applied_scale_ratio, "unitary").in_units("code_length")
         elif self._yt_geom_str == "spherical":
             rad_index = ds.coordinates.axis_id["r"]

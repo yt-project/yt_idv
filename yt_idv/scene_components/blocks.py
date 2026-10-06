@@ -54,6 +54,11 @@ class BlockRendering(SceneComponent):
 
     priority = 10
 
+    # the index buffer giving the draw order; it belongs to this component,
+    # not to the data's vertex array, so it is neither shared with other
+    # components nor saved with the scene
+    _index_buffer = None
+
     _saved_attributes = SceneComponent._saved_attributes + ("transfer_function",)
 
     def render_gui(self, imgui, renderer, scene):
@@ -210,38 +215,11 @@ class BlockRendering(SceneComponent):
         tf = TransferFunctionTexture(data=np.ones((256, 1, 4), dtype="u1") * 255)
         return tf
 
-    def draw(self, scene, program):
-        each = self.data.vertex_array.each
-        GL.glEnable(GL.GL_CULL_FACE)
-        GL.glCullFace(GL.GL_BACK)
-        depth_clip_active = (
-            self.use_external_depth_clip and self.external_depth_texture is not None
-        )
-        depth_ctx = (
-            self.external_depth_texture.bind(target=3)
-            if depth_clip_active
-            else contextlib.nullcontext()
-        )
-        if self._draw_order_matters:
-            blocks = self.data.viewpoint_iter(scene.camera)
-        else:
-            blocks = (
-                (vbo_i, tex, self.data.bitmap_objects[vbo_i])
-                for vbo_i, tex in self.data.texture_objects.items()
-            )
-        with self.transfer_function.bind(target=2):
-            with depth_ctx:
-                for tex_ind, tex, bitmap_tex in blocks:
-                    with tex.bind(target=0):
-                        with bitmap_tex.bind(target=1):
-                            GL.glDrawArrays(GL.GL_POINTS, tex_ind * each, each)
-
     @property
     def _draw_order_matters(self):
         # Blocks have to be drawn furthest first unless the first pass blends
         # them commutatively (a max, a min, or a plain sum) with no depth
-        # test, as max_intensity and projection do. Then any order gives the
-        # same image, and the kd-tree walk can be skipped.
+        # test, as max_intensity and projection do.
         shader = self.fragment_shader
         if shader is None:
             return True
@@ -254,6 +232,42 @@ class BlockRendering(SceneComponent):
             and tuple(shader.blend_func) == (GL.GL_ONE, GL.GL_ONE)
         )
 
+    def draw(self, scene, program):
+        GL.glEnable(GL.GL_CULL_FACE)
+        GL.glCullFace(GL.GL_BACK)
+        depth_clip_active = (
+            self.use_external_depth_clip and self.external_depth_texture is not None
+        )
+        depth_ctx = (
+            self.external_depth_texture.bind(target=3)
+            if depth_clip_active
+            else contextlib.nullcontext()
+        )
+        data = self.data
+        with self.transfer_function.bind(target=2):
+            with depth_ctx, data.data_atlas.bind(0), data.bitmap_atlas.bind(1):
+                self._draw_blocks(scene)
+
+    def _draw_blocks(self, scene):
+        # draw every block (a single vertex each) with one call; each block
+        # finds itself in the atlases through its offset and size attributes,
+        # and when the order matters an index buffer gives it
+        n_blocks = len(self.data.block_data)
+        if not self._draw_order_matters:
+            GL.glDrawArrays(GL.GL_POINTS, 0, n_blocks)
+            return
+        order = self.data.viewpoint_order(scene.camera)
+        if self._index_buffer is None:
+            self._index_buffer = GL.glGenBuffers(1)
+        # the element buffer binding is part of the bound vertex array's
+        # state, so it is reset afterwards
+        GL.glBindBuffer(GL.GL_ELEMENT_ARRAY_BUFFER, self._index_buffer)
+        GL.glBufferData(
+            GL.GL_ELEMENT_ARRAY_BUFFER, order.nbytes, order, GL.GL_STREAM_DRAW
+        )
+        GL.glDrawElements(GL.GL_POINTS, order.size, GL.GL_UNSIGNED_INT, None)
+        GL.glBindBuffer(GL.GL_ELEMENT_ARRAY_BUFFER, 0)
+
     def _set_uniforms(self, scene, shader_program):
         if self.data._yt_geom_str == "spherical":
             axis_id = self.data.axis_id
@@ -263,7 +277,7 @@ class BlockRendering(SceneComponent):
 
         shader_program._set_uniform("box_width", self.box_width)
         shader_program._set_uniform("sample_factor", self.sample_factor)
-        shader_program._set_uniform("ds_tex", np.array([0, 0, 0, 0, 0, 0]))
+        shader_program._set_uniform("data_tex", 0)
         shader_program._set_uniform("bitmap_tex", 1)
         shader_program._set_uniform("tf_tex", 2)
         shader_program._set_uniform("external_depth_tex", 3)

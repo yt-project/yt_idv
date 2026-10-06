@@ -66,9 +66,11 @@ def test_save_load_block_scene(make_rc, tmp_path):
     assert len(loaded.data_objects) == len(scene.data_objects)
 
     bc, loaded_bc = component.data, loaded_component.data
-    assert set(loaded_bc.texture_objects) == set(bc.texture_objects)
-    for i, tex in bc.texture_objects.items():
-        np.testing.assert_equal(loaded_bc.texture_objects[i].data, tex.data)
+    assert set(loaded_bc.block_data) == set(bc.block_data)
+    for i, arr in bc.block_data.items():
+        np.testing.assert_equal(loaded_bc.block_data[i], arr)
+        np.testing.assert_equal(loaded_bc.block_bitmaps[i], bc.block_bitmaps[i])
+    np.testing.assert_equal(loaded_bc.data_atlas.offsets, bc.data_atlas.offsets)
 
     rc.scene = loaded
     np.testing.assert_allclose(_render(rc), original)

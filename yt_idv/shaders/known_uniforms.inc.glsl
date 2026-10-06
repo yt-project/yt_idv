@@ -46,8 +46,13 @@ uniform sampler1D cm_tex;
 uniform sampler2D db_tex;
 uniform sampler2D fb_tex;
 uniform sampler2D tf_tex;
+
+// The data and bitmap textures. Each holds many blocks (see TextureAtlas), and
+// fragment shaders declare where the block being drawn lies in them, in texels,
+// with BLOCK_TEXTURE_INPUTS.
+uniform sampler3D data_tex;
 uniform sampler3D bitmap_tex;
-uniform sampler3D ds_tex[6];
+#define BLOCK_TEXTURE_INPUTS flat in ivec3 data_offset; flat in ivec3 data_size; flat in ivec3 bitmap_offset; flat in ivec3 bitmap_size;
 
 // ray tracing control
 uniform float sample_factor;

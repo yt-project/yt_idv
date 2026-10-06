@@ -26,6 +26,7 @@ from yt.utilities.math_utils import get_scale_matrix, get_translate_matrix
 
 from yt_idv._cmyt_utilities import validate_cmyt_name
 from yt_idv.constants import bbox_vertices
+from yt_idv.texture_packing import pack
 
 const_types = (
     GL.constant.IntConstant,
@@ -75,6 +76,7 @@ gl_to_np = {
 
 np_to_gl = {
     "float32": GL.GL_FLOAT,
+    "int32": GL.GL_INT,
     "uint32": GL.GL_UNSIGNED_INT,
     "uint8": GL.GL_UNSIGNED_BYTE,
 }
@@ -328,21 +330,59 @@ class Texture3D(Texture):
             dx, dy, dz = data.shape[:3]
             gl_type, type1, type2 = TEX_CHANNELS[data.dtype.name][channels]
             GL.glPixelStorei(GL.GL_UNPACK_ALIGNMENT, 1)
-            GL.glTexParameterf(GL.GL_TEXTURE_3D, GL.GL_TEXTURE_WRAP_S, self.boundary_x)
-            GL.glTexParameterf(GL.GL_TEXTURE_3D, GL.GL_TEXTURE_WRAP_T, self.boundary_y)
-            GL.glTexParameterf(GL.GL_TEXTURE_3D, GL.GL_TEXTURE_WRAP_R, self.boundary_z)
             if not isinstance(change["old"], np.ndarray):
+                # the sampling state is only set when the storage is allocated
+                GL.glTexParameterf(
+                    GL.GL_TEXTURE_3D, GL.GL_TEXTURE_WRAP_S, self.boundary_x
+                )
+                GL.glTexParameterf(
+                    GL.GL_TEXTURE_3D, GL.GL_TEXTURE_WRAP_T, self.boundary_y
+                )
+                GL.glTexParameterf(
+                    GL.GL_TEXTURE_3D, GL.GL_TEXTURE_WRAP_R, self.boundary_z
+                )
+                GL.glTexParameteri(
+                    GL.GL_TEXTURE_3D, GL.GL_TEXTURE_MIN_FILTER, self.min_filter
+                )
+                GL.glTexParameteri(
+                    GL.GL_TEXTURE_3D, GL.GL_TEXTURE_MAG_FILTER, self.mag_filter
+                )
                 GL.glTexStorage3D(GL.GL_TEXTURE_3D, 1, type1, dx, dy, dz)
             GL.glTexSubImage3D(
                 GL.GL_TEXTURE_3D, 0, 0, 0, 0, dx, dy, dz, type2, gl_type, data.T
             )
+            GL.glGenerateMipmap(GL.GL_TEXTURE_3D)
+
+    def allocate(self, dims, dtype="float32", channels=1):
+        """Allocate uninitialized storage of shape dims, without uploading data.
+
+        Like _set_data, the sampling state is set along with the storage.
+        """
+        dx, dy, dz = (int(_) for _ in dims)
+        _, type1, _ = TEX_CHANNELS[np.dtype(dtype).name][channels]
+        with self.bind():
+            GL.glTexParameterf(GL.GL_TEXTURE_3D, GL.GL_TEXTURE_WRAP_S, self.boundary_x)
+            GL.glTexParameterf(GL.GL_TEXTURE_3D, GL.GL_TEXTURE_WRAP_T, self.boundary_y)
+            GL.glTexParameterf(GL.GL_TEXTURE_3D, GL.GL_TEXTURE_WRAP_R, self.boundary_z)
             GL.glTexParameteri(
                 GL.GL_TEXTURE_3D, GL.GL_TEXTURE_MIN_FILTER, self.min_filter
             )
             GL.glTexParameteri(
                 GL.GL_TEXTURE_3D, GL.GL_TEXTURE_MAG_FILTER, self.mag_filter
             )
-            GL.glGenerateMipmap(GL.GL_TEXTURE_3D)
+            GL.glTexStorage3D(GL.GL_TEXTURE_3D, 1, type1, dx, dy, dz)
+
+    def set_subdata(self, offset, data):
+        """Upload data into the region of the texture starting at offset."""
+        channels = data.shape[-1] if data.ndim == 4 else 1
+        dx, dy, dz = data.shape[:3]
+        ox, oy, oz = (int(_) for _ in offset)
+        gl_type, _, type2 = TEX_CHANNELS[data.dtype.name][channels]
+        with self.bind():
+            GL.glPixelStorei(GL.GL_UNPACK_ALIGNMENT, 1)
+            GL.glTexSubImage3D(
+                GL.GL_TEXTURE_3D, 0, ox, oy, oz, dx, dy, dz, type2, gl_type, data.T
+            )
 
 
 class VertexAttribute(traitlets.HasTraits):
@@ -352,6 +392,9 @@ class VertexAttribute(traitlets.HasTraits):
     each = traitlets.CInt(-1)
     opengl_type = traitlets.CInt(GL.GL_FLOAT)
     divisor = traitlets.CInt(0)
+    # integer attributes (declared ivec/uvec in the shader) keep their values
+    # exactly; otherwise they are converted to float
+    integer = traitlets.Bool(False)
 
     @traitlets.default("id")
     def _id_default(self):
@@ -367,7 +410,12 @@ class VertexAttribute(traitlets.HasTraits):
                 _ = GL.glEnableVertexAttribArray(loc)
         _ = GL.glBindBuffer(GL.GL_ARRAY_BUFFER, self.id)
         if loc >= 0:
-            GL.glVertexAttribPointer(loc, self.each, self.opengl_type, False, 0, None)
+            if self.integer:
+                GL.glVertexAttribIPointer(loc, self.each, self.opengl_type, 0, None)
+            else:
+                GL.glVertexAttribPointer(
+                    loc, self.each, self.opengl_type, False, 0, None
+                )
         yield
         if loc >= 0:
             GL.glDisableVertexAttribArray(loc)
@@ -444,6 +492,105 @@ class VertexArray(traitlets.HasTraits):
         self.index_id = GL.glGenBuffers(1)
         GL.glBindBuffer(GL.GL_ELEMENT_ARRAY_BUFFER, self.index_id)
         GL.glBufferData(GL.GL_ELEMENT_ARRAY_BUFFER, arr.nbytes, arr, GL.GL_STATIC_DRAW)
+
+
+class TextureAtlas(traitlets.HasTraits):
+    """
+    Many 3D blocks packed into a single Texture3D.
+
+    The atlas is laid out once, when it is created, from the blocks' sizes and
+    padding; to change the layout, create a new atlas. No axis of it is larger
+    than GL_MAX_3D_TEXTURE_SIZE, and if the blocks don't fit, creating it
+    raises a ValueError. Block i's interior starts at offsets[i], and padding
+    texels on every side of it (filled by __setitem__ with the block's edge
+    values) keep linear interpolation from reading a neighboring block.
+
+    If a vertex array is given, the offsets and sizes are added to it as the
+    integer vertex attributes offset_attribute_name and size_attribute_name
+    (ivec3s in the shaders), one per block, so the sizes have to be given in
+    the vertex array's block order.
+    """
+
+    sizes = traittypes.Array(None, allow_none=True, read_only=True)
+    padding = traitlets.CInt(0, read_only=True)
+    offsets = traittypes.Array(None, allow_none=True, read_only=True)
+    dims = traittypes.Array(None, allow_none=True, read_only=True)
+    dtype = traitlets.CUnicode("float32")
+    channels = traitlets.CInt(1)
+    min_filter = GLValue("linear")
+    mag_filter = GLValue("linear")
+    texture = traitlets.Instance(Texture3D, allow_none=True)
+    vertex_array = traitlets.Instance(VertexArray, allow_none=True)
+    offset_attribute_name = traitlets.CUnicode("in_texture_offset")
+    size_attribute_name = traitlets.CUnicode("in_texture_size")
+
+    def __init__(self, sizes, padding=0, **kwargs):
+        super().__init__(**kwargs)
+        sizes = np.asarray(sizes, dtype="int64").reshape(-1, 3)
+        max_dim = GL.glGetInteger(GL.GL_MAX_3D_TEXTURE_SIZE)
+        offsets, dims = pack(sizes, padding=padding, max_dim=max_dim)
+        self.set_trait("sizes", sizes)
+        self.set_trait("padding", padding)
+        self.set_trait("offsets", offsets)
+        self.set_trait("dims", np.asarray(dims, dtype="int64"))
+        self.texture = Texture3D(
+            min_filter=self.min_filter,
+            mag_filter=self.mag_filter,
+            boundary_x="clamp",
+            boundary_y="clamp",
+            boundary_z="clamp",
+        )
+        self.texture.allocate(self.dims, self.dtype, self.channels)
+        self._set_attributes()
+
+    def __len__(self):
+        return self.sizes.shape[0]
+
+    def __setitem__(self, index, data):
+        """Upload block index's data, padded with its edge values."""
+        data = np.asarray(data, dtype=self.dtype)
+        if data.shape[:3] != tuple(self.sizes[index]):
+            raise ValueError(
+                f"Block {index} has size {tuple(self.sizes[index])}, "
+                f"got data of shape {data.shape}"
+            )
+        if self.padding > 0:
+            pad = [(self.padding, self.padding)] * 3 + [(0, 0)] * (data.ndim - 3)
+            data = np.pad(data, pad, mode="edge")
+        self.texture.set_subdata(self.offsets[index] - self.padding, data)
+
+    @traitlets.observe("vertex_array")
+    def _observe_vertex_array(self, change):
+        self._set_attributes()
+
+    def _set_attributes(self):
+        if self.vertex_array is None or self.offsets is None:
+            return
+        for name, arr in (
+            (self.offset_attribute_name, self.offsets),
+            (self.size_attribute_name, self.sizes),
+        ):
+            data = arr.astype("int32")
+            if name in self.vertex_array.keys():
+                attr = self.vertex_array[name]
+                attr.integer = True
+                attr.data = data
+            else:
+                self.vertex_array.attributes.append(
+                    VertexAttribute(name=name, data=data, integer=True)
+                )
+
+    @contextmanager
+    def bind(self, target=0):
+        with self.texture.bind(target=target):
+            yield
+
+    def release(self):
+        # the offset and size attributes belong to the vertex array, which
+        # releases them
+        if self.texture is not None:
+            self.texture.release()
+            self.texture = None
 
 
 def _pixels_by_row(arr, width, height):

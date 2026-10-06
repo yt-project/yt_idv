@@ -173,15 +173,29 @@ def test_viewpoint_order_in_tree_coordinates(make_rc, tmp_path, saved):
         scene.save(filename)
         rc.scene = scene = SceneGraph.load(filename)
         data = scene.components[0].data
-    order = [vbo_i for vbo_i, _, _ in data.viewpoint_iter(scene.camera)]
+    order = data.viewpoint_order(scene.camera).tolist()
     assert order == expected
 
 
-def test_internal_length_unit_follows_scale(region_rc):
+def test_internal_length_unit_follows_ratio(region_rc):
     data = region_rc.scene.components[0].data
     unscaled = data.internal_length_unit
-    data.scale = True
+    region_rc.scene.rescale([0.0, 0.0, 0.0], 0.4)
     assert float(data.internal_length_unit / unscaled) == pytest.approx(0.4)
+
+
+def test_internal_length_unit_rejects_offset(region_rc):
+    # a nonzero offset can't be folded into a length unit, and the rendered
+    # image plane's center would silently be wrong without it
+    component = region_rc.scene.components[0]
+    data = component.data
+    data.scale = True
+    assert any(data.applied_scale_offset)
+    with pytest.raises(NotImplementedError, match="offset"):
+        _ = data.internal_length_unit
+    region_rc.scene.render()
+    with pytest.raises(NotImplementedError, match="offset"):
+        component.rendered_image_plane()
 
 
 def test_standalone_export_rescales_exactly(region_rc, tmp_path):

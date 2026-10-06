@@ -28,7 +28,14 @@ flat in mat4 vinverse_mvm[];
 flat in mat4 vinverse_pmvm[];
 flat in vec4 vv_model[];
 
-flat out ivec3 texture_offset;
+flat in ivec3 vdata_offset[];
+flat in ivec3 vdata_size[];
+flat in ivec3 vbitmap_offset[];
+flat in ivec3 vbitmap_size[];
+flat out ivec3 data_offset;
+flat out ivec3 data_size;
+flat out ivec3 bitmap_offset;
+flat out ivec3 bitmap_size;
 
 // https://stackoverflow.com/questions/28375338/cube-using-single-gl-triangle-strip
 // suggests that the triangle strip we want for the cube is
@@ -82,7 +89,10 @@ void main() {
 
         dx = vdx[0];
         v_model = newPos;
-        texture_offset = ivec3(0);
+        data_offset = vdata_offset[0];
+        data_size = vdata_size[0];
+        bitmap_offset = vbitmap_offset[0];
+        bitmap_size = vbitmap_size[0];
         EmitVertex();
     }
 

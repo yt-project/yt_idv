@@ -29,7 +29,7 @@ def test_block_collection_normalization(empty_rc, ds_yt_ugrid):
     )
     block_coll.add_data(("stream", "constant_field"), no_ghost=True)
 
-    assert np.allclose(block_coll.texture_objects[0].data, 0.5)
+    assert np.allclose(block_coll.block_data[0], 0.5)
 
 
 @pytest.mark.image_test
