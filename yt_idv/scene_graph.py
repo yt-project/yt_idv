@@ -131,8 +131,9 @@ class SceneGraph(traitlets.HasTraits):
         ratio: float, the length in model coordinates that becomes one
         """
         offset = np.asarray(offset, dtype="f8")
+
         for data in self.data_objects:
-            if isinstance(data, BlockCollection):
+            if isinstance(data, BlockCollection) and data._yt_geom_str == "cartesian":
                 data.apply_scale(offset, ratio)
         camera = self.camera
         camera.update(
