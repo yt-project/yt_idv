@@ -16,13 +16,15 @@ flat out vec3 vdx;
 flat out vec3 vleft_edge;
 flat out vec3 vright_edge;
 
-#ifdef BINDLESS_TEXTURES
-// the block's data and bitmap texture handles, see known_uniforms.inc.glsl
-in uvec2 in_data_tex;
-in uvec2 in_bitmap_tex;
-flat out uvec2 vdata_tex;
-flat out uvec2 vbitmap_tex;
-#endif
+// where the block lies in the data and bitmap atlases, see known_uniforms.inc.glsl
+in ivec3 in_data_offset;
+in ivec3 in_data_size;
+in ivec3 in_bitmap_offset;
+in ivec3 in_bitmap_size;
+flat out ivec3 vdata_offset;
+flat out ivec3 vdata_size;
+flat out ivec3 vbitmap_offset;
+flat out ivec3 vbitmap_size;
 
 #ifdef NONCARTESIAN_GEOM
 // pre-computed cartesian le, re
@@ -38,10 +40,10 @@ flat out vec3 vdx_cart;
 
 void main()
 {
-    #ifdef BINDLESS_TEXTURES
-    vdata_tex = in_data_tex;
-    vbitmap_tex = in_bitmap_tex;
-    #endif
+    vdata_offset = in_data_offset;
+    vdata_size = in_data_size;
+    vbitmap_offset = in_bitmap_offset;
+    vbitmap_size = in_bitmap_size;
 
     // camera uniforms: projection, modelview
     vv_model = model_vertex;

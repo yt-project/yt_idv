@@ -5,7 +5,6 @@ flat in vec3 right_edge;
 flat in mat4 inverse_proj;
 flat in mat4 inverse_mvm;
 flat in mat4 inverse_pmvm;
-flat in ivec3 texture_offset;
 
 // this block's data_tex and bitmap_tex, see known_uniforms.inc.glsl
 BLOCK_TEXTURE_INPUTS
@@ -218,8 +217,10 @@ float spherical_step_size(vec3 ro, vec3 rd, float t_entry, float t_exit)
 
 vec3 get_offset_texture_position(sampler3D tex, vec3 tex_curr_pos)
 {
-    ivec3 texsize = textureSize(tex, 0); // lod (mipmap level) always 0?
-    return (tex_curr_pos * texsize + texture_offset) / texsize;
+    // tex_curr_pos runs from 0 to 1 across the block, which lies at
+    // data_offset in the data atlas
+    vec3 texsize = vec3(textureSize(tex, 0));
+    return (tex_curr_pos * vec3(data_size) + vec3(data_offset)) / texsize;
 }
 
 vec3 get_bitmap_texture_position(vec3 tex_curr_pos)
@@ -228,12 +229,14 @@ vec3 get_bitmap_texture_position(vec3 tex_curr_pos)
     // block's vertices, but the bitmap of a grid block has one texel per cell,
     // spanning left_edge to right_edge. Other bitmaps (octree blocks share one
     // bitmap that isn't sized per cell) keep the data texture's coordinate.
-    ivec3 n_vertices = textureSize(data_tex, 0);
-    ivec3 n_cells = textureSize(bitmap_tex, 0);
-    if (n_cells != n_vertices - ivec3(1)) {
-        return get_offset_texture_position(bitmap_tex, tex_curr_pos);
+    vec3 texsize = vec3(textureSize(bitmap_tex, 0));
+    vec3 texel;
+    if (bitmap_size != data_size - ivec3(1)) {
+        texel = tex_curr_pos * vec3(bitmap_size);
+    } else {
+        texel = tex_curr_pos * vec3(data_size) - 0.5;
     }
-    return (tex_curr_pos * vec3(n_vertices) - 0.5) / vec3(n_cells);
+    return (texel + vec3(bitmap_offset)) / texsize;
 }
 
 bool sample_texture(vec3 tex_curr_pos, inout vec4 curr_color, float tdelta,

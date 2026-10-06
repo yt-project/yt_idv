@@ -6,12 +6,7 @@ import traitlets
 from OpenGL import GL
 
 from yt_idv.gui_support import add_popup_help
-from yt_idv.opengl_support import (
-    Texture2D,
-    TransferFunctionTexture,
-    VertexAttribute,
-    bindless_textures_supported,
-)
+from yt_idv.opengl_support import Texture2D, TransferFunctionTexture
 from yt_idv.rendered_image_plane import RenderedImagePlane, image_plane_extent
 from yt_idv.scene_components.base_component import SceneComponent
 from yt_idv.scene_data.block_collection import BlockCollection
@@ -56,20 +51,12 @@ class BlockRendering(SceneComponent):
         Texture2D, allow_none=True, default_value=None
     )
     use_external_depth_clip = traitlets.Bool(False)
-    # Draw all the blocks with a single call, giving each block its textures
-    # through GL_ARB_bindless_texture handles, instead of binding each block's
-    # textures and drawing it separately. Defaults to whether the context
-    # supports the extension.
-    use_bindless_textures = traitlets.Bool()
 
     priority = 10
 
-    # the bindless draw's per-block texture handles and index buffer; these
-    # belong to this component, not to the data's vertex array, so they are
-    # neither shared with other components nor saved with the scene
-    _data_handles = None
-    _bitmap_handles = None
-    _handle_attribute_source = None
+    # the index buffer giving the draw order; it belongs to this component,
+    # not to the data's vertex array, so it is neither shared with other
+    # components nor saved with the scene
     _index_buffer = None
 
     _saved_attributes = SceneComponent._saved_attributes + ("transfer_function",)
@@ -228,28 +215,6 @@ class BlockRendering(SceneComponent):
         tf = TransferFunctionTexture(data=np.ones((256, 1, 4), dtype="u1") * 255)
         return tf
 
-    @traitlets.default("use_bindless_textures")
-    def _default_use_bindless_textures(self):
-        return bindless_textures_supported()
-
-    @traitlets.observe("data", "use_bindless_textures")
-    def _set_bindless_pp_directive(self, change):
-        # observing data too applies the default before the shaders are first
-        # compiled, since traitlets doesn't notify observers of a default
-        directive = ("BINDLESS_TEXTURES", "")
-        current_shader = component_shaders[self.name][self.render_method]
-        with self.hold_trait_notifications():
-            for shd in ("vertex", "geometry", "fragment"):
-                if self.use_bindless_textures:
-                    self._program1_pp_defs.add_definition(shd, directive)
-                elif directive[0] in dict(self._program1_pp_defs[shd]):
-                    self._program1_pp_defs.clear_definition(shd, directive)
-                shader = current_shader.get(f"first_{shd}", None)
-                if shader is not None:
-                    setattr(
-                        self, f"{shd}_shader", (shader, self._program1_pp_defs[shd])
-                    )
-
     @property
     def _draw_order_matters(self):
         # Blocks have to be drawn furthest first unless the first pass blends
@@ -267,12 +232,6 @@ class BlockRendering(SceneComponent):
             and tuple(shader.blend_func) == (GL.GL_ONE, GL.GL_ONE)
         )
 
-    def _block_order(self, scene):
-        """The block indices in the order to draw them, as a uint32 array."""
-        if self._draw_order_matters:
-            return self.data.viewpoint_order(scene.camera)
-        return np.arange(len(self.data.texture_objects), dtype="uint32")
-
     def draw(self, scene, program):
         GL.glEnable(GL.GL_CULL_FACE)
         GL.glCullFace(GL.GL_BACK)
@@ -284,55 +243,30 @@ class BlockRendering(SceneComponent):
             if depth_clip_active
             else contextlib.nullcontext()
         )
-        with self.transfer_function.bind(target=2):
-            with depth_ctx:
-                if self.use_bindless_textures:
-                    self._draw_bindless(scene, program)
-                else:
-                    self._draw_bound(scene)
-
-    def _draw_bound(self, scene):
-        # bind each block's textures and draw it on its own
         data = self.data
-        each = data.vertex_array.each
-        for vbo_i in self._block_order(scene).tolist():
-            tex = data.texture_objects[vbo_i]
-            bitmap_tex = data.bitmap_objects[vbo_i]
-            with tex.bind(target=0):
-                with bitmap_tex.bind(target=1):
-                    GL.glDrawArrays(GL.GL_POINTS, vbo_i * each, each)
+        with self.transfer_function.bind(target=2):
+            with depth_ctx, data.data_atlas.bind(0), data.bitmap_atlas.bind(1):
+                self._draw_blocks(scene)
 
-    def _draw_bindless(self, scene, program):
-        # draw every block with one call: each block (a single vertex) gets its
-        # texture handles from vertex attributes, and when the order matters an
-        # index buffer gives it
-        handles = self.data.texture_handles()
-        if self._handle_attribute_source is not handles:
-            self._handle_attribute_source = handles
-            if self._data_handles is None:
-                self._data_handles = VertexAttribute(name="in_data_tex", integer=True)
-                self._bitmap_handles = VertexAttribute(
-                    name="in_bitmap_tex", integer=True
-                )
-            # each 64-bit handle goes to the shaders as a uvec2
-            data_handles, bitmap_handles = handles.view("uint32")
-            self._data_handles.data = data_handles.reshape(-1, 2)
-            self._bitmap_handles.data = bitmap_handles.reshape(-1, 2)
-        with self._data_handles.bind(program), self._bitmap_handles.bind(program):
-            if not self._draw_order_matters:
-                GL.glDrawArrays(GL.GL_POINTS, 0, handles.shape[1])
-                return
-            order = self.data.viewpoint_order(scene.camera)
-            if self._index_buffer is None:
-                self._index_buffer = GL.glGenBuffers(1)
-            # the element buffer binding is part of the bound vertex array's
-            # state, so it is reset afterwards
-            GL.glBindBuffer(GL.GL_ELEMENT_ARRAY_BUFFER, self._index_buffer)
-            GL.glBufferData(
-                GL.GL_ELEMENT_ARRAY_BUFFER, order.nbytes, order, GL.GL_STREAM_DRAW
-            )
-            GL.glDrawElements(GL.GL_POINTS, order.size, GL.GL_UNSIGNED_INT, None)
-            GL.glBindBuffer(GL.GL_ELEMENT_ARRAY_BUFFER, 0)
+    def _draw_blocks(self, scene):
+        # draw every block (a single vertex each) with one call; each block
+        # finds itself in the atlases through its offset and size attributes,
+        # and when the order matters an index buffer gives it
+        n_blocks = len(self.data.block_data)
+        if not self._draw_order_matters:
+            GL.glDrawArrays(GL.GL_POINTS, 0, n_blocks)
+            return
+        order = self.data.viewpoint_order(scene.camera)
+        if self._index_buffer is None:
+            self._index_buffer = GL.glGenBuffers(1)
+        # the element buffer binding is part of the bound vertex array's
+        # state, so it is reset afterwards
+        GL.glBindBuffer(GL.GL_ELEMENT_ARRAY_BUFFER, self._index_buffer)
+        GL.glBufferData(
+            GL.GL_ELEMENT_ARRAY_BUFFER, order.nbytes, order, GL.GL_STREAM_DRAW
+        )
+        GL.glDrawElements(GL.GL_POINTS, order.size, GL.GL_UNSIGNED_INT, None)
+        GL.glBindBuffer(GL.GL_ELEMENT_ARRAY_BUFFER, 0)
 
     def _set_uniforms(self, scene, shader_program):
         if self.data._yt_geom_str == "spherical":

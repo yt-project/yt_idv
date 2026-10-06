@@ -17,6 +17,7 @@ not overlap any other box's padded region.
 
 Run fast tests only:  pytest -m "not slow"
 """
+
 import time
 
 import numpy as np
@@ -25,9 +26,9 @@ import pytest
 from yt_idv.texture_packing import pack
 
 # ---- knobs to tune for your implementation ---------------------------------
-TIGHT_DIMS = True       # False if you round the atlas up (e.g. to powers of two)
-MIN_FILL = 0.85         # minimum acceptable fill ratio on realistic inputs
-TIME_LIMIT_S = 10.0     # budget for packing 200k boxes
+TIGHT_DIMS = True  # False if you round the atlas up (e.g. to powers of two)
+MIN_FILL = 0.85  # minimum acceptable fill ratio on realistic inputs
+TIME_LIMIT_S = 10.0  # budget for packing 200k boxes
 MAX_CHECK_VOXELS = 2**30  # occupancy-grid limit for the overlap check (bytes)
 # -----------------------------------------------------------------------------
 
@@ -38,6 +39,7 @@ def run_pack(sizes, padding=0):
 
 # ---- helpers -----------------------------------------------------------------
 
+
 def random_sizes(n, seed, lo=1, hi=9):
     return np.random.default_rng(seed).integers(lo, hi + 1, size=(n, 3))
 
@@ -47,14 +49,16 @@ def find_overlap(lo, hi, dims):
     overlapping index pair (earlier, later) or None. Exact, and fast enough
     for 200k small boxes."""
     n_voxels = int(np.prod(dims, dtype=np.int64))
-    assert n_voxels <= MAX_CHECK_VOXELS, \
+    assert n_voxels <= MAX_CHECK_VOXELS, (
         f"atlas {tuple(dims)} too large for the occupancy-grid overlap check"
+    )
     occ = np.zeros(tuple(int(v) for v in dims), dtype=bool)
-    for i, ((x0, y0, z0), (x1, y1, z1)) in enumerate(zip(lo.tolist(), hi.tolist())):
+    for i, ((x0, y0, z0), (x1, y1, z1)) in enumerate(
+        zip(lo.tolist(), hi.tolist(), strict=True)
+    ):
         region = occ[x0:x1, y0:y1, z0:z1]
         if region.any():
-            hits = np.flatnonzero(
-                np.all((lo[:i] < hi[i]) & (lo[i] < hi[:i]), axis=1))
+            hits = np.flatnonzero(np.all((lo[:i] < hi[i]) & (lo[i] < hi[:i]), axis=1))
             return int(hits[0]), i
         region[...] = True
     return None
@@ -64,17 +68,21 @@ def check_valid(sizes, offsets, dims, padding=0):
     sizes = np.asarray(sizes, dtype=np.int64).reshape(-1, 3)
     n = len(sizes)
 
-    assert isinstance(offsets, np.ndarray), \
+    assert isinstance(offsets, np.ndarray), (
         f"offsets must be a numpy array, got {type(offsets).__name__}"
-    assert offsets.shape == (n, 3), \
+    )
+    assert offsets.shape == (n, 3), (
         f"offsets must have shape {(n, 3)}, got {offsets.shape}"
-    assert np.issubdtype(offsets.dtype, np.integer), \
+    )
+    assert np.issubdtype(offsets.dtype, np.integer), (
         f"offsets must have an integer dtype, got {offsets.dtype}"
+    )
 
     dims = np.asarray(dims)
     assert dims.shape == (3,), f"atlas dims must have shape (3,), got {dims.shape}"
-    assert np.issubdtype(dims.dtype, np.integer), \
+    assert np.issubdtype(dims.dtype, np.integer), (
         f"atlas dims must be integers, got {dims.dtype}"
+    )
     assert (dims > 0).all(), f"atlas dims must be positive, got {dims}"
 
     offsets = offsets.astype(np.int64)
@@ -84,16 +92,19 @@ def check_valid(sizes, offsets, dims, padding=0):
     below = np.flatnonzero((lo < 0).any(axis=1))
     assert below.size == 0, (
         f"{below.size} boxes extend below 0, e.g. box {below[0]} "
-        f"{sizes[below[0]]} at {offsets[below[0]]} (padding={padding})")
+        f"{sizes[below[0]]} at {offsets[below[0]]} (padding={padding})"
+    )
     above = np.flatnonzero((hi > dims).any(axis=1))
     assert above.size == 0, (
         f"{above.size} boxes exceed atlas {dims}, e.g. box {above[0]} "
-        f"{sizes[above[0]]} at {offsets[above[0]]} (padding={padding})")
+        f"{sizes[above[0]]} at {offsets[above[0]]} (padding={padding})"
+    )
 
     pair = find_overlap(lo, hi, dims)
     assert pair is None, (
         f"boxes {pair[0]} {sizes[pair[0]]}@{offsets[pair[0]]} and "
-        f"{pair[1]} {sizes[pair[1]]}@{offsets[pair[1]]} overlap")
+        f"{pair[1]} {sizes[pair[1]]}@{offsets[pair[1]]} overlap"
+    )
 
 
 def fill_ratio(sizes, dims, padding=0):
@@ -103,6 +114,7 @@ def fill_ratio(sizes, dims, padding=0):
 
 
 # ---- return type -------------------------------------------------------------
+
 
 def test_returns_numpy_arrays():
     sizes = random_sizes(100, seed=0)
@@ -120,6 +132,7 @@ def test_accepts_list_of_tuples():
 
 
 # ---- edge cases --------------------------------------------------------------
+
 
 def test_empty_input():
     offsets, _ = run_pack(np.empty((0, 3), dtype=np.int64))
@@ -152,6 +165,25 @@ def test_rejects_degenerate_sizes(bad):
         pack(np.array([(2, 2, 2), bad]))
 
 
+# Unconstrained, these atlases have a longest axis of 108 and 164.
+@pytest.mark.parametrize("padding, max_dim", [(0, 80), (1, 120)])
+def test_respects_max_dim(padding, max_dim):
+    sizes = random_sizes(3000, seed=9)
+    offsets, dims = pack(sizes, padding=padding, max_dim=max_dim)
+    check_valid(sizes, offsets, dims, padding)
+    assert (np.asarray(dims) <= max_dim).all(), f"atlas {dims} exceeds max_dim"
+
+
+def test_rejects_block_larger_than_max_dim():
+    with pytest.raises(ValueError):
+        pack(np.array([(2, 2, 2), (5, 5, 5)]), padding=1, max_dim=6)
+
+
+def test_rejects_when_atlas_too_small():
+    with pytest.raises(ValueError):
+        pack(np.ones((1000, 3), dtype=np.int64) * 4, max_dim=16)
+
+
 def test_does_not_mutate_input():
     sizes = random_sizes(500, seed=1)
     before = sizes.copy()
@@ -178,6 +210,7 @@ def test_deterministic():
 
 # ---- correctness on varied inputs --------------------------------------------
 
+
 @pytest.mark.parametrize("seed", range(5))
 @pytest.mark.parametrize("padding", [0, 1, 2])
 def test_random_inputs_valid(seed, padding):
@@ -186,7 +219,9 @@ def test_random_inputs_valid(seed, padding):
     check_valid(sizes, offsets, dims, padding)
 
 
-@pytest.mark.parametrize("shape", [(1, 1, 1), (4, 4, 4), (9, 1, 1), (1, 9, 1), (1, 1, 9)])
+@pytest.mark.parametrize(
+    "shape", [(1, 1, 1), (4, 4, 4), (9, 1, 1), (1, 9, 1), (1, 1, 9)]
+)
 def test_identical_boxes_pack_well(shape):
     sizes = np.tile(shape, (4000, 1))
     offsets, dims = run_pack(sizes)
@@ -227,6 +262,7 @@ def test_one_large_among_many_small():
 
 # ---- quality -----------------------------------------------------------------
 
+
 @pytest.mark.parametrize("padding", [0, 1])
 def test_fill_ratio_realistic(padding):
     sizes = random_sizes(20000, seed=4)
@@ -255,6 +291,7 @@ def test_atlas_not_absurdly_elongated():
 
 # ---- scale -------------------------------------------------------------------
 
+
 @pytest.mark.slow
 @pytest.mark.parametrize("padding", [0, 1])
 def test_200k_boxes(padding):
@@ -265,4 +302,3 @@ def test_200k_boxes(padding):
     assert elapsed < TIME_LIMIT_S, f"packing took {elapsed:.1f}s"
     check_valid(sizes, offsets, dims, padding)
     assert fill_ratio(sizes, dims, padding) >= MIN_FILL
-

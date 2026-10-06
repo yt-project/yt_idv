@@ -56,9 +56,9 @@ def test_order_independent_methods_skip_viewpoint_walk(
     monkeypatch.undo()
 
     def fail(camera):
-        raise AssertionError("viewpoint_iter called for an order-independent method")
+        raise AssertionError("viewpoint_order called for an order-independent method")
 
-    monkeypatch.setattr(component.data, "viewpoint_iter", fail)
+    monkeypatch.setattr(component.data, "viewpoint_order", fail)
     amr_rc.run()
     unordered = np.array(component.first_pass_fb_rgba)
 

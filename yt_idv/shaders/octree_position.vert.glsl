@@ -9,7 +9,10 @@ flat out mat4 inverse_pmvm;
 flat out vec3 dx;
 flat out vec3 left_edge;
 flat out vec3 right_edge;
-flat out ivec3 texture_offset;
+flat out ivec3 data_offset;
+flat out ivec3 data_size;
+flat out ivec3 bitmap_offset;
+flat out ivec3 bitmap_size;
 
 void main()
 {
@@ -23,5 +26,10 @@ void main()
     dx = vec3(in_dx);
     left_edge = vec3(in_left_edge);
     right_edge = vec3(in_right_edge);
-    texture_offset = ivec3(0, 0, gl_InstanceID);
+    // the octree's blocks are stacked in z in textures of their own, and they
+    // all share one bitmap
+    data_offset = ivec3(0, 0, gl_InstanceID);
+    data_size = textureSize(data_tex, 0);
+    bitmap_offset = data_offset;
+    bitmap_size = textureSize(bitmap_tex, 0);
 }

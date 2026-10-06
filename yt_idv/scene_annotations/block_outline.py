@@ -22,7 +22,7 @@ class BlockOutline(SceneAnnotation):
     def draw(self, scene, program):
         GL.glDisable(GL.GL_CULL_FACE)
         each = self.data.vertex_array.each
-        for tex_ind, _tex, _bitmap_tex in self.data.viewpoint_iter(scene.camera):
+        for tex_ind in self.data.viewpoint_order(scene.camera).tolist():
             GL.glDrawArrays(GL.GL_POINTS, tex_ind * each, each)
 
     def render_gui(self, imgui, renderer, scene):

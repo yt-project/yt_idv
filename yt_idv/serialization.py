@@ -115,7 +115,12 @@ class SceneWriter:
                 "each": va.each,
                 "indices": self.encode(va.indices),
                 "attributes": [
-                    {"name": a.name, "divisor": a.divisor, "data": self.encode(a.data)}
+                    {
+                        "name": a.name,
+                        "divisor": a.divisor,
+                        "integer": a.integer,
+                        "data": self.encode(a.data),
+                    }
                     for a in va.attributes
                 ],
             }
@@ -193,6 +198,7 @@ class SceneReader:
                 VertexAttribute(
                     name=attr["name"],
                     divisor=attr["divisor"],
+                    integer=attr.get("integer", False),
                     data=self.decode(attr["data"]),
                 )
             )

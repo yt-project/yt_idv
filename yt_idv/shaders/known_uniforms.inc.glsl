@@ -47,23 +47,12 @@ uniform sampler2D db_tex;
 uniform sampler2D fb_tex;
 uniform sampler2D tf_tex;
 
-// A block's data and bitmap textures, data_tex and bitmap_tex. Normally they
-// are uniforms, bound to texture units 0 and 1 before each block is drawn.
-// With bindless textures all the blocks are drawn at once: each block's
-// texture handles are vertex attributes, passed on by the vertex and geometry
-// shaders, and fragment shaders declare them as inputs with
-// BLOCK_TEXTURE_INPUTS. The handles stay uvec2 between stages, since sampler
-// varyings crash NVIDIA's linker (595.91), and data_tex and bitmap_tex make
-// them samplers where they're used.
-#ifdef BINDLESS_TEXTURES
-#define BLOCK_TEXTURE_INPUTS flat in uvec2 data_tex_handle; flat in uvec2 bitmap_tex_handle;
-#define data_tex sampler3D(data_tex_handle)
-#define bitmap_tex sampler3D(bitmap_tex_handle)
-#else
-#define BLOCK_TEXTURE_INPUTS
+// The data and bitmap textures. Each holds many blocks (see TextureAtlas), and
+// fragment shaders declare where the block being drawn lies in them, in texels,
+// with BLOCK_TEXTURE_INPUTS.
 uniform sampler3D data_tex;
 uniform sampler3D bitmap_tex;
-#endif
+#define BLOCK_TEXTURE_INPUTS flat in ivec3 data_offset; flat in ivec3 data_size; flat in ivec3 bitmap_offset; flat in ivec3 bitmap_size;
 
 // ray tracing control
 uniform float sample_factor;

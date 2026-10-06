@@ -168,8 +168,8 @@ def export_block_scene(
         ],
     }
 
-    texture_objects = []
-    bitmap_objects = []
+    block_data = []
+    block_bitmaps = []
     for i, block in enumerate(blocks):
         n_data = np.abs(block.my_data[0]).copy(order="F").astype("float32").d
         if max_val != min_val:
@@ -178,14 +178,9 @@ def export_block_scene(
             n_data[n_data > 1] = 1.0
             # zero-valued blocks are skipped by the shader
             n_data[n_data == 0.0] += np.finfo(np.float32).eps
-        texture_objects.append([i, archive.add_texture(n_data)])
-        bitmap_objects.append(
-            [
-                i,
-                archive.add_texture(
-                    block.source_mask * 255, min_filter="nearest", mag_filter="nearest"
-                ),
-            ]
+        block_data.append([i, archive.add_array(n_data)])
+        block_bitmaps.append(
+            [i, archive.add_array((block.source_mask * 255).astype("uint8"))]
         )
 
     block_collection = {
@@ -200,8 +195,8 @@ def export_block_scene(
         "attributes": {
             "vertex_array": {"__vertex_array__": vertex_array},
             "textures": [],
-            "texture_objects": {"__items__": texture_objects},
-            "bitmap_objects": {"__items__": bitmap_objects},
+            "block_data": {"__items__": block_data},
+            "block_bitmaps": {"__items__": block_bitmaps},
             "_kd_tree": {
                 k: archive.add_array(v)
                 for k, v in _flatten_kd_tree(tiles.tree.trunk).items()
