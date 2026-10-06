@@ -187,6 +187,34 @@ def test_apparent_size_at_focal_plane(projection_type: str):
     assert_allclose(ndc[0], 0.0, atol=1e-7)
 
 
+@pytest.mark.parametrize("aspect", [16 / 9, 9 / 16])
+@pytest.mark.parametrize("projection_type", ["perspective", "orthographic"])
+def test_apparent_size_at_any_aspect(projection_type: str, aspect: float):
+    # the vertical field of view is fixed and the horizontal one widens with
+    # the aspect ratio, so the image stays centered and shapes keep their
+    # proportions in pixels
+    cam = _get_camera(projection_type)
+    cam.aspect_ratio = aspect
+    above = cam.focus + cam.orthographic_scale * np.array([0.0, 1.0, 0.0])
+    beside = cam.focus + cam.orthographic_scale * aspect * np.array([1.0, 0.0, 0.0])
+    assert_allclose(_to_ndc(cam, cam.focus)[:2], 0.0, atol=1e-7)
+    assert_allclose(_to_ndc(cam, above)[:2], [0.0, 1.0], atol=1e-6)
+    assert_allclose(_to_ndc(cam, beside)[:2], [1.0, 0.0], atol=1e-6)
+
+
+def test_perspective_matrix_matches_yt_when_square():
+    from yt.utilities.math_utils import get_perspective_matrix as yt_perspective
+
+    from yt_idv.cameras.trackball_camera import get_perspective_matrix
+
+    for fov in (30.0, 45.0, 70.0):
+        assert_allclose(
+            get_perspective_matrix(fov, 1.0, 1e-3, 20.0),
+            yt_perspective(fov, 1.0, 1e-3, 20.0),
+            rtol=1e-6,
+        )
+
+
 def test_projection_type_trait_rebuilds_projection(camera):
     p_persp = camera.projection_matrix.copy()
     v0 = camera.view_matrix.copy()

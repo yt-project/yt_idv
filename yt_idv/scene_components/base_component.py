@@ -500,13 +500,9 @@ class SceneComponent(SerializableMixin, traitlets.HasTraits):
         return full_array
 
     def _read_first_pass_fb(self):
-        # glReadPixels allocates its result with shape (width, height, 4) but
-        # fills it row-by-row in y, so the array has to be reshaped to be
-        # indexed as [y, x, channel] (a no-op for square viewports). Row 0 is
-        # the bottom of the image, following the OpenGL convention.
-        data = np.asarray(self.fb.data)
-        _, _, width, height = self.fb.viewport
-        return data.reshape((height, width, 4))
+        # indexed as [y, x, channel], with row 0 the bottom of the image,
+        # following the OpenGL convention
+        return np.array(self.fb.data)
 
     @property
     def first_pass_fb_data(self):

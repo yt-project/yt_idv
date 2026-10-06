@@ -6,7 +6,7 @@ from yt.data_objects.static_output import Dataset
 
 from yt_idv.cameras.base_camera import BaseCamera
 from yt_idv.cameras.trackball_camera import TrackballCamera
-from yt_idv.opengl_support import Framebuffer
+from yt_idv.opengl_support import Framebuffer, _pixels_by_row
 from yt_idv.scene_annotations.base_annotation import SceneAnnotation
 from yt_idv.scene_annotations.box import BoxAnnotation
 from yt_idv.scene_annotations.text import TextAnnotation
@@ -233,13 +233,10 @@ class SceneGraph(traitlets.HasTraits):
 
         """
         if self.fb is not None:
-            arr = self.fb.data[::-1, :, :]
-            arr.swapaxes(0, 1)
-            return arr
+            return self.fb.data[::-1, :, :]
         _, _, width, height = GL.glGetIntegerv(GL.GL_VIEWPORT)
-        arr = GL.glReadPixels(0, 0, width, height, GL.GL_RGBA, GL.GL_FLOAT)[::-1, :, :]
-        arr.swapaxes(0, 1)
-        return arr
+        arr = GL.glReadPixels(0, 0, width, height, GL.GL_RGBA, GL.GL_FLOAT)
+        return _pixels_by_row(arr, width, height)[::-1, :, :]
 
     @property
     def depth(self):
@@ -252,15 +249,10 @@ class SceneGraph(traitlets.HasTraits):
 
         """
         if self.fb is not None:
-            arr = self.fb.depth_data[::-1, :]
-            arr.swapaxes(0, 1)
-            return arr
+            return self.fb.depth_data[::-1, :]
         _, _, width, height = GL.glGetIntegerv(GL.GL_VIEWPORT)
-        arr = GL.glReadPixels(0, 0, width, height, GL.GL_DEPTH_COMPONENT, GL.GL_FLOAT)[
-            ::-1, :
-        ]
-        arr.swapaxes(0, 1)
-        return arr
+        arr = GL.glReadPixels(0, 0, width, height, GL.GL_DEPTH_COMPONENT, GL.GL_FLOAT)
+        return _pixels_by_row(arr, width, height)[::-1, :]
 
     @staticmethod
     def from_ds(ds, field, no_ghost=True):
