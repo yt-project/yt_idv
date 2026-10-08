@@ -1,14 +1,17 @@
 import warnings
 from dataclasses import dataclass
-from typing import Any
 
 import numpy as np
+from numpy.typing import NDArray
 from unyt import unyt_quantity
 
 from yt_idv.utilities.coordinate_utilities import spherical_to_cartesian
 
 _GEOGRAPHIC_GEOMETRIES = ("geographic", "internal_geographic")
 _SPHERICAL_GEOMETRIES = ("spherical",) + _GEOGRAPHIC_GEOMETRIES
+
+# a length as a float in code_length, a unyt quantity or a (value, unit) tuple
+Length = unyt_quantity | float | tuple[float, str]
 
 
 def render_geometry(ds) -> str:
@@ -24,7 +27,7 @@ def render_geometry(ds) -> str:
     return geom
 
 
-def validate_reference_height(ds, reference_height: Any) -> None:
+def validate_reference_height(ds, reference_height: Length | None) -> None:
     geom = str(ds.geometry)
     if reference_height is not None and geom not in _GEOGRAPHIC_GEOMETRIES:
         raise ValueError(
@@ -33,7 +36,7 @@ def validate_reference_height(ds, reference_height: Any) -> None:
         )
 
 
-def _to_code_length(ds, value: Any) -> float:
+def _to_code_length(ds, value: Length) -> float:
     if isinstance(value, tuple):
         value = ds.quan(*value)
     if hasattr(value, "to"):
@@ -41,7 +44,7 @@ def _to_code_length(ds, value: Any) -> float:
     return float(value)
 
 
-def _radial_offset(data_source, reference_height: Any) -> tuple[float, float]:
+def _radial_offset(data_source, reference_height: Length | None) -> tuple[float, float]:
     # returns (offset, factor) in code_length such that the physical radius is
     # factor * native_radial_coordinate + offset
     ds = data_source.ds
@@ -75,13 +78,13 @@ class SphericalMapping:
     """
 
     axis_id: dict[str, int]
-    scale: np.ndarray
-    offset: np.ndarray
+    scale: NDArray
+    offset: NDArray
     phi_min: float
-    max_r: Any
+    max_r: unyt_quantity | float
 
     @classmethod
-    def from_data_source(cls, data_source, reference_height: Any = None):
+    def from_data_source(cls, data_source, reference_height: Length | None = None):
         ds = data_source.ds
         geom = str(ds.geometry)
         validate_reference_height(ds, reference_height)
@@ -99,9 +102,9 @@ class SphericalMapping:
                 "phi": ax["longitude"],
             }
             r_offset, r_factor = _radial_offset(data_source, reference_height)
-            scale[axis_id["theta"]] = -np.pi / 180.0
-            offset[axis_id["theta"]] = np.pi / 2.0
-            scale[axis_id["phi"]] = np.pi / 180.0
+            scale[axis_id["theta"]] = -np.pi / 180.0  # degrees to radians
+            offset[axis_id["theta"]] = np.pi / 2.0  # latitude to co-latitude
+            scale[axis_id["phi"]] = np.pi / 180.0  # degrees to radians
         else:
             raise NotImplementedError(
                 f"No spherical mapping is available for {geom} geometries."
@@ -135,20 +138,20 @@ class SphericalMapping:
         )
 
     @property
-    def tex_axis_flip(self) -> np.ndarray:
+    def tex_axis_flip(self) -> NDArray:
         return (self.scale < 0).astype("f4")
 
-    def edges(self, le: np.ndarray, re: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+    def edges(self, le: NDArray, re: NDArray) -> tuple[NDArray, NDArray]:
         """map native left/right edges (shape (..., 3)) to sorted spherical edges"""
         le_s = np.asarray(le, dtype="f8") * self.scale + self.offset
         re_s = np.asarray(re, dtype="f8") * self.scale + self.offset
         return np.minimum(le_s, re_s), np.maximum(le_s, re_s)
 
-    def widths(self, dx: np.ndarray) -> np.ndarray:
+    def widths(self, dx: NDArray) -> NDArray:
         """map native widths (shape (..., 3)) to spherical widths"""
         return np.asarray(dx, dtype="f8") * np.abs(self.scale)
 
-    def to_model_coords(self, points: np.ndarray, radius: Any = None) -> np.ndarray:
+    def to_model_coords(self, points: NDArray, radius: Length | None = None) -> NDArray:
         """
         Map points in the dataset's native coordinates to the model coordinates
         the scene is rendered in: cartesian x, y, z with the maximum radius of
@@ -181,7 +184,7 @@ class SphericalMapping:
         x, y, z = spherical_to_cartesian(r, theta, phi)
         return np.column_stack([x, y, z])
 
-    def _normalized_radius(self, radius: Any) -> float:
+    def _normalized_radius(self, radius: Length) -> float:
         # a physical radius as a fraction of the maximum radius of the domain
         if isinstance(radius, tuple):
             radius = unyt_quantity(*radius)
