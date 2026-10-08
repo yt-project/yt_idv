@@ -146,11 +146,8 @@ class SceneComponent(SerializableMixin, traitlets.HasTraits):
 
     @traitlets.observe("data")
     def _update_geometry(self, change):
-        if (
-            hasattr(change["new"], "_yt_geom_str")
-            and change["new"]._yt_geom_str == "spherical"
-        ):
-            self._data_geometry = change["new"]._yt_geom_str
+        if getattr(change["new"], "_render_geom", "cartesian") == "spherical":
+            self._data_geometry = change["new"]._render_geom
 
     @traitlets.observe("display_bounds")
     def _change_display_bounds(self, change):
