@@ -91,6 +91,81 @@ def test_reference_height_rejected(geometry):
         bc.add_data(("stream", "density"), no_ghost=True)
 
 
+@pytest.mark.parametrize("geometry", ["geographic", "internal_geographic"])
+def test_to_model_coords_matches_mapped_edges(geometry):
+    ds = _geo_ds(geometry=geometry)
+    setattr(ds, "surface_height" if geometry == "geographic" else "outer_radius", 1.5)
+    mapping = SphericalMapping.from_data_source(ds.all_data())
+    points = _native_points(ds)
+    expected = _mapped_cartesian(mapping, points) / mapping.max_r.d
+    assert np.allclose(mapping.to_model_coords(points), expected)
+    # a single point is accepted and returned as a single row
+    assert mapping.to_model_coords(points[0]).shape == (1, 3)
+    assert np.allclose(mapping.to_model_coords(points[0])[0], expected[0])
+
+
+def test_to_model_coords_spherical_dataset():
+    data = np.random.default_rng(0).random(_SHAPE)
+    ds = yt.load_uniform_grid(
+        {"density": data},
+        data.shape,
+        bbox=np.array([[0.1, 2.0], [0.0, np.pi], [0.0, 2 * np.pi]]),
+        geometry="spherical",
+        length_unit="m",
+    )
+    mapping = SphericalMapping.from_data_source(ds.all_data())
+    points = _native_points(ds)
+    expected = np.column_stack(
+        spherical_to_cartesian(points[:, 0] / 2.0, points[:, 1], points[:, 2])
+    )
+    assert np.allclose(mapping.to_model_coords(points), expected)
+
+
+def test_to_model_coords_radius_override():
+    ds = _geo_ds(geometry="geographic")
+    ds.surface_height = 1.5
+    mapping = SphericalMapping.from_data_source(ds.all_data())
+    # the altitude is ignored when a radius is given; (lat, lon) = (0, 0) is
+    # on +x, the pole on +z and (0, 90) on +y. The outer surface, at
+    # surface_height + the maximum altitude = 2 m, is at 1 in the scene.
+    points = np.array([[0.0, 0.0, 0.3], [90.0, 0.0, 0.1], [0.0, 90.0, 0.4]])
+    axes = np.eye(3)[[0, 2, 1]]
+    assert np.allclose(mapping.to_model_coords(points, radius=2.0), axes, atol=1e-12)
+    assert np.allclose(mapping.to_model_coords(points, radius=1.0), 0.5 * axes)
+    assert np.allclose(mapping.to_model_coords(points, radius=(200.0, "cm")), axes)
+    half = ds.quan(100.0, "cm")
+    assert np.allclose(mapping.to_model_coords(points, radius=half), 0.5 * axes)
+    # default: the altitude sets the radius
+    expected_r = (1.5 + points[:, 2]) / 2.0
+    assert np.allclose(
+        np.linalg.norm(mapping.to_model_coords(points), axis=1), expected_r
+    )
+
+
+def test_to_model_coords_radius_with_units_needs_registry():
+    ds = _geo_ds(geometry="geographic")
+    ds.surface_height = 1.5
+    mapping = SphericalMapping.from_data_source(ds.all_data())
+    mapping.max_r = float(mapping.max_r.d)  # as restored from a saved scene
+    assert np.allclose(
+        mapping.to_model_coords([0.0, 0.0, 0.0], radius=2.0), [[1, 0, 0]]
+    )
+    with pytest.raises(ValueError, match="float in code_length"):
+        mapping.to_model_coords([0.0, 0.0, 0.0], radius=(2.0, "m"))
+
+
+def test_block_collection_exposes_mapping(make_rc):
+    ds = _geo_ds(geometry="geographic")
+    rc = make_rc()
+    scene = rc.add_scene(ds, "density", no_ghost=True)
+    mapping = scene.components[0].data.spherical_mapping
+    assert isinstance(mapping, SphericalMapping)
+    outer = mapping.max_r
+    assert np.allclose(
+        mapping.to_model_coords([0.0, 0.0, 0.0], radius=outer), [[1, 0, 0]]
+    )
+
+
 def test_zero_surface_height_warns():
     ds = _geo_ds()
     with pytest.warns(UserWarning, match="reference_height"):

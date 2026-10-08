@@ -3,6 +3,9 @@ from dataclasses import dataclass
 from typing import Any
 
 import numpy as np
+from unyt import unyt_quantity
+
+from yt_idv.utilities.coordinate_utilities import spherical_to_cartesian
 
 _GEOGRAPHIC_GEOMETRIES = ("geographic", "internal_geographic")
 _SPHERICAL_GEOMETRIES = ("spherical",) + _GEOGRAPHIC_GEOMETRIES
@@ -144,3 +147,51 @@ class SphericalMapping:
     def widths(self, dx: np.ndarray) -> np.ndarray:
         """map native widths (shape (..., 3)) to spherical widths"""
         return np.asarray(dx, dtype="f8") * np.abs(self.scale)
+
+    def to_model_coords(self, points: np.ndarray, radius: Any = None) -> np.ndarray:
+        """
+        Map points in the dataset's native coordinates to the model coordinates
+        the scene is rendered in: cartesian x, y, z with the maximum radius of
+        the domain at 1. Use it to place annotations such as curves.
+
+        Parameters
+        ----------
+        points : array of shape (N, 3) or (3,)
+            Native coordinates in the dataset's axis order, e.g. (latitude,
+            longitude, altitude) in degrees and code_length for a geographic
+            dataset or (r, theta, phi) for a spherical one.
+        radius : float, unyt quantity or (value, unit) tuple, optional
+            If given, the physical radius at which to place every point, in
+            place of their radial coordinate. A float is in code_length, like
+            reference_height. The outer surface of the domain is at max_r.
+
+        Returns
+        -------
+        array of shape (N, 3)
+            x, y, z in model coordinates. One model unit is max_r, which
+            BlockCollection.internal_length_unit also returns.
+        """
+        sph = np.atleast_2d(np.asarray(points, dtype="f8")) * self.scale + self.offset
+        ax = self.axis_id
+        r = sph[:, ax["r"]].copy()
+        if radius is not None:
+            r[:] = self._normalized_radius(radius)
+        theta = sph[:, ax["theta"]].copy()
+        phi = sph[:, ax["phi"]].copy()
+        x, y, z = spherical_to_cartesian(r, theta, phi)
+        return np.column_stack([x, y, z])
+
+    def _normalized_radius(self, radius: Any) -> float:
+        # a physical radius as a fraction of the maximum radius of the domain
+        if isinstance(radius, tuple):
+            radius = unyt_quantity(*radius)
+        max_r = self.max_r
+        if hasattr(radius, "to"):
+            if not hasattr(max_r, "units"):
+                raise ValueError(
+                    "A radius with units needs the dataset's unit registry, "
+                    "which is not available for a mapping loaded from a saved "
+                    "scene. Pass the radius as a float in code_length instead."
+                )
+            radius = radius.to(max_r.units).d
+        return float(radius) / float(getattr(max_r, "d", max_r))

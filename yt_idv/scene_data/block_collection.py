@@ -21,27 +21,6 @@ except ImportError:
 
 
 class BlockCollection(SceneData):
-    """
-    A collection of the blocks of a yt data source, ready for volume rendering.
-
-    Parameters
-    ----------
-    reference_height : unyt quantity, (value, unit) tuple, float or None
-        Only for geographic and internal_geographic datasets, where it sets the
-        radius that the native radial coordinate is measured from:
-
-        * geographic: the radius of the altitude=0 surface, used in place of
-          the dataset's ``surface_height`` (radius = altitude + reference_height).
-        * internal_geographic: the outer radius, used in place of the dataset's
-          ``outer_radius`` (radius = reference_height - depth).
-
-        A float is interpreted in code_length units. If None (the default), the
-        dataset's own value is used. This only changes how the data is rendered,
-        the dataset itself is not modified. Setting it for any other geometry
-        raises a ValueError. It is read when data is added, so it must be set
-        before calling ``add_data``.
-    """
-
     name = "block_collection"
     data_source = traitlets.Instance(YTDataContainer, allow_none=True)
     # each block's (normalized) data and bitmap, by vertex array index, which
@@ -423,6 +402,14 @@ class BlockCollection(SceneData):
             self._order_node_inds,
         )
         return self._order_node_inds[:n].astype("uint32")
+
+    @property
+    def spherical_mapping(self):
+        """
+        The SphericalMapping from the dataset's native coordinates to the
+        rendered scene, or None for cartesian data.
+        """
+        return self._spherical_mapping
 
     @property
     def bbox(self):
