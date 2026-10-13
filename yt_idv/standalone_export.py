@@ -29,6 +29,7 @@ size), and needs a yt_idv that can load float64 scenes.
 
 import argparse
 import json
+import os
 import zipfile
 
 import numpy as np
@@ -42,13 +43,18 @@ _TEXTURE_CLASS = "yt_idv.opengl_support.Texture3D"
 
 
 class _Archive:
-    def __init__(self):
-        self.arrays = {}
+    # Arrays are written to the zip file as they are added, so they are not
+    # all held in memory at once.
+    def __init__(self, zf):
+        self.zf = zf
+        self.n_arrays = 0
         self.textures = []
 
     def add_array(self, arr):
-        key = f"arrays/{len(self.arrays):06d}.npy"
-        self.arrays[key] = np.asarray(arr)
+        key = f"arrays/{self.n_arrays:06d}.npy"
+        self.n_arrays += 1
+        with self.zf.open(key, "w", force_zip64=True) as f:
+            np.lib.format.write_array(f, np.asarray(arr), allow_pickle=False)
         return {"__array__": key}
 
     def add_texture(self, data, **parameters):
@@ -61,13 +67,8 @@ class _Archive:
         )
         return {"__texture__": len(self.textures) - 1}
 
-    def write(self, filename, state, compress=False):
-        mode = zipfile.ZIP_DEFLATED if compress else zipfile.ZIP_STORED
-        with zipfile.ZipFile(filename, "w", compression=mode, allowZip64=True) as zf:
-            zf.writestr("scene.json", json.dumps(state, indent=2))
-            for key, arr in self.arrays.items():
-                with zf.open(key, "w", force_zip64=True) as f:
-                    np.lib.format.write_array(f, arr, allow_pickle=False)
+    def write_state(self, state):
+        self.zf.writestr("scene.json", json.dumps(state, indent=2))
 
 
 def _flatten_kd_tree(trunk):
@@ -160,88 +161,101 @@ def export_block_scene(
     diagonal = float(np.sqrt(((re.max(axis=0) - le.min(axis=0)) ** 2).sum()))
     ratio = (ds.units.code_length / ds.units.unitary).base_value
 
-    archive = _Archive()
-    vertex_array = {
-        "name": "block_info",
-        "each": 1,
-        "indices": None,
-        "attributes": [
-            {
-                "name": name,
-                "divisor": 0,
-                "data": archive.add_array(arr),
+    mode = zipfile.ZIP_DEFLATED if compress else zipfile.ZIP_STORED
+    partial = f"{filename}.partial"
+    try:
+        with zipfile.ZipFile(partial, "w", compression=mode, allowZip64=True) as zf:
+            archive = _Archive(zf)
+            vertex_array = {
+                "name": "block_info",
+                "each": 1,
+                "indices": None,
+                "attributes": [
+                    {
+                        "name": name,
+                        "divisor": 0,
+                        "data": archive.add_array(arr),
+                    }
+                    for name, arr in (
+                        ("model_vertex", np.ones((len(blocks), 4), dtype="f4")),
+                        ("in_dx", (dx * ratio).astype(dtype)),
+                        ("in_left_edge", (le * ratio).astype(dtype)),
+                        ("in_right_edge", (re * ratio).astype(dtype)),
+                    )
+                ],
             }
-            for name, arr in (
-                ("model_vertex", np.ones((len(blocks), 4), dtype="f4")),
-                ("in_dx", (dx * ratio).astype(dtype)),
-                ("in_left_edge", (le * ratio).astype(dtype)),
-                ("in_right_edge", (re * ratio).astype(dtype)),
-            )
-        ],
-    }
 
-    block_data = []
-    block_bitmaps = []
-    for i, block in enumerate(blocks):
-        n_data = np.abs(block.my_data[0]).copy(order="F").astype(dtype).d
-        if max_val != min_val:
-            n_data = (n_data - min_val) / (max_val - min_val)
-            n_data[n_data < 0] = 0.0
-            n_data[n_data > 1] = 1.0
-            # zero-valued blocks are skipped by the shader
-            n_data[n_data == 0.0] += np.finfo(np.float32).eps
-        block_data.append([i, archive.add_array(n_data)])
-        block_bitmaps.append(
-            [i, archive.add_array((block.source_mask * 255).astype("uint8"))]
-        )
+            block_data = []
+            block_bitmaps = []
+            for i, block in enumerate(blocks):
+                n_data = np.abs(block.my_data[0]).copy(order="F").astype(dtype).d
+                if max_val != min_val:
+                    n_data = (n_data - min_val) / (max_val - min_val)
+                    n_data[n_data < 0] = 0.0
+                    n_data[n_data > 1] = 1.0
+                    # zero-valued blocks are skipped by the shader
+                    n_data[n_data == 0.0] += np.finfo(np.float32).eps
+                block_data.append([i, archive.add_array(n_data)])
+                block_bitmaps.append(
+                    [i, archive.add_array((block.source_mask * 255).astype("uint8"))]
+                )
 
-    block_collection = {
-        "class": _DATA_CLASS,
-        "traits": {
-            "min_val": min_val,
-            "max_val": max_val,
-            "field": list(field),
-            "field_units": field_units,
-            "_yt_geom_str": geometry,
-        },
-        "attributes": {
-            "vertex_array": {"__vertex_array__": vertex_array},
-            "textures": [],
-            "block_data": {"__items__": block_data},
-            "block_bitmaps": {"__items__": block_bitmaps},
-            "_kd_tree": {
-                k: archive.add_array(v)
-                for k, v in _flatten_kd_tree(tiles.tree.trunk).items()
-            },
-            "diagonal": diagonal,
-            # the data source's bounding box (unitary), BlockCollection.bbox
-            "_bbox": archive.add_array(
-                np.array([edge.to("unitary").d for edge in data_source.get_bbox()])
-            ),
-            # float64 unscaled edges (unitary) and the unit conversion, so the
-            # scene can be scaled and rescaled without losing precision
-            "_unscaled_edges": archive.add_array(
-                np.array([le * ratio, re * ratio, dx * ratio])
-            ),
-            "_unitary_per_code_length": ratio,
-        },
-    }
-    component = {
-        "class": _COMPONENT_CLASS,
-        "traits": {} if render_method is None else {"render_method": render_method},
-        "attributes": {},
-        "data": {"__data__": 0},
-    }
-    state = {
-        "format_version": FORMAT_VERSION,
-        "camera": {"class": _CAMERA_CLASS, "state": _camera_state(ds)},
-        "n_scene_data_objects": 1,
-        "components": [component],
-        "annotations": [],
-        "data_objects": [block_collection],
-        "textures": archive.textures,
-    }
-    archive.write(filename, state, compress=compress)
+            block_collection = {
+                "class": _DATA_CLASS,
+                "traits": {
+                    "min_val": min_val,
+                    "max_val": max_val,
+                    "field": list(field),
+                    "field_units": field_units,
+                    "_yt_geom_str": geometry,
+                },
+                "attributes": {
+                    "vertex_array": {"__vertex_array__": vertex_array},
+                    "textures": [],
+                    "block_data": {"__items__": block_data},
+                    "block_bitmaps": {"__items__": block_bitmaps},
+                    "_kd_tree": {
+                        k: archive.add_array(v)
+                        for k, v in _flatten_kd_tree(tiles.tree.trunk).items()
+                    },
+                    "diagonal": diagonal,
+                    # the data source's bounding box (unitary), BlockCollection.bbox
+                    "_bbox": archive.add_array(
+                        np.array(
+                            [edge.to("unitary").d for edge in data_source.get_bbox()]
+                        )
+                    ),
+                    # float64 unscaled edges (unitary) and the unit conversion, so the
+                    # scene can be scaled and rescaled without losing precision
+                    "_unscaled_edges": archive.add_array(
+                        np.array([le * ratio, re * ratio, dx * ratio])
+                    ),
+                    "_unitary_per_code_length": ratio,
+                },
+            }
+            component = {
+                "class": _COMPONENT_CLASS,
+                "traits": {}
+                if render_method is None
+                else {"render_method": render_method},
+                "attributes": {},
+                "data": {"__data__": 0},
+            }
+            state = {
+                "format_version": FORMAT_VERSION,
+                "camera": {"class": _CAMERA_CLASS, "state": _camera_state(ds)},
+                "n_scene_data_objects": 1,
+                "components": [component],
+                "annotations": [],
+                "data_objects": [block_collection],
+                "textures": archive.textures,
+            }
+            archive.write_state(state)
+    except BaseException:
+        if os.path.exists(partial):
+            os.remove(partial)
+        raise
+    os.replace(partial, filename)
 
 
 def main():
