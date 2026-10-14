@@ -3,6 +3,7 @@
 ## 0.5.4dev
 
 ### Changes
+* Releases now ship pre-built wheels for linux (x86_64, aarch64) and macOS (x86_64, arm64) on python 3.10-3.14, attached to the GitHub release and uploaded to PyPI alongside the sdist.
 * `imgui` is now an optional dependency: install it with `pip install yt_idv[gui]` for the interactive GUI. A plain `pip install yt_idv` supports headless rendering only, which allows using `yt_idv` with python 3.13+ (see https://github.com/yt-project/yt_idv/issues/256).
 
 ## 0.5.4
