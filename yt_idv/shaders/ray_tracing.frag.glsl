@@ -22,18 +22,15 @@ vec3 cart_to_sphere_vec3(vec3 v) {
     // transform a single point in cartesian coords to spherical
     vec3 vout = vec3(0.,0.,0.);
 
-    // in yt, phi is the azimuth from (0, 2pi), theta is the co-latitude
-    // angle (0, pi). the id_ values below are uniforms that depend on the
-    // yt dataset coordinate ordering, cart_bbox_* variables are also uniforms
+    // phi is the azimuth, wrapped into (phi_min, phi_min + 2pi) to match the
+    // range of the data, theta is the co-latitude angle (0, pi). the id_
+    // values below are uniforms that depend on the yt dataset coordinate
+    // ordering.
     vout[id_r] = v[0] * v[0] + v[1] * v[1] + v[2] * v[2];
     vout[id_r] = sqrt(vout[id_r]);
     vout[id_theta] = acos(v[2] / vout[id_r]);
     float phi = atan(v[1], v[0]);
-    // atan2 returns -pi to pi, adjust to (0, 2pi)
-    if (phi < 0 ){
-        phi = phi + 2.0 * PI;
-    }
-    vout[id_phi] = phi;
+    vout[id_phi] = phi_min + mod(phi - phi_min, 2.0 * PI);
 
     return vout;
 }
@@ -373,6 +370,9 @@ void main()
             // The texture holds n + 1 vertex-centered values, so it spans
             // left_edge - dx/2 to right_edge + dx/2; texel k's center is vertex k.
             tex_curr_pos = (ray_position_native - left_edge) / range + ndx / 2.0;
+            // native axes that run opposite to their spherical counterpart
+            // (latitude, depth) index the texture from the other end
+            tex_curr_pos = mix(tex_curr_pos, 1.0 - tex_curr_pos, tex_axis_flip);
             sampled = sample_texture(tex_curr_pos, curr_color, tdelta, t, dir);
 
             if (sampled) {

@@ -22,8 +22,8 @@ class BlockRendering(SceneComponent):
 
     Note that the meaning of ``sample_factor`` depends on the coordinate system
     of the data. For cartesian data, it is the number of samples taken per cell
-    width along a ray. For spherical data, the step size along a ray within a
-    volume element is
+    width along a ray. For spherical and geographic data, the step size along a
+    ray within a volume element is
 
         ds = eta * min(dr, r * dtheta, r * sin(theta) * dphi)
 
@@ -64,7 +64,7 @@ class BlockRendering(SceneComponent):
     def render_gui(self, imgui, renderer, scene):
         changed = super().render_gui(imgui, renderer, scene)
 
-        if self.data._yt_geom_str == "spherical":
+        if self.data._render_geom == "spherical":
             _, sample_factor = imgui.slider_float(
                 "log10(Sample Factor)",
                 self.sample_factor,
@@ -94,7 +94,7 @@ class BlockRendering(SceneComponent):
 
         # Now, shaders
         valid_shaders = get_shader_combos(
-            self.name, coord_system=self.data._yt_geom_str
+            self.name, coord_system=self.data._render_geom
         )
         descriptions = [
             component_shaders[self.name][_]["description"] for _ in valid_shaders
@@ -108,12 +108,12 @@ class BlockRendering(SceneComponent):
             _, self.data.scale = imgui.checkbox("Scale Positions", self.data.scale)
             changed = changed or _
         if imgui.button("Add Block Outline"):
-            if self.data._yt_geom_str == "cartesian":
+            if self.data._render_geom == "cartesian":
                 from ..scene_annotations.block_outline import BlockOutline
 
                 block_outline = BlockOutline(data=self.data)
                 scene.annotations.append(block_outline)
-            elif self.data._yt_geom_str == "spherical":
+            elif self.data._render_geom == "spherical":
                 from ..scene_data.block_collection import _block_collection_outlines
 
                 cc, cc_render = _block_collection_outlines(
@@ -123,14 +123,14 @@ class BlockRendering(SceneComponent):
                 scene.components.append(cc_render)
 
         if imgui.button("Add Grid Outline"):
-            if self.data._yt_geom_str == "cartesian":
+            if self.data._render_geom == "cartesian":
                 from ..scene_annotations.grid_outlines import GridOutlines
                 from ..scene_data.grid_positions import GridPositions
 
                 gp = GridPositions(grid_list=self.data.intersected_grids)
                 scene.data_objects.append(gp)
                 scene.components.append(GridOutlines(data=gp))
-            elif self.data._yt_geom_str == "spherical":
+            elif self.data._render_geom == "spherical":
                 from ..scene_data.block_collection import _block_collection_outlines
 
                 cc, cc_render = _block_collection_outlines(
@@ -206,7 +206,7 @@ class BlockRendering(SceneComponent):
         # factor eta (so the default of 0.0 corresponds to eta of 1), while in
         # cartesian coordinates it is the number of samples per cell width.
         data = self._trait_values.get("data", None)
-        if data is not None and data._yt_geom_str == "spherical":
+        if data is not None and data._render_geom == "spherical":
             return 0.0
         return 1.0
 
@@ -269,11 +269,13 @@ class BlockRendering(SceneComponent):
         GL.glBindBuffer(GL.GL_ELEMENT_ARRAY_BUFFER, 0)
 
     def _set_uniforms(self, scene, shader_program):
-        if self.data._yt_geom_str == "spherical":
-            axis_id = self.data.axis_id
-            shader_program._set_uniform("id_theta", axis_id["theta"])
-            shader_program._set_uniform("id_r", axis_id["r"])
-            shader_program._set_uniform("id_phi", axis_id["phi"])
+        if self.data._render_geom == "spherical":
+            mapping = self.data._spherical_mapping
+            shader_program._set_uniform("id_theta", mapping.axis_id["theta"])
+            shader_program._set_uniform("id_r", mapping.axis_id["r"])
+            shader_program._set_uniform("id_phi", mapping.axis_id["phi"])
+            shader_program._set_uniform("phi_min", mapping.phi_min)
+            shader_program._set_uniform("tex_axis_flip", mapping.tex_axis_flip)
 
         shader_program._set_uniform("box_width", self.box_width)
         shader_program._set_uniform("sample_factor", self.sample_factor)

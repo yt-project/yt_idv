@@ -60,6 +60,7 @@ test = [
   "pytest>=6.2.4",
   "pytest-html",
 ]
+examples = ["cartopy", "shapely"]
 
 [project.urls]
 Homepage = "https://github.com/yt-project/yt_idv"
