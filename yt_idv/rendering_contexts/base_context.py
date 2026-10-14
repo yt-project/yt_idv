@@ -10,7 +10,7 @@ class BaseContext:
         self.width = width
         self.height = height
 
-    def add_scene(self, ds, field, no_ghost=True):
+    def add_scene(self, ds, field, no_ghost=True, reference_height=None):
         """
         add a :class:`SceneGraph` to the current context for the supplied yt data.
 
@@ -23,6 +23,11 @@ class BaseContext:
             the form ('field_type', 'field').
         no_ghost: bool
             if True, skip ghost zones to improve performance.
+        reference_height:
+            Only for geographic and internal_geographic datasets: the surface
+            height (geographic) or outer radius (internal_geographic) to use in
+            place of the dataset's own value. See
+            :class:`~yt_idv.scene_data.block_collection.BlockCollection`.
 
         Returns
         -------
@@ -31,7 +36,9 @@ class BaseContext:
         """
         from ..scene_graph import SceneGraph
 
-        self.scene = SceneGraph.from_ds(ds, field, no_ghost=no_ghost)
+        self.scene = SceneGraph.from_ds(
+            ds, field, no_ghost=no_ghost, reference_height=reference_height
+        )
         return self.scene
 
     def add_image(self, width=None, height=None):

@@ -13,14 +13,16 @@ class BlockOutline(SceneAnnotation):
 
     name = "block_outline"
     data = traitlets.Instance(BlockCollection)
-    box_width = traitlets.CFloat(0.1)
-    box_color = traitlets.Tuple((1.0, 1.0, 1.0), trait=traitlets.CFloat())
-    box_alpha = traitlets.CFloat(1.0)
+    box_width = traitlets.CFloat(0.1).tag(config=True)
+    box_color = traitlets.Tuple((1.0, 1.0, 1.0), trait=traitlets.CFloat()).tag(
+        config=True
+    )
+    box_alpha = traitlets.CFloat(1.0).tag(config=True)
 
     def draw(self, scene, program):
         GL.glDisable(GL.GL_CULL_FACE)
         each = self.data.vertex_array.each
-        for tex_ind, _tex, _bitmap_tex in self.data.viewpoint_iter(scene.camera):
+        for tex_ind in self.data.viewpoint_order(scene.camera).tolist():
             GL.glDrawArrays(GL.GL_POINTS, tex_ind * each, each)
 
     def render_gui(self, imgui, renderer, scene):

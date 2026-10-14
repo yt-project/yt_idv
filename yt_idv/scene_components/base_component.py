@@ -12,6 +12,7 @@ from yt_idv.opengl_support import (
     VertexAttribute,
 )
 from yt_idv.scene_data.base_data import SceneData
+from yt_idv.serialization import SerializableMixin
 from yt_idv.shader_objects import (
     PreprocessorDefinitionState,
     ShaderProgram,
@@ -19,6 +20,7 @@ from yt_idv.shader_objects import (
     component_shaders,
     default_shader_combos,
 )
+from yt_idv.utilities.logger import ytidv_log
 
 _cmaps = ["arbre", "viridis", "magma", "doom", "cividis", "plasma", "RdBu", "coolwarm"]
 _cmaps += [f"{_}_r" for _ in _cmaps]
@@ -31,28 +33,36 @@ _buffers = ["frame", "depth"]
 _geom_directives = {"spherical": "SPHERICAL_GEOM"}
 
 
-class SceneComponent(traitlets.HasTraits):
+class SceneComponent(SerializableMixin, traitlets.HasTraits):
     data = traitlets.Instance(SceneData)
     base_quad = traitlets.Instance(SceneData)
     name = "undefined"
-    priority = traitlets.CInt(0)
-    visible = traitlets.Bool(True)
-    use_db = traitlets.Bool(False)  # use depth buffer
-    iso_tolerance = traitlets.CFloat(-1)  # the tolerance for finding isocontours
-    iso_tol_is_pct = traitlets.Bool(False)  # if True, the tolerance is a fraction
-    iso_log = traitlets.Bool(True)  # if True, iso values are base 10 exponents
-    iso_layers = traitlets.List()  # the target values for isocontours
-    iso_layers_alpha = traitlets.List()  # the transparency of isocontours
+    priority = traitlets.CInt(0).tag(config=True)
+    visible = traitlets.Bool(True).tag(config=True)
+    use_db = traitlets.Bool(False).tag(config=True)  # use depth buffer
+    iso_tolerance = traitlets.CFloat(-1).tag(
+        config=True
+    )  # the tolerance for finding isocontours
+    iso_tol_is_pct = traitlets.Bool(False).tag(
+        config=True
+    )  # if True, the tolerance is a fraction
+    iso_log = traitlets.Bool(True).tag(
+        config=True
+    )  # if True, iso values are base 10 exponents
+    iso_layers = traitlets.List().tag(config=True)  # the target values for isocontours
+    iso_layers_alpha = traitlets.List().tag(
+        config=True
+    )  # the transparency of isocontours
     display_bounds = traitlets.Tuple(
         traitlets.CFloat(),
         traitlets.CFloat(),
         traitlets.CFloat(),
         traitlets.CFloat(),
         default_value=(0.0, 1.0, 0.0, 1.0),
-    )
-    clear_region = traitlets.Bool(False)
+    ).tag(config=True)
+    clear_region = traitlets.Bool(False).tag(config=True)
 
-    render_method = traitlets.Unicode(allow_none=True)
+    render_method = traitlets.Unicode(allow_none=True).tag(config=True)
     fragment_shader = ShaderTrait(allow_none=True).tag(shader_type="fragment")
     geometry_shader = ShaderTrait(allow_none=True).tag(shader_type="geometry")
     vertex_shader = ShaderTrait(allow_none=True).tag(shader_type="vertex")
@@ -72,7 +82,7 @@ class SceneComponent(traitlets.HasTraits):
     _cmap_bounds_invalid = True
     _data_geometry = traitlets.Unicode(default_value="cartesian")
 
-    display_name = traitlets.Unicode(allow_none=True)
+    display_name = traitlets.Unicode(allow_none=True).tag(config=True)
 
     final_pass_vertex = ShaderTrait(allow_none=True).tag(shader_type="vertex")
     final_pass_fragment = ShaderTrait(allow_none=True).tag(shader_type="fragment")
@@ -80,15 +90,34 @@ class SceneComponent(traitlets.HasTraits):
     _final_pass_invalid = True
 
     # These attributes are just for colormap application
-    fixed_cmap_min = traitlets.CFloat(None, allow_none=True)
-    fixed_cmap_max = traitlets.CFloat(None, allow_none=True)
-    cmap_min = traitlets.CFloat(None, allow_none=True)
-    cmap_max = traitlets.CFloat(None, allow_none=True)
-    cmap_log = traitlets.Bool(True)
-    scale = traitlets.CFloat(1.0)
+    fixed_cmap_min = traitlets.CFloat(None, allow_none=True).tag(config=True)
+    fixed_cmap_max = traitlets.CFloat(None, allow_none=True).tag(config=True)
+    cmap_min = traitlets.CFloat(None, allow_none=True).tag(config=True)
+    cmap_max = traitlets.CFloat(None, allow_none=True).tag(config=True)
+    cmap_log = traitlets.Bool(True).tag(config=True)
+    scale = traitlets.CFloat(1.0).tag(config=True)
 
     # This attribute determines whether or not this component is "active"
-    active = traitlets.Bool(True)
+    active = traitlets.Bool(True).tag(config=True)
+
+    _saved_attributes = ("colormap",)
+    _restore_first = ("render_method", "iso_log")
+
+    def _get_state(self, writer):
+        state = super()._get_state(writer)
+        state["data"] = None if self.data is None else writer.add_data_object(self.data)
+        return state
+
+    @classmethod
+    def _from_state(cls, state, reader):
+        kwargs = {}
+        if state["data"] is not None:
+            kwargs["data"] = reader.decode(state["data"])
+        obj = cls(**kwargs)
+        obj._set_state(state, reader)
+        if obj.cmap_min is not None and obj.cmap_max is not None:
+            obj._cmap_bounds_invalid = False
+        return obj
 
     @traitlets.observe("_data_geometry")
     def _update_geometry_pp_directives(self, change):
@@ -117,11 +146,8 @@ class SceneComponent(traitlets.HasTraits):
 
     @traitlets.observe("data")
     def _update_geometry(self, change):
-        if (
-            hasattr(change["new"], "_yt_geom_str")
-            and change["new"]._yt_geom_str == "spherical"
-        ):
-            self._data_geometry = change["new"]._yt_geom_str
+        if getattr(change["new"], "_render_geom", "cartesian") == "spherical":
+            self._data_geometry = change["new"]._render_geom
 
     @traitlets.observe("display_bounds")
     def _change_display_bounds(self, change):
@@ -136,6 +162,12 @@ class SceneComponent(traitlets.HasTraits):
         new_height = change["new"][3] - change["new"][2]
         if old_width != new_width or old_height != new_height:
             self.fb = Framebuffer()
+
+    @traitlets.observe("fb")
+    def _release_old_fb(self, change):
+        old = change["old"]
+        if isinstance(old, Framebuffer) and old is not change["new"]:
+            old.release()
 
     def render_gui(self, imgui, renderer, scene):
         changed, self.visible = imgui.checkbox("Visible", self.visible)
@@ -217,10 +249,10 @@ class SceneComponent(traitlets.HasTraits):
                 new_combo["first_fragment"],
                 self._program1_pp_defs["fragment"],
             )
-            self.geometry_shader = (
-                new_combo.get("first_geometry", None),
-                self._program1_pp_defs["geometry"],
-            )
+            geometry_shader = new_combo.get("first_geometry", None)
+            if geometry_shader is not None:
+                geometry_shader = (geometry_shader, self._program1_pp_defs["geometry"])
+            self.geometry_shader = geometry_shader
             self.colormap_vertex = (
                 new_combo["second_vertex"],
                 self._program2_pp_defs["vertex"],
@@ -466,13 +498,9 @@ class SceneComponent(traitlets.HasTraits):
         return full_array
 
     def _read_first_pass_fb(self):
-        # glReadPixels allocates its result with shape (width, height, 4) but
-        # fills it row-by-row in y, so the array has to be reshaped to be
-        # indexed as [y, x, channel] (a no-op for square viewports). Row 0 is
-        # the bottom of the image, following the OpenGL convention.
-        data = np.asarray(self.fb.data)
-        _, _, width, height = self.fb.viewport
-        return data.reshape((height, width, 4))
+        # indexed as [y, x, channel], with row 0 the bottom of the image,
+        # following the OpenGL convention
+        return np.array(self.fb.data)
 
     @property
     def first_pass_fb_data(self):
@@ -629,7 +657,6 @@ class SceneComponent(traitlets.HasTraits):
         return changed
 
     def _reset_cmap_bounds(self, print_new_bounds=True):
-
         data = self.fb.data
         if self.use_db:
             data[:, :, :3] = self.fb.depth_data[:, :, None]
@@ -650,6 +677,8 @@ class SceneComponent(traitlets.HasTraits):
             self.cmap_min = self.fixed_cmap_min
 
         if print_new_bounds:
-            print(f"Computed new cmap values {self.cmap_min} - {self.cmap_max}")
+            ytidv_log.info(
+                "Computed new cmap values %s - %s", self.cmap_min, self.cmap_max
+            )
 
         self._cmap_bounds_invalid = False

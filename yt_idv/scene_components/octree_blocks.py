@@ -20,14 +20,16 @@ class OctreeBlockRendering(SceneComponent):
 
     name = "octree_block_rendering"
     data = traitlets.Instance(OctreeBlockCollection)
-    box_width = traitlets.CFloat(0.1)
-    sample_factor = traitlets.CFloat(1.0)
+    box_width = traitlets.CFloat(0.1).tag(config=True)
+    sample_factor = traitlets.CFloat(1.0).tag(config=True)
     transfer_function = traitlets.Instance(TransferFunctionTexture)
-    tf_min = traitlets.CFloat(0.0)
-    tf_max = traitlets.CFloat(1.0)
-    tf_log = traitlets.Bool(True)
+    tf_min = traitlets.CFloat(0.0).tag(config=True)
+    tf_max = traitlets.CFloat(1.0).tag(config=True)
+    tf_log = traitlets.Bool(True).tag(config=True)
 
     priority = 10
+
+    _saved_attributes = SceneComponent._saved_attributes + ("transfer_function",)
 
     def render_gui(self, imgui, renderer, scene):
         changed = super().render_gui(imgui, renderer, scene)
@@ -127,7 +129,7 @@ class OctreeBlockRendering(SceneComponent):
     def _set_uniforms(self, scene, shader_program):
         shader_program._set_uniform("box_width", self.box_width)
         shader_program._set_uniform("sample_factor", self.sample_factor)
-        shader_program._set_uniform("ds_tex", np.array([0, 0, 0, 0, 0, 0]))
+        shader_program._set_uniform("data_tex", 0)
         shader_program._set_uniform("bitmap_tex", 1)
         shader_program._set_uniform("tf_tex", 2)
         shader_program._set_uniform("tf_min", self.tf_min)

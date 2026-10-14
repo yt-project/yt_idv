@@ -19,6 +19,8 @@ from yt.utilities.exceptions import (
     YTUnknownUniformSize,
 )
 
+from yt_idv.utilities.logger import ytidv_log
+
 from .opengl_support import GLValue, num_to_const
 
 _NULL_SOURCES = {
@@ -393,9 +395,17 @@ class Shader(traitlets.HasTraits):
                 self.compile()
             except RuntimeError as exc:
                 if self.allow_null:
-                    print(exc)
-                    for line_num, line in enumerate(self.shader_source.split("\n")):
-                        print(f"{line_num + 1:05}: {line}")
+                    ytidv_log.warning(
+                        "Shader compilation failed, falling back to null shader: %s",
+                        exc,
+                    )
+                    numbered = "\n".join(
+                        f"{i + 1:05}: {line}"
+                        for i, line in enumerate(self.shader_source.split("\n"))
+                    )
+                    ytidv_log.debug(
+                        "Shader source for %s:\n%s", self.shader_name, numbered
+                    )
                     self._enable_null_shader()
                 else:
                     raise exc

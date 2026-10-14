@@ -5,21 +5,41 @@ flat in vec3 right_edge;
 flat in mat4 inverse_proj;
 flat in mat4 inverse_mvm;
 flat in mat4 inverse_pmvm;
-flat in ivec3 texture_offset;
+
+// this block's data_tex and bitmap_tex, see known_uniforms.inc.glsl
+BLOCK_TEXTURE_INPUTS
 out vec4 output_color;
 
 vec3 get_offset_texture_position(sampler3D tex, vec3 tex_curr_pos)
 {
-    ivec3 texsize = textureSize(tex, 0); // lod (mipmap level) always 0?
-    return (tex_curr_pos * texsize + texture_offset) / texsize;
+    // tex_curr_pos runs from 0 to 1 across the block, which lies at
+    // data_offset in the data atlas
+    vec3 texsize = vec3(textureSize(tex, 0));
+    return (tex_curr_pos * vec3(data_size) + vec3(data_offset)) / texsize;
+}
+
+vec3 get_bitmap_texture_position(vec3 tex_curr_pos)
+{
+    // tex_curr_pos addresses the data texture, whose n + 1 texel centers are the
+    // block's vertices, but the bitmap of a grid block has one texel per cell,
+    // spanning left_edge to right_edge. Other bitmaps (octree blocks share one
+    // bitmap that isn't sized per cell) keep the data texture's coordinate.
+    vec3 texsize = vec3(textureSize(bitmap_tex, 0));
+    vec3 texel;
+    if (bitmap_size != data_size - ivec3(1)) {
+        texel = tex_curr_pos * vec3(bitmap_size);
+    } else {
+        texel = tex_curr_pos * vec3(data_size) - 0.5;
+    }
+    return (texel + vec3(bitmap_offset)) / texsize;
 }
 
 bool sample_texture(vec3 tex_curr_pos, inout vec4 curr_color, float tdelta,
                     float t, vec3 dir)
 {
-    vec3 offset_pos = get_offset_texture_position(ds_tex[0], tex_curr_pos);
-    vec3 tex_sample = texture(ds_tex[0], offset_pos).rgb;
-    vec3 offset_bmap_pos = get_offset_texture_position(bitmap_tex, tex_curr_pos);
+    vec3 offset_pos = get_offset_texture_position(data_tex, tex_curr_pos);
+    vec3 tex_sample = texture(data_tex, offset_pos).rgb;
+    vec3 offset_bmap_pos = get_bitmap_texture_position(tex_curr_pos);
     float map_sample = texture(bitmap_tex, offset_bmap_pos).r;
     if ((map_sample > 0.0) && (length(curr_color.rgb) < length(tex_sample))) {
         curr_color = vec4(tex_sample, 1.0);
@@ -45,16 +65,17 @@ void main()
 
     // Five samples
     vec3 step_size = dx/sample_factor;
-    vec3 dir = -normalize(camera_pos.xyz - ray_position);
-    dir = max(abs(dir), 0.0001) * sign(dir);
+    vec3 ray_origin;
+    vec3 dir;
+    get_ray_origin_and_dir(ray_position, ray_origin, dir);
     vec4 curr_color = vec4(0.0);
 
     // We need to figure out where the ray intersects the box, if it intersects the box.
     // This will help solve the left/right edge issues.
 
     vec3 idir = 1.0/dir;
-    vec3 tl = (left_edge - camera_pos)*idir;
-    vec3 tr = (right_edge - camera_pos)*idir;
+    vec3 tl = (left_edge - ray_origin)*idir;
+    vec3 tr = (right_edge - ray_origin)*idir;
     vec3 tmin, tmax;
     bvec3 temp_x, temp_y;
     // These 't' prefixes actually mean 'parameter', as we use in grid_traversal.pyx.
@@ -73,8 +94,8 @@ void main()
     // Some more discussion of this here:
     //  http://prideout.net/blog/?p=64
 
-    vec3 p0 = camera_pos.xyz + dir * t0;
-    vec3 p1 = camera_pos.xyz + dir * t1;
+    vec3 p0 = ray_origin + dir * t0;
+    vec3 p1 = ray_origin + dir * t1;
 
     vec3 dxidir = abs(idir)  * step_size;
 
@@ -101,9 +122,9 @@ void main()
     bool is_layer = false;
 
     while(t <= t1) {
-        tex_curr_pos = (ray_position - left_edge) / range;  // Scale from 0 .. 1
-        // But, we actually need it to be 0 + normalized dx/2 to 1 - normalized dx/2
-        tex_curr_pos = (tex_curr_pos * (1.0 - ndx)) + ndx/2.0;
+        // The texture holds n + 1 vertex-centered values, so it spans
+        // left_edge - dx/2 to right_edge + dx/2; texel k's center is vertex k.
+        tex_curr_pos = (ray_position - left_edge) / range + ndx / 2.0;
 
         sampled = sample_texture(tex_curr_pos, curr_color, tdelta, t, dir);
 

@@ -1,3 +1,4 @@
+import contextlib
 from math import ceil, floor
 
 import numpy as np
@@ -5,7 +6,7 @@ import traitlets
 from OpenGL import GL
 
 from yt_idv.gui_support import add_popup_help
-from yt_idv.opengl_support import TransferFunctionTexture
+from yt_idv.opengl_support import Texture2D, TransferFunctionTexture
 from yt_idv.rendered_image_plane import RenderedImagePlane, image_plane_extent
 from yt_idv.scene_components.base_component import SceneComponent
 from yt_idv.scene_data.block_collection import BlockCollection
@@ -18,35 +19,82 @@ class BlockRendering(SceneComponent):
     including mesh outline.  This allows us to render a single collection of
     blocks multiple times in a single scene and to separate out the memory
     handling from the display.
+
+    Note that the meaning of ``sample_factor`` depends on the coordinate system
+    of the data. For cartesian data, it is the number of samples taken per cell
+    width along a ray. For spherical and geographic data, the step size along a
+    ray within a volume element is
+
+        ds = eta * min(dr, r * dtheta, r * sin(theta) * dphi)
+
+    and ``sample_factor`` stores log10(eta), so that a ``sample_factor`` of 0
+    (the default for spherical data) samples at the smallest characteristic
+    length of the element and smaller values sample more finely.
     """
 
     name = "block_rendering"
     data = traitlets.Instance(BlockCollection)
-    box_width = traitlets.CFloat(0.1)
-    sample_factor = traitlets.CFloat(1.0)
+    box_width = traitlets.CFloat(0.1).tag(config=True)
+    sample_factor = traitlets.CFloat().tag(config=True)
     transfer_function = traitlets.Instance(TransferFunctionTexture)
-    tf_min = traitlets.CFloat(0.0)
-    tf_max = traitlets.CFloat(1.0)
-    tf_log = traitlets.Bool(True)
-    slice_position = traitlets.Tuple((0.5, 0.5, 0.5)).tag(trait=traitlets.CFloat())
-    slice_normal = traitlets.Tuple((1.0, 0.0, 0.0)).tag(trait=traitlets.CFloat())
+    tf_min = traitlets.CFloat(0.0).tag(config=True)
+    tf_max = traitlets.CFloat(1.0).tag(config=True)
+    tf_log = traitlets.Bool(True).tag(config=True)
+    slice_position = traitlets.Tuple((0.5, 0.5, 0.5)).tag(
+        trait=traitlets.CFloat(), config=True
+    )
+    slice_normal = traitlets.Tuple((1.0, 0.0, 0.0)).tag(
+        trait=traitlets.CFloat(), config=True
+    )
+    # External depth clip used in ray_tracing.frag.glsl for truncating ray integration early based on view
+    external_depth_texture = traitlets.Instance(
+        Texture2D, allow_none=True, default_value=None
+    )
+    use_external_depth_clip = traitlets.Bool(False)
 
     priority = 10
+
+    # the index buffer giving the draw order; it belongs to this component,
+    # not to the data's vertex array, so it is neither shared with other
+    # components nor saved with the scene
+    _index_buffer = None
+
+    _saved_attributes = SceneComponent._saved_attributes + ("transfer_function",)
 
     def render_gui(self, imgui, renderer, scene):
         changed = super().render_gui(imgui, renderer, scene)
 
-        _, sample_factor = imgui.slider_float(
-            "Sample Factor",
-            self.sample_factor,
-            1.0,
-            20.0,
-        )
-        if _:
-            self.sample_factor = sample_factor
+        if self.data._render_geom == "spherical":
+            _, sample_factor = imgui.slider_float(
+                "log10(Sample Factor)",
+                self.sample_factor,
+                -1.0,
+                1.0,
+            )
+            if _:
+                self.sample_factor = sample_factor
+                changed = True
+            _ = add_popup_help(
+                imgui,
+                "log10 of the sampling factor, eta. The step size along a ray "
+                "within a spherical volume element is eta times the smallest "
+                "of the element's characteristic lengths, dr, r * dtheta and "
+                "r * sin(theta) * dphi. Smaller values sample more finely.",
+            )
+            changed = changed or _
+        else:
+            _, sample_factor = imgui.slider_float(
+                "Sample Factor",
+                self.sample_factor,
+                1.0,
+                20.0,
+            )
+            if _:
+                self.sample_factor = sample_factor
+
         # Now, shaders
         valid_shaders = get_shader_combos(
-            self.name, coord_system=self.data._yt_geom_str
+            self.name, coord_system=self.data._render_geom
         )
         descriptions = [
             component_shaders[self.name][_]["description"] for _ in valid_shaders
@@ -56,13 +104,16 @@ class BlockRendering(SceneComponent):
         if _:
             self.render_method = valid_shaders[shader_ind]
         changed = changed or _
+        if self.data._yt_geom_str == "cartesian":
+            _, self.data.scale = imgui.checkbox("Scale Positions", self.data.scale)
+            changed = changed or _
         if imgui.button("Add Block Outline"):
-            if self.data._yt_geom_str == "cartesian":
+            if self.data._render_geom == "cartesian":
                 from ..scene_annotations.block_outline import BlockOutline
 
                 block_outline = BlockOutline(data=self.data)
                 scene.annotations.append(block_outline)
-            elif self.data._yt_geom_str == "spherical":
+            elif self.data._render_geom == "spherical":
                 from ..scene_data.block_collection import _block_collection_outlines
 
                 cc, cc_render = _block_collection_outlines(
@@ -72,14 +123,14 @@ class BlockRendering(SceneComponent):
                 scene.components.append(cc_render)
 
         if imgui.button("Add Grid Outline"):
-            if self.data._yt_geom_str == "cartesian":
+            if self.data._render_geom == "cartesian":
                 from ..scene_annotations.grid_outlines import GridOutlines
                 from ..scene_data.grid_positions import GridPositions
 
                 gp = GridPositions(grid_list=self.data.intersected_grids)
                 scene.data_objects.append(gp)
                 scene.components.append(GridOutlines(data=gp))
-            elif self.data._yt_geom_str == "spherical":
+            elif self.data._render_geom == "spherical":
                 from ..scene_data.block_collection import _block_collection_outlines
 
                 cc, cc_render = _block_collection_outlines(
@@ -149,33 +200,95 @@ class BlockRendering(SceneComponent):
 
         return changed
 
+    @traitlets.default("sample_factor")
+    def _default_sample_factor(self):
+        # in spherical coordinates, sample_factor stores log10 of the sampling
+        # factor eta (so the default of 0.0 corresponds to eta of 1), while in
+        # cartesian coordinates it is the number of samples per cell width.
+        data = self._trait_values.get("data", None)
+        if data is not None and data._render_geom == "spherical":
+            return 0.0
+        return 1.0
+
     @traitlets.default("transfer_function")
     def _default_transfer_function(self):
         tf = TransferFunctionTexture(data=np.ones((256, 1, 4), dtype="u1") * 255)
         return tf
 
+    @property
+    def _draw_order_matters(self):
+        # Blocks have to be drawn furthest first unless the first pass blends
+        # them commutatively (a max, a min, or a plain sum) with no depth
+        # test, as max_intensity and projection do.
+        shader = self.fragment_shader
+        if shader is None:
+            return True
+        if shader.use_separate_blend or shader.depth_test != GL.GL_ALWAYS:
+            return True
+        if shader.blend_equation in (GL.GL_MAX, GL.GL_MIN):
+            return False
+        return not (
+            shader.blend_equation == GL.GL_FUNC_ADD
+            and tuple(shader.blend_func) == (GL.GL_ONE, GL.GL_ONE)
+        )
+
     def draw(self, scene, program):
-        each = self.data.vertex_array.each
         GL.glEnable(GL.GL_CULL_FACE)
         GL.glCullFace(GL.GL_BACK)
+        depth_clip_active = (
+            self.use_external_depth_clip and self.external_depth_texture is not None
+        )
+        depth_ctx = (
+            self.external_depth_texture.bind(target=3)
+            if depth_clip_active
+            else contextlib.nullcontext()
+        )
+        data = self.data
         with self.transfer_function.bind(target=2):
-            for tex_ind, tex, bitmap_tex in self.data.viewpoint_iter(scene.camera):
-                with tex.bind(target=0):
-                    with bitmap_tex.bind(target=1):
-                        GL.glDrawArrays(GL.GL_POINTS, tex_ind * each, each)
+            with depth_ctx, data.data_atlas.bind(0), data.bitmap_atlas.bind(1):
+                self._draw_blocks(scene)
+
+    def _draw_blocks(self, scene):
+        # draw every block (a single vertex each) with one call; each block
+        # finds itself in the atlases through its offset and size attributes,
+        # and when the order matters an index buffer gives it
+        n_blocks = len(self.data.block_data)
+        if not self._draw_order_matters:
+            GL.glDrawArrays(GL.GL_POINTS, 0, n_blocks)
+            return
+        order = self.data.viewpoint_order(scene.camera)
+        if self._index_buffer is None:
+            self._index_buffer = GL.glGenBuffers(1)
+        # the element buffer binding is part of the bound vertex array's
+        # state, so it is reset afterwards
+        GL.glBindBuffer(GL.GL_ELEMENT_ARRAY_BUFFER, self._index_buffer)
+        GL.glBufferData(
+            GL.GL_ELEMENT_ARRAY_BUFFER, order.nbytes, order, GL.GL_STREAM_DRAW
+        )
+        GL.glDrawElements(GL.GL_POINTS, order.size, GL.GL_UNSIGNED_INT, None)
+        GL.glBindBuffer(GL.GL_ELEMENT_ARRAY_BUFFER, 0)
 
     def _set_uniforms(self, scene, shader_program):
-        if self.data._yt_geom_str == "spherical":
-            axis_id = self.data.data_source.ds.coordinates.axis_id
-            shader_program._set_uniform("id_theta", axis_id["theta"])
-            shader_program._set_uniform("id_r", axis_id["r"])
-            shader_program._set_uniform("id_phi", axis_id["phi"])
+        if self.data._render_geom == "spherical":
+            mapping = self.data._spherical_mapping
+            shader_program._set_uniform("id_theta", mapping.axis_id["theta"])
+            shader_program._set_uniform("id_r", mapping.axis_id["r"])
+            shader_program._set_uniform("id_phi", mapping.axis_id["phi"])
+            shader_program._set_uniform("phi_min", mapping.phi_min)
+            shader_program._set_uniform("tex_axis_flip", mapping.tex_axis_flip)
 
         shader_program._set_uniform("box_width", self.box_width)
         shader_program._set_uniform("sample_factor", self.sample_factor)
-        shader_program._set_uniform("ds_tex", np.array([0, 0, 0, 0, 0, 0]))
+        shader_program._set_uniform("data_tex", 0)
         shader_program._set_uniform("bitmap_tex", 1)
         shader_program._set_uniform("tf_tex", 2)
+        shader_program._set_uniform("external_depth_tex", 3)
+        shader_program._set_uniform(
+            "use_external_depth_clip",
+            float(
+                self.use_external_depth_clip and self.external_depth_texture is not None
+            ),
+        )
         shader_program._set_uniform("tf_min", self.tf_min)
         shader_program._set_uniform("tf_max", self.tf_max)
         shader_program._set_uniform("tf_log", float(self.tf_log))
@@ -208,6 +321,14 @@ class BlockRendering(SceneComponent):
         vertex-centered data used to build the 3D textures, so they can fall
         slightly outside the range of the cell-centered field (particularly with
         ``no_ghost=True``).
+
+        For ``projection``, values are path integrals along the rays cast by
+        the camera. With the default perspective camera the rays diverge, so
+        the integrals only approximate a yt projection; setting
+        ``camera.projection_type = "orthographic"`` before rendering casts
+        parallel rays, making them true parallel-ray path integrals (and
+        ``RenderedImagePlane.integrate`` then recovers the total up to
+        discretization error).
         """
         if self.first_pass_fb_rgba is None:
             raise RuntimeError(

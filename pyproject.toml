@@ -60,6 +60,7 @@ test = [
   "pytest>=6.2.4",
   "pytest-html",
 ]
+examples = ["cartopy", "shapely"]
 
 [project.urls]
 Homepage = "https://github.com/yt-project/yt_idv"
@@ -110,7 +111,9 @@ ignore = [
 combine-as-imports = true
 
 [tool.pytest.ini_options]
-offscreen_backend = "osmesa"
+offscreen_backend = "osmesa"markers = [
+  "slow: long-running tests (deselect with -m \"not slow\")",
+]
 
 [tool.cibuildwheel]
 build = ["cp310-*", "cp311-*", "cp312-*", "cp313-*", "cp314-*"]

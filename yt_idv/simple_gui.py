@@ -145,6 +145,14 @@ class SimpleGUI:
             if _:
                 scene.camera.near_plane = values[0]
                 scene.camera.far_plane = values[1]
+            _, ortho = imgui.checkbox(
+                "Orthographic", scene.camera.projection_type == "orthographic"
+            )
+            changed = changed or _
+            if _:
+                scene.camera.projection_type = (
+                    "orthographic" if ortho else "perspective"
+                )
             if imgui.button("Center"):
                 scene.camera.position = np.array([0.499, 0.499, 0.499])
                 scene.camera.focus = np.array([0.5, 0.5, 0.5])
@@ -173,7 +181,7 @@ class SimpleGUI:
                 scene.camera.up = np.array([0.0, 0.0, 1.0])
                 changed = True
         if changed:
-            scene.camera._update_matrices()
+            scene.camera.update_matrices()
 
         if imgui.button("print camera to console"):
             import json

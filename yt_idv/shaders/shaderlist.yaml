@@ -23,6 +23,14 @@ shader_definitions:
         - src alpha
         - dst alpha
       blend_equation: func add
+    apply_colormap_alpha:
+      info:
+       Apply a colormap but keep the texture's own alpha channel.
+      source: apply_colormap_alpha.frag.glsl
+      blend_func:
+        - src alpha
+        - dst alpha
+      blend_equation: func add
     expand_1d:
       info: This expands a 1D texture along the y dimension
       source: expand_1d.frag.glsl
@@ -75,6 +83,14 @@ shader_definitions:
         A first pass fragment shader that performs no operation. Used for debug
         puproses. It's distinct from NoOpFragmentShader, because of the number of uniforms
       source: passthrough.frag.glsl
+      blend_func:
+        - src alpha
+        - dst alpha
+      blend_equation: func add
+    passthrough_alpha:
+      info:
+        passthrough shader that preserves the first pass alpha
+      source: passthrough_alpha.frag.glsl
       blend_func:
         - src alpha
         - dst alpha
@@ -209,6 +225,15 @@ component_shaders:
       second_vertex: passthrough
       second_fragment: apply_colormap
       coordinate_systems: [cartesian, spherical]
+    max_intensity_alpha:
+      description:
+        Maximum Intensity with a value-driven (not presence-driven) alpha
+      first_vertex: grid_position
+      first_geometry: grid_expand
+      first_fragment: max_intensity
+      second_vertex: passthrough
+      second_fragment: apply_colormap_alpha
+      coordinate_systems: [cartesian, spherical]
     projection:
       description: Projective integration
       first_vertex: grid_position
@@ -223,7 +248,7 @@ component_shaders:
       first_geometry: grid_expand
       first_fragment: transfer_function
       second_vertex: passthrough
-      second_fragment: passthrough
+      second_fragment: passthrough_alpha
       coordinate_systems: [cartesian, spherical]
     isocontours:
       description: Isocontours
@@ -266,7 +291,7 @@ component_shaders:
       first_vertex: octree_position
       first_fragment: transfer_function
       second_vertex: passthrough
-      second_fragment: passthrough
+      second_fragment: passthrough_alpha
   block_outline:
     default_value: default
     default:

@@ -13,13 +13,15 @@ class GridOutlines(SceneAnnotation):
 
     name = "grid_outline"
     data = traitlets.Instance(GridPositions)
-    box_width = traitlets.CFloat(0.25)  # quarter of a dx
-    box_color = traitlets.Tuple((1.0, 1.0, 1.0)).tag(trait=traitlets.CFloat())
-    box_alpha = traitlets.CFloat(1.0)
+    box_width = traitlets.CFloat(0.25).tag(config=True)  # quarter of a dx
+    box_color = traitlets.Tuple((1.0, 1.0, 1.0)).tag(
+        trait=traitlets.CFloat(), config=True
+    )
+    box_alpha = traitlets.CFloat(1.0).tag(config=True)
 
     def draw(self, scene, program):
         GL.glDisable(GL.GL_CULL_FACE)
-        GL.glDrawArrays(GL.GL_POINTS, 0, len(self.data.grid_list))
+        GL.glDrawArrays(GL.GL_POINTS, 0, self.data.n_grids)
 
     def _set_uniforms(self, scene, shader_program):
         shader_program._set_uniform("box_width", self.box_width)

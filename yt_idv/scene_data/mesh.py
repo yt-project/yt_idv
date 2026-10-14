@@ -14,7 +14,7 @@ class MeshData(SceneData):
     texture_objects = traitlets.Dict(trait=traitlets.Instance(Texture3D))
     blocks = traitlets.Dict(default_value=())
     scale = traitlets.Bool(False)
-    size = traitlets.CInt(-1)
+    size = traitlets.CInt(-1).tag(config=True)
 
     def get_mesh_data(self, data_source, field):
         """

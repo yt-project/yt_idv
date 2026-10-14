@@ -9,14 +9,14 @@ from yt_idv.scene_data.box import BoxData
 class BoxAnnotation(SceneAnnotation):
     name = "box_outline"
     data = traitlets.Instance(BoxData)
-    box_width = traitlets.CFloat(0.05)
+    box_width = traitlets.CFloat(0.05).tag(config=True)
     box_color = traitlets.Tuple(
         traitlets.CFloat(),
         traitlets.CFloat(),
         traitlets.CFloat(),
         default_value=(1.0, 1.0, 1.0),
-    )
-    box_alpha = traitlets.CFloat(1.0)
+    ).tag(config=True)
+    box_alpha = traitlets.CFloat(1.0).tag(config=True)
 
     def draw(self, scene, program):
         each = self.data.vertex_array.each

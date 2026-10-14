@@ -2,13 +2,34 @@ import numpy as np
 import traitlets
 from yt.utilities.math_utils import (
     get_lookat_matrix,
-    get_perspective_matrix,
+    get_orthographic_matrix,
     quaternion_to_rotation_matrix,
     rotation_matrix_to_quaternion,
 )
 
 from yt_idv.cameras.base_camera import BaseCamera
 from yt_idv.utilities.camera_utilities import update_orientation
+from yt_idv.utilities.spherical_mapping import render_geometry
+
+
+def get_perspective_matrix(fovy, aspect, z_near, z_far):
+    """
+    The perspective projection of a symmetric frustum with a vertical field of
+    view of fovy degrees, in the same row-major layout as
+    yt.utilities.math_utils.get_perspective_matrix.
+
+    yt's version scales the bottom of the frustum by the aspect ratio along
+    with its sides, which squashes and shifts the image vertically whenever
+    aspect != 1, so the matrix is built here instead.
+    """
+    f = 1.0 / np.tan(np.radians(fovy) / 2.0)
+    result = np.zeros((4, 4), dtype="float32")
+    result[0][0] = f / aspect
+    result[1][1] = f
+    result[2][2] = -(z_far + z_near) / (z_far - z_near)
+    result[2][3] = -2.0 * z_far * z_near / (z_far - z_near)
+    result[3][2] = -1.0
+    return result
 
 
 class TrackballCamera(BaseCamera):
@@ -26,8 +47,29 @@ class TrackballCamera(BaseCamera):
     """
 
     @property
-    def proj_func(self):
-        return get_perspective_matrix
+    def orthographic_scale(self):
+        # half-height of the orthographic view volume, chosen to match the
+        # perspective frustum's half-height at the focal plane so that
+        # toggling projection_type preserves the apparent size at the focus
+        # and moving the camera still zooms
+        return np.tan(np.radians(self.fov) / 2.0) * np.linalg.norm(
+            self.position - self.focus
+        )
+
+    def _get_projection_matrix(self):
+        if self.projection_type == "orthographic":
+            # get_orthographic_matrix uses the column-major (OpenGL) layout,
+            # the transpose of get_perspective_matrix; yt_idv computes
+            # projection @ view row-major and uploads with transpose=GL_TRUE
+            return get_orthographic_matrix(
+                self.orthographic_scale,
+                self.aspect_ratio,
+                self.near_plane,
+                self.far_plane,
+            ).T
+        return get_perspective_matrix(
+            self.fov, self.aspect_ratio, self.near_plane, self.far_plane
+        )
 
     @traitlets.default("orientation")
     def _orientation_default(self):
@@ -51,9 +93,14 @@ class TrackballCamera(BaseCamera):
         return np.array([x, -y, z])
 
     def update_orientation(self, start_x, start_y, end_x, end_y):
-        self.orientation = update_orientation(
-            self.orientation.astype("float64"), start_x, start_y, end_x, end_y
+        self.set_orientation(
+            update_orientation(
+                self.orientation.astype("float64"), start_x, start_y, end_x, end_y
+            )
         )
+
+    def set_orientation(self, orientation):
+        self.orientation = orientation
 
         rotation_matrix = quaternion_to_rotation_matrix(self.orientation)
         dp = np.linalg.norm(self.position - self.focus) * rotation_matrix[2]
@@ -61,18 +108,12 @@ class TrackballCamera(BaseCamera):
         self.up = rotation_matrix[1]
 
         self.view_matrix = get_lookat_matrix(self.position, self.focus, self.up)
+        self._compute_matrices()
 
-        self.projection_matrix = self.proj_func(
-            self.fov, self.aspect_ratio, self.near_plane, self.far_plane
-        )
-
-    def _update_matrices(self):
+    def update_matrices(self):
         self.view_matrix = get_lookat_matrix(self.position, self.focus, self.up)
         self.orientation = rotation_matrix_to_quaternion(self.view_matrix[0:3, 0:3])
-
-        self.projection_matrix = self.proj_func(
-            self.fov, self.aspect_ratio, self.near_plane, self.far_plane
-        )
+        self._compute_matrices()
 
     def move_forward(self, move_amount):
         dpos = (self.focus - self.position) / np.linalg.norm(self.focus - self.position)
@@ -83,26 +124,31 @@ class TrackballCamera(BaseCamera):
             dpos = np.array([0.0, 0.0, 0.0])
         self.position += dpos
         self.view_matrix = get_lookat_matrix(self.position, self.focus, self.up)
+        if self.projection_type == "orthographic":
+            # the orthographic scale depends on the camera-focus distance,
+            # so moving the camera zooms only if the projection is rebuilt
+            self.projection_matrix = self._get_projection_matrix()
 
     def _compute_matrices(self):
-        pass
+        self.projection_matrix = self._get_projection_matrix()
 
     def set_position(self, pos):
         self.position = pos
-        self._update_matrices()
+        self.update_matrices()
 
     @staticmethod
     def from_dataset(ds):
         center, pos, near_plane = _get_camera_for_ds_geometry(ds)
 
         c = TrackballCamera(position=pos, focus=center, near_plane=near_plane)
-        c.update_orientation(0, 0, 0, 0)
+        c.set_orientation(c.orientation)
         return c
 
 
 def _get_camera_for_ds_geometry(ds):
 
-    if str(ds.geometry) == "spherical":
+    geom = render_geometry(ds)
+    if geom == "spherical":
         # dummy values here, will get updated after data is loaded
         # and the cartesian bounds are available
         center = np.array([0.5, 0.5, 0.5])
@@ -111,13 +157,14 @@ def _get_camera_for_ds_geometry(ds):
         dx_aprox = wid[0] / np.max(ds.domain_dimensions)
         near_plane = 3.0 * dx_aprox
         near_plane = max(near_plane, 1e-5)
-    elif str(ds.geometry) == "cartesian":
+    elif geom == "cartesian":
         center = ds.domain_center
         pos = center + 1.5 * ds.domain_width.in_units("unitary")
         near_plane = 3.0 * ds.index.get_smallest_dx().min().in_units("unitary").d
         near_plane = max(near_plane, 1e-5)
     else:
         raise NotImplementedError(
-            "Only cartesian and spherical geometries are supported at present."
+            "Only cartesian, spherical and geographic geometries are supported "
+            "at present."
         )
     return center, pos, near_plane

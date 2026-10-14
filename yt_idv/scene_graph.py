@@ -1,12 +1,13 @@
 import contextlib
 
+import numpy as np
 import traitlets
 from OpenGL import GL
 from yt.data_objects.static_output import Dataset
 
 from yt_idv.cameras.base_camera import BaseCamera
 from yt_idv.cameras.trackball_camera import TrackballCamera
-from yt_idv.opengl_support import Framebuffer
+from yt_idv.opengl_support import Framebuffer, _pixels_by_row
 from yt_idv.scene_annotations.base_annotation import SceneAnnotation
 from yt_idv.scene_annotations.box import BoxAnnotation
 from yt_idv.scene_annotations.text import TextAnnotation
@@ -16,6 +17,7 @@ from yt_idv.scene_data.base_data import SceneData
 from yt_idv.scene_data.block_collection import BlockCollection
 from yt_idv.scene_data.box import BoxData
 from yt_idv.scene_data.text_characters import TextCharacters
+from yt_idv.utilities.spherical_mapping import render_geometry
 
 
 class SceneGraph(traitlets.HasTraits):
@@ -38,7 +40,9 @@ class SceneGraph(traitlets.HasTraits):
     input_captured_mouse = traitlets.Bool(False)
     input_captured_keyboard = traitlets.Bool(False)
 
-    def add_volume(self, data_source, field_name, no_ghost=False):
+    def add_volume(
+        self, data_source, field_name, no_ghost=False, reference_height=None
+    ):
         """
         Add a BlockRendering component to volume render.
 
@@ -50,6 +54,11 @@ class SceneGraph(traitlets.HasTraits):
         data_source: yt data container such as a sphere, region, etc
         field_name: The field to volume render
         no_ghost: Should we save time by skipping ghost zone generation
+        reference_height: Only for geographic and internal_geographic datasets:
+            the surface height (geographic) or outer radius (internal_geographic)
+            to use in place of the dataset's own value when converting the native
+            radial coordinate to a radius. See
+            :class:`~yt_idv.scene_data.block_collection.BlockCollection`.
 
         Returns
         -------
@@ -57,7 +66,9 @@ class SceneGraph(traitlets.HasTraits):
         component: BlockRendering
 
         """
-        self.data_objects.append(BlockCollection(data_source=data_source))
+        self.data_objects.append(
+            BlockCollection(data_source=data_source, reference_height=reference_height)
+        )
         self.data_objects[-1].add_data(field_name, no_ghost=no_ghost)
         self.components.append(BlockRendering(data=self.data_objects[-1]))
         return self.components[-1]  # Only the rendering object
@@ -109,6 +120,81 @@ class SceneGraph(traitlets.HasTraits):
         data = BoxData(left_edge=left_edge, right_edge=right_edge)
         self.data_objects.append(data)
         self.annotations.append(BoxAnnotation(data=data))
+
+    def rescale(self, offset, ratio):
+        """
+        Map the scene's model coordinates x to (x - offset) / ratio, moving the
+        camera with them so the view doesn't change.
+
+        Calls compose with each other and with a block collection's scale.
+        Re-centering on a point while zooming in, for instance with
+        ``scene.rescale(target, 0.01)`` each time the camera gets 100 times
+        closer, keeps the coordinates near the camera of order one, where the
+        shaders' float32 arithmetic stays precise.
+
+        Only block collections (with cartesian geometry) are rescaled; other
+        data objects, such as boxes, are not moved.
+
+        Parameters
+        ----------
+        offset: Array-like, the point in model coordinates that becomes the origin
+        ratio: float, the length in model coordinates that becomes one
+        """
+        offset = np.asarray(offset, dtype="f8")
+
+        for data in self.data_objects:
+            if isinstance(data, BlockCollection) and data._yt_geom_str == "cartesian":
+                data.apply_scale(offset, ratio)
+        camera = self.camera
+        camera.update(
+            position=(np.asarray(camera.position) - offset) / ratio,
+            focus=(np.asarray(camera.focus) - offset) / ratio,
+            near_plane=camera.near_plane / ratio,
+            far_plane=camera.far_plane / ratio,
+        )
+
+    def save(self, filename, compress=False):
+        """
+        Save the scene, including its textures and vertex data, to a file.
+
+        Parameters
+        ----------
+        filename: The file to write
+        compress: Should the file be compressed (slower, but often smaller)
+
+        Examples
+        --------
+
+        >>> sg.save("galaxy_scene.zip")
+        >>> sg2 = SceneGraph.load("galaxy_scene.zip")
+        """
+        from yt_idv.serialization import save_scene
+
+        save_scene(self, filename, compress=compress)
+
+    @staticmethod
+    def load(filename, ds=None):
+        """
+        Load a scene written by :meth:`SceneGraph.save`.
+
+        An OpenGL context must already exist, as the textures are uploaded
+        to the GPU. The original dataset is not needed to render the scene,
+        but operations that read from it (e.g., ``rendered_image_plane``) are
+        not available.
+
+        Parameters
+        ----------
+        filename: The file to read
+        ds: An optional yt Dataset to attach to the scene
+
+        Returns
+        -------
+
+        scene: SceneGraph
+        """
+        from yt_idv.serialization import load_scene
+
+        return load_scene(filename, ds=ds)
 
     def __iter__(self):
         """
@@ -190,13 +276,10 @@ class SceneGraph(traitlets.HasTraits):
 
         """
         if self.fb is not None:
-            arr = self.fb.data[::-1, :, :]
-            arr.swapaxes(0, 1)
-            return arr
+            return self.fb.data[::-1, :, :]
         _, _, width, height = GL.glGetIntegerv(GL.GL_VIEWPORT)
-        arr = GL.glReadPixels(0, 0, width, height, GL.GL_RGBA, GL.GL_FLOAT)[::-1, :, :]
-        arr.swapaxes(0, 1)
-        return arr
+        arr = GL.glReadPixels(0, 0, width, height, GL.GL_RGBA, GL.GL_FLOAT)
+        return _pixels_by_row(arr, width, height)[::-1, :, :]
 
     @property
     def depth(self):
@@ -209,18 +292,13 @@ class SceneGraph(traitlets.HasTraits):
 
         """
         if self.fb is not None:
-            arr = self.fb.depth_data[::-1, :]
-            arr.swapaxes(0, 1)
-            return arr
+            return self.fb.depth_data[::-1, :]
         _, _, width, height = GL.glGetIntegerv(GL.GL_VIEWPORT)
-        arr = GL.glReadPixels(0, 0, width, height, GL.GL_DEPTH_COMPONENT, GL.GL_FLOAT)[
-            ::-1, :
-        ]
-        arr.swapaxes(0, 1)
-        return arr
+        arr = GL.glReadPixels(0, 0, width, height, GL.GL_DEPTH_COMPONENT, GL.GL_FLOAT)
+        return _pixels_by_row(arr, width, height)[::-1, :]
 
     @staticmethod
-    def from_ds(ds, field, no_ghost=True):
+    def from_ds(ds, field, no_ghost=True, reference_height=None):
         """
         Return a SceneGraph made from some best-guess values from a dataset and
         a field.
@@ -234,6 +312,10 @@ class SceneGraph(traitlets.HasTraits):
         ds: A yt Dataset or Data Object to use as a source
         field: The field to render
         no_ghost: Should we save time by skipping ghost zones?
+        reference_height: Only for geographic and internal_geographic datasets:
+            the surface height (geographic) or outer radius (internal_geographic)
+            to use in place of the dataset's own value. See
+            :class:`~yt_idv.scene_data.block_collection.BlockCollection`.
 
         Returns
         -------
@@ -263,7 +345,9 @@ class SceneGraph(traitlets.HasTraits):
         scene = SceneGraph(camera=c)
 
         if field is not None:
-            scene.add_volume(data_source, field, no_ghost=no_ghost)
+            scene.add_volume(
+                data_source, field, no_ghost=no_ghost, reference_height=reference_height
+            )
             _update_scene_camera_for_geometry(ds, scene)
 
         return scene
@@ -272,7 +356,7 @@ class SceneGraph(traitlets.HasTraits):
 def _update_scene_camera_for_geometry(ds, scene):
     # for non-cartesian geometries, the cartesian bounds may not
     # be available until after the data is loaded and processed.
-    if str(ds.geometry) == "spherical":
+    if render_geometry(ds) == "spherical":
         data = scene.components[-1].data
         if hasattr(data, "cart_bbox_center"):
             center = data.cart_bbox_center
@@ -283,4 +367,3 @@ def _update_scene_camera_for_geometry(ds, scene):
 
             camera: TrackballCamera = scene.camera
             camera.update(focus=center, position=pos, near_plane=near_plane)
-            camera._update_matrices()

@@ -5,6 +5,9 @@ flat in vec3 right_edge;
 flat in mat4 inverse_proj;
 flat in mat4 inverse_mvm;
 flat in mat4 inverse_pmvm;
+
+// this block's data_tex and bitmap_tex, see known_uniforms.inc.glsl
+BLOCK_TEXTURE_INPUTS
 out vec4 output_color;
 
 bool sample_texture(vec3 tex_curr_pos, inout vec4 curr_color, float tdelta,
@@ -25,7 +28,11 @@ void main()
     // blocks disagree about where a ray crosses the face they share.
     vec3 ray_position = v_model.xyz;
 
-    vec3 dir = normalize(camera_pos.xyz - ray_position);
+    // note: dir points toward the camera here, hence -camera_view_dir for
+    // the parallel rays of an orthographic projection
+    vec3 dir = (projection_type == 1)
+        ? -camera_view_dir
+        : normalize(camera_pos.xyz - ray_position);
     vec4 curr_color = vec4(0.0);
 
     // We'll compute the t at which this ray intersects the slice. If that t
@@ -42,12 +49,18 @@ void main()
     vec3 nzones = range / dx;
     vec3 ndx = 1.0/nzones;
 
-    vec3 tex_curr_pos = (ray_position - left_edge) / range;  // Scale from 0 .. 1
-    // But, we actually need it to be 0 + normalized dx/2 to 1 - normalized dx/2
-    tex_curr_pos = (tex_curr_pos * (1.0 - ndx)) + ndx/2.0;
+    // The texture holds n + 1 vertex-centered values, so it spans
+    // left_edge - dx/2 to right_edge + dx/2; texel k's center is vertex k.
+    vec3 tex_curr_pos = (ray_position - left_edge) / range + ndx / 2.0;
 
-    float map_sample = texture(bitmap_tex, tex_curr_pos).r;
+    // the bitmap has one texel per cell, so it spans exactly left_edge to right_edge
+    vec3 bitmap_pos = (ray_position - left_edge) / (right_edge - left_edge);
+    bitmap_pos = (bitmap_pos * vec3(bitmap_size) + vec3(bitmap_offset))
+        / vec3(textureSize(bitmap_tex, 0));
+    float map_sample = texture(bitmap_tex, bitmap_pos).r;
     if (!(map_sample > 0.0)) discard;
 
-    output_color = texture(ds_tex[0], tex_curr_pos);
+    tex_curr_pos = (tex_curr_pos * vec3(data_size) + vec3(data_offset))
+        / vec3(textureSize(data_tex, 0));
+    output_color = texture(data_tex, tex_curr_pos);
 }

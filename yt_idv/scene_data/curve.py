@@ -12,8 +12,10 @@ class CurveData(SceneData):
     """
 
     name = "curve_data"
-    data = Array()
-    n_vertices = traitlets.CInt()
+    data = Array().tag(config=True)
+    n_vertices = traitlets.CInt().tag(config=True)
+
+    _saved_attributes = SceneData._saved_attributes + ("size",)
 
     @traitlets.default("vertex_array")
     def _default_vertex_array(self):
@@ -54,8 +56,10 @@ class CurveCollection(CurveData):
     """Data component for a collection of curves"""
 
     name = "curve_collection"
-    data = Array()
-    n_vertices = traitlets.CInt()
+    data = Array().tag(config=True)
+    n_vertices = traitlets.CInt().tag(config=True)
+
+    _saved_attributes = CurveData._saved_attributes + ("n_curves",)
 
     def __init__(self):
         self.n_curves = 0
