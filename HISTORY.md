@@ -1,10 +1,65 @@
 # History
 
-## 0.5.4dev
+## 0.6.0
+
+### Highlights
+* Releases now ship pre-built wheels for linux (x86_64, aarch64) and macOS (x86_64, arm64) on python 3.10-3.14, attached to the GitHub release and uploaded to PyPI alongside the sdist (https://github.com/yt-project/yt_idv/pull/200).
+* `imgui` is now an optional dependency: install it with `pip install yt_idv[gui]` for the interactive GUI. A plain `pip install yt_idv` supports headless rendering only, which allows using `yt_idv` with python 3.13+ (see https://github.com/yt-project/yt_idv/issues/256, https://github.com/yt-project/yt_idv/pull/268).
+* Volume rendering now supports `geographic` and `internal_geographic` coordinate systems, and spherical rendering uses full volume element intersections (https://github.com/yt-project/yt_idv/pull/278, https://github.com/yt-project/yt_idv/pull/239).
+* The camera gained an orthographic projection option, scenes can be serialized, and data values can be extracted from rendered block scenes (https://github.com/yt-project/yt_idv/pull/265, https://github.com/yt-project/yt_idv/pull/283, https://github.com/yt-project/yt_idv/pull/251).
+* Headless rendering is now tested in CI on osmesa, egl and pyglet across linux and macOS, and tests can be run against any of these backends locally (https://github.com/yt-project/yt_idv/pull/257, https://github.com/yt-project/yt_idv/pull/258, https://github.com/yt-project/yt_idv/pull/259, https://github.com/yt-project/yt_idv/pull/260).
+* Rendering can now be composited into larger external scenes: an external depth buffer can be supplied to truncate rays at a fixed depth, the EGL context works for external callers, and the long-standing seams at block boundaries and non-unity aspect ratio issues are fixed (https://github.com/yt-project/yt_idv/pull/247, https://github.com/yt-project/yt_idv/pull/282, https://github.com/yt-project/yt_idv/pull/286).
 
 ### Changes
-* Releases now ship pre-built wheels for linux (x86_64, aarch64) and macOS (x86_64, arm64) on python 3.10-3.14, attached to the GitHub release and uploaded to PyPI alongside the sdist.
-* `imgui` is now an optional dependency: install it with `pip install yt_idv[gui]` for the interactive GUI. A plain `pip install yt_idv` supports headless rendering only, which allows using `yt_idv` with python 3.13+ (see https://github.com/yt-project/yt_idv/issues/256).
+
+#### New Features
+* Extract data values from rendered block scenes by @chrishavlin in https://github.com/yt-project/yt_idv/pull/251
+* add orthographic projection option to the camera, wire the shaders by @chrishavlin in https://github.com/yt-project/yt_idv/pull/265
+* full spherical volume element intersections by @chrishavlin in https://github.com/yt-project/yt_idv/pull/239
+* support geographic and internal_geographic volume rendering by @chrishavlin in https://github.com/yt-project/yt_idv/pull/278
+* Add serialization support. by @matthewturk in https://github.com/yt-project/yt_idv/pull/283
+* Add release() functions to deallocate memory by @matthewturk in https://github.com/yt-project/yt_idv/pull/281
+* Scaling vertices by @matthewturk in https://github.com/yt-project/yt_idv/pull/276
+* Speedup scene export by @matthewturk in https://github.com/yt-project/yt_idv/pull/298
+* add a yt_idv logger, replace some print statements by @chrishavlin in https://github.com/yt-project/yt_idv/pull/295
+* Make imgui an optional dependency (gui extra), add 3.13, 3.14 to CI by @chrishavlin in https://github.com/yt-project/yt_idv/pull/268
+* build and publish wheels by @chrishavlin in https://github.com/yt-project/yt_idv/pull/200
+
+#### Bug Fixes
+* Fix invisible imgui overlay on macOS with pyglet >= 2.1 by @chrishavlin in https://github.com/yt-project/yt_idv/pull/250
+* Skip whitespace control chars when building text glyph textures by @chrishavlin in https://github.com/yt-project/yt_idv/pull/254
+* fix pixels dropped at block boundaries in slice rendering by @chrishavlin in https://github.com/yt-project/yt_idv/pull/253
+* Headless rendering fixes by @chrishavlin in https://github.com/yt-project/yt_idv/pull/257
+* Fixing for external usage by @matthewturk in https://github.com/yt-project/yt_idv/pull/247
+* Fix camera trait observations by @chrishavlin in https://github.com/yt-project/yt_idv/pull/274
+* Fix seams in the ray tracing by @matthewturk in https://github.com/yt-project/yt_idv/pull/282
+* Address matrix and pixel order by @matthewturk in https://github.com/yt-project/yt_idv/pull/286
+* Change float eps to float tiny by @matthewturk in https://github.com/yt-project/yt_idv/pull/299
+
+#### Testing and CI
+* Pytest headless config: run tests with osmesa, egl or pyglet! by @chrishavlin in https://github.com/yt-project/yt_idv/pull/258
+* Add osmesa, pyglet matrix and macos runner to test action by @chrishavlin in https://github.com/yt-project/yt_idv/pull/259
+* add ubuntu egl smoke test to the CI matrix by @chrishavlin in https://github.com/yt-project/yt_idv/pull/260
+* add image_test mark, skip-image-tests option to skip rendering-context tests by @chrishavlin in https://github.com/yt-project/yt_idv/pull/261
+* yield rc fixtures so the dataset ref survives by @chrishavlin in https://github.com/yt-project/yt_idv/pull/262
+* cache osmesa apt packages in CI by @chrishavlin in https://github.com/yt-project/yt_idv/pull/248
+* Fix osmesa apt cache key to include runner image version by @chrishavlin in https://github.com/yt-project/yt_idv/pull/280
+* restrict actions to push to main or PR by @chrishavlin in https://github.com/yt-project/yt_idv/pull/246
+* configure dependabot by @chrishavlin in https://github.com/yt-project/yt_idv/pull/242
+* Ruff migration, zizmor checks and action hardening by @chrishavlin in https://github.com/yt-project/yt_idv/pull/270
+* Use PyPI trusted publishing in release workflow by @chrishavlin in https://github.com/yt-project/yt_idv/pull/271
+* bump rtd build to use python 3.10 by @chrishavlin in https://github.com/yt-project/yt_idv/pull/277
+
+#### Project Maintenance
+* Cleanup from 0.5.4 release  by @chrishavlin in https://github.com/yt-project/yt_idv/pull/216
+* fix: resolve python flake8 compatibility crash by @HarshShinde0 in https://github.com/yt-project/yt_idv/pull/232
+* unpin mlp and update min py-3.10 by @HarshShinde0 in https://github.com/yt-project/yt_idv/pull/234
+* pin pyglet to <3.0.0 by @chrishavlin in https://github.com/yt-project/yt_idv/pull/240
+* Update project configuration, metadata by @chrishavlin in https://github.com/yt-project/yt_idv/pull/269
+* add an AGENTS.md, adopt yt's AI policy by @chrishavlin in https://github.com/yt-project/yt_idv/pull/294
+
+
+**Full Changelog**: https://github.com/yt-project/yt_idv/compare/v0.5.4...v0.6.0
 
 ## 0.5.4
 

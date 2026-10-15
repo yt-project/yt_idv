@@ -2,7 +2,7 @@
 
 __author__ = """Matthew Turk"""
 __email__ = "matthewturk@gmail.com"
-__version__ = "0.5.4.dev0"
+__version__ = "0.6.0"
 
 # We don't want to import this if we're just doing offscreen rendering
 from .rendering_contexts import render_context
