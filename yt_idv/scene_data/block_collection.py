@@ -516,10 +516,10 @@ class BlockCollection(SceneData):
             # Avoid setting to NaNs
             if self.max_val != self.min_val or self.always_normalize:
                 n_data = self._normalize_by_min_max(n_data)
-                # blocks filled with identically 0 values will be
-                # skipped by the shader, so offset by a tiny value.
-                # see https://github.com/yt-project/yt_idv/issues/171
-                n_data[n_data == 0.0] += np.finfo(np.float32).eps
+                # We want this to be the smallest normal -- not the epsilon,
+                # which isn't appropriate for anything spanning many decades in
+                # value.  This just keeps it from being 0.0.
+                n_data[n_data == 0.0] = np.finfo(np.float32).tiny
 
             self.block_data[vbo_i] = n_data
             self.block_bitmaps[vbo_i] = (block.source_mask * 255).astype("uint8")
