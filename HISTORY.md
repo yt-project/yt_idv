@@ -1,5 +1,7 @@
 # History
 
+## 0.6.1.dev0
+
 ## 0.6.0
 
 ### Highlights
