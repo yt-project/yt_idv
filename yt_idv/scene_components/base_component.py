@@ -682,3 +682,6 @@ class SceneComponent(SerializableMixin, traitlets.HasTraits):
             )
 
         self._cmap_bounds_invalid = False
+
+
+_cmaps = ["arbre", "viridis", "magma", "doom"]
