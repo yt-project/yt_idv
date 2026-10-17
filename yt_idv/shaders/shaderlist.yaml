@@ -27,10 +27,14 @@ shader_definitions:
       info:
        Apply a colormap but keep the texture's own alpha channel.
       source: apply_colormap_alpha.frag.glsl
-      blend_func:
+      blend_func_separate:
         - src alpha
-        - dst alpha
-      blend_equation: func add
+        - one minus src alpha
+        - one
+        - one minus src alpha
+      blend_equation_separate:
+        - func add
+        - func add
     expand_1d:
       info: This expands a 1D texture along the y dimension
       source: expand_1d.frag.glsl
@@ -92,8 +96,8 @@ shader_definitions:
         passthrough shader that preserves the first pass alpha
       source: passthrough_alpha.frag.glsl
       blend_func:
-        - src alpha
-        - dst alpha
+        - one
+        - one minus src alpha
       blend_equation: func add
     display_border:
       info: Draws a border around the display area
