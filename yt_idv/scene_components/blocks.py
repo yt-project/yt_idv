@@ -256,7 +256,7 @@ class BlockRendering(SceneComponent):
         if not self._draw_order_matters:
             GL.glDrawArrays(GL.GL_POINTS, 0, n_blocks)
             return
-        order = self.data.viewpoint_order(scene.camera)
+        order = self.data.viewpoint_order(scene.camera)[::-1].copy()  # nearest first
         if self._index_buffer is None:
             self._index_buffer = GL.glGenBuffers(1)
         # the element buffer binding is part of the bound vertex array's
