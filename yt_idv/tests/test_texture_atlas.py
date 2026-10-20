@@ -55,3 +55,29 @@ def test_atlas_too_large(empty_rc):
     max_dim = GL.glGetInteger(GL.GL_MAX_3D_TEXTURE_SIZE)
     with pytest.raises(ValueError):
         TextureAtlas([(max_dim + 1, 1, 1)])
+
+
+@pytest.mark.parametrize("render_method", ["max_intensity", "projection", "transfer_function"])
+def test_unpadded_atlas_renders_as_padded(make_rc, monkeypatch, render_method):
+    # The shaders clamp each block's lookups to its own texel centers, as edge
+    # padding (and clamp-to-edge before the atlas) did, so blocks need no padding.
+    from yt.testing import fake_amr_ds
+
+    from yt_idv.scene_data import block_collection
+
+    ds = fake_amr_ds(fields=[("gas", "density")], units=["g/cm**3"])
+    rc = make_rc(width=256, height=256)
+    atlas = block_collection.TextureAtlas
+    images = []
+    for padding in (1, 0):
+        monkeypatch.setattr(
+            block_collection,
+            "TextureAtlas",
+            lambda *a, _padding=padding, **kw: atlas(*a, **dict(kw, padding=_padding)),
+        )
+        scene = rc.add_scene(ds, ("gas", "density"), no_ghost=True)
+        scene.components[0].render_method = render_method
+        assert scene.data_objects[0].data_atlas.padding == padding
+        images.append(np.asarray(rc.run(), dtype="float64"))
+    assert images[0][..., 3].max() > 0  # something drew
+    np.testing.assert_allclose(images[1], images[0], atol=2 / 255)

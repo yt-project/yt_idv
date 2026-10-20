@@ -10,12 +10,23 @@ flat in mat4 inverse_pmvm;
 BLOCK_TEXTURE_INPUTS
 out vec4 output_color;
 
+vec3 clamp_to_block(vec3 texel, ivec3 size, ivec3 texsize)
+{
+    // Keep an atlas block's samples on its own texel centers, as clamp-to-edge
+    // did for a texture per block, so neighbors in the atlas never blend in
+    // and the blocks need no padding. A block filling its texture (octree
+    // blocks) is left alone.
+    if (size == texsize) return texel;
+    return clamp(texel, vec3(0.5), vec3(size) - 0.5);
+}
+
 vec3 get_offset_texture_position(sampler3D tex, vec3 tex_curr_pos)
 {
     // tex_curr_pos runs from 0 to 1 across the block, which lies at
     // data_offset in the data atlas
-    vec3 texsize = vec3(textureSize(tex, 0));
-    return (tex_curr_pos * vec3(data_size) + vec3(data_offset)) / texsize;
+    ivec3 texsize = textureSize(tex, 0);
+    vec3 texel = clamp_to_block(tex_curr_pos * vec3(data_size), data_size, texsize);
+    return (texel + vec3(data_offset)) / vec3(texsize);
 }
 
 vec3 get_bitmap_texture_position(vec3 tex_curr_pos)
@@ -24,14 +35,15 @@ vec3 get_bitmap_texture_position(vec3 tex_curr_pos)
     // block's vertices, but the bitmap of a grid block has one texel per cell,
     // spanning left_edge to right_edge. Other bitmaps (octree blocks share one
     // bitmap that isn't sized per cell) keep the data texture's coordinate.
-    vec3 texsize = vec3(textureSize(bitmap_tex, 0));
+    ivec3 texsize = textureSize(bitmap_tex, 0);
     vec3 texel;
     if (bitmap_size != data_size - ivec3(1)) {
         texel = tex_curr_pos * vec3(bitmap_size);
     } else {
         texel = tex_curr_pos * vec3(data_size) - 0.5;
     }
-    return (texel + vec3(bitmap_offset)) / texsize;
+    texel = clamp_to_block(texel, bitmap_size, texsize);
+    return (texel + vec3(bitmap_offset)) / vec3(texsize);
 }
 
 bool sample_texture(vec3 tex_curr_pos, inout vec4 curr_color, float tdelta,

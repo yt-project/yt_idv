@@ -535,8 +535,8 @@ class BlockCollection(SceneData):
     def _build_atlases(self):
         # Pack every block's data and bitmap into one texture each. The data
         # holds n + 1 vertex-centered values and the bitmap n cells, so they're
-        # laid out separately. One texel of edge padding keeps interpolation
-        # (and the bitmap's half-texel shift) inside each block.
+        # laid out separately. No padding: the shaders clamp each block's
+        # lookups to its own texel centers.
         for atlas in (self.data_atlas, self.bitmap_atlas):
             if atlas is not None:
                 atlas.release()
@@ -553,7 +553,7 @@ class BlockCollection(SceneData):
             sizes = [arrays[i].shape[:3] for i in range(n_blocks)]
             atlas = TextureAtlas(
                 sizes,
-                padding=1,
+                padding=0,
                 vertex_array=self.vertex_array,
                 offset_attribute_name=f"in_{name}_offset",
                 size_attribute_name=f"in_{name}_size",
