@@ -218,6 +218,30 @@ def _hashable(value):
     return value
 
 
+def dataset_info(ds):
+    """
+    What a saved scene needs to convert its unitary lengths to physical ones
+    without the dataset: yt's unit registry (which defines ``unitary``, the
+    code units and, for cosmological datasets, comoving units), plus the
+    redshift and time for reference.
+    """
+    return {
+        "unit_registry": ds.unit_registry.to_json(),
+        "current_redshift": float(getattr(ds, "current_redshift", 0.0) or 0.0),
+        "current_time": str(getattr(ds, "current_time", "")),
+    }
+
+
+def _scene_dataset(scene):
+    if scene.ds is not None:
+        return scene.ds
+    for data in scene.data_objects:
+        source = getattr(data, "data_source", None)
+        if source is not None:
+            return source.ds
+    return None
+
+
 def save_scene(scene, filename, compress=False):
     """
     Save the state of a SceneGraph to a file.
@@ -247,6 +271,9 @@ def save_scene(scene, filename, compress=False):
     }
     state["data_objects"] = writer.data_objects
     state["textures"] = writer.textures
+    ds = _scene_dataset(scene)
+    if ds is not None:
+        state["dataset"] = dataset_info(ds)
 
     mode = zipfile.ZIP_DEFLATED if compress else zipfile.ZIP_STORED
     with zipfile.ZipFile(filename, "w", compression=mode, allowZip64=True) as zf:
