@@ -57,7 +57,9 @@ def test_atlas_too_large(empty_rc):
         TextureAtlas([(max_dim + 1, 1, 1)])
 
 
-@pytest.mark.parametrize("render_method", ["max_intensity", "projection", "transfer_function"])
+@pytest.mark.parametrize(
+    "render_method", ["max_intensity", "projection", "transfer_function"]
+)
 def test_unpadded_atlas_renders_as_padded(make_rc, monkeypatch, render_method):
     # The shaders clamp each block's lookups to its own texel centers, as edge
     # padding (and clamp-to-edge before the atlas) did, so blocks need no padding.
