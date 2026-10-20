@@ -379,21 +379,26 @@ class BlockCollection(SceneData):
         self._order_node_ids = np.empty(len(self.blocks), dtype="int64")
         self._order_node_inds = np.empty(len(self.blocks), dtype="int64")
 
-    def viewpoint_order(self, camera):
+    def viewpoint_order(self, camera, nearest_first=False):
         """
-        The block indices, ordered from furthest to nearest the camera.
+        The block indices, ordered from furthest to nearest the camera, unless
+        *nearest_first* is True, in which case ... it's the opposite.
 
         Returns a uint32 array that can be used directly as an index buffer.
         """
         viewpoint = self._tree_viewpoint(camera.position)
         if self.data_source is None:
             order = _kd_viewpoint_order(self._kd_tree, viewpoint)
+            if nearest_first:
+                order = order[::-1]
             return np.asarray(order, dtype="uint32")
         if viewpoint_node_ids is None:
             order = [
                 self.blocks[id(block)][0]
                 for block in self.data_source.tiles.traverse(viewpoint=viewpoint)
             ]
+            if nearest_first:
+                order = order[::-1]
             return np.asarray(order, dtype="uint32")
         n = viewpoint_node_ids(
             self.data_source.tiles.tree.trunk,
@@ -401,6 +406,8 @@ class BlockCollection(SceneData):
             self._order_node_ids,
             self._order_node_inds,
         )
+        if nearest_first:
+            return self._order_node_inds[:n][::-1].astype("uint32")
         return self._order_node_inds[:n].astype("uint32")
 
     @property

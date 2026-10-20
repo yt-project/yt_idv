@@ -217,9 +217,9 @@ class BlockRendering(SceneComponent):
 
     @property
     def _draw_order_matters(self):
-        # Blocks have to be drawn furthest first unless the first pass blends
-        # them commutatively (a max, a min, or a plain sum) with no depth
-        # test, as max_intensity and projection do.
+        # Blocks have to be drawn nearest first unless the first pass blends
+        # them commutatively (a max, a min, or a plain sum) with no depth test,
+        # as max_intensity and projection do.
         shader = self.fragment_shader
         if shader is None:
             return True
@@ -256,7 +256,7 @@ class BlockRendering(SceneComponent):
         if not self._draw_order_matters:
             GL.glDrawArrays(GL.GL_POINTS, 0, n_blocks)
             return
-        order = self.data.viewpoint_order(scene.camera)
+        order = self.data.viewpoint_order(scene.camera, nearest_first=True)
         if self._index_buffer is None:
             self._index_buffer = GL.glGenBuffers(1)
         # the element buffer binding is part of the bound vertex array's
