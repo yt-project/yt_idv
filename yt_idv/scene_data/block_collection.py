@@ -379,7 +379,7 @@ class BlockCollection(SceneData):
         self._order_node_ids = np.empty(len(self.blocks), dtype="int64")
         self._order_node_inds = np.empty(len(self.blocks), dtype="int64")
 
-    def viewpoint_order(self, camera, nearest_first = False):
+    def viewpoint_order(self, camera, nearest_first=False):
         """
         The block indices, ordered from furthest to nearest the camera, unless
         *nearest_first* is True, in which case ... it's the opposite.
