@@ -76,7 +76,11 @@ def test_unpadded_atlas_renders_as_padded(make_rc, monkeypatch, render_method):
             lambda *a, _padding=padding, **kw: atlas(*a, **dict(kw, padding=_padding)),
         )
         scene = rc.add_scene(ds, ("gas", "density"), no_ghost=True)
-        scene.components[0].render_method = render_method
+        component = scene.components[0]
+        component.render_method = render_method
+        # a linear 0-1 range over the normalized texels: the default log range
+        # starts at log(0), whose NaN lookups draw nothing on some platforms
+        component.tf_log = False
         assert scene.data_objects[0].data_atlas.padding == padding
         images.append(np.asarray(rc.run(), dtype="float64"))
     assert images[0][..., 3].max() > 0  # something drew
