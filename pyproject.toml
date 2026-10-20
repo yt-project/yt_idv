@@ -46,6 +46,7 @@ dependencies = [
   "traitlets>=5.0.5",
   "traittypes>=0.2.1",
   "yt>=4.1.0",
+  "unyt",
 ]
 
 [project.optional-dependencies]
