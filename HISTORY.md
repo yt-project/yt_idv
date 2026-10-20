@@ -1,5 +1,15 @@
 # History
 
+## 0.6.2.dev
+
+### Changes
+
+#### Bug Fixes
+
+#### New Features
+
+#### Project Maintenance
+
 ## 0.6.1
 
 Minor bug fix release to address some lingering issues from 0.6.0, primarily in transfer function rendering and standalone scene export.
