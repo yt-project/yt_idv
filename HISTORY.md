@@ -5,7 +5,7 @@
 Minor bug fix release to address some lingering issues from 0.6.0
 
 * Add unyt as an explicit dependency.
-
+* Update docs on pull request guidelines in CONTRIBUTING.md
 
 ## 0.6.0
 
