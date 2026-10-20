@@ -233,8 +233,10 @@ def dataset_info(ds):
 
 
 def _scene_dataset(scene):
-    if scene.ds is not None:
+    try:
         return scene.ds
+    except traitlets.TraitError:  # ds was never set, and the trait doesn't allow None
+        pass
     for data in scene.data_objects:
         source = getattr(data, "data_source", None)
         if source is not None:
