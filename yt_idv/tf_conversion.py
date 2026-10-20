@@ -107,8 +107,10 @@ def convert_yt_transfer_function(tf, block_collection, ray_length, nbins=1024):
     hi = min(hi, probe[support[-1]] + step)
 
     # yt_idv's textures hold (|v| - min) / (max - min), with exact zeros bumped
-    # to float32 eps, unless all the data is a single value.
-    eps = np.finfo(np.float32).eps
+    # to float32's smallest normal, unless it's all a single value.  We can't
+    # let the "log10" lookup hit a 0, otherwise it kills it, and so we set it
+    # to a tiny value that won't destroy high dynamic range (>1e7) tf's.
+    tiny = np.finfo(np.float32).tiny
     if block_collection._textures_are_normalized:
         vmin = block_collection.min_val
         vrange = block_collection.val_range
@@ -121,7 +123,7 @@ def convert_yt_transfer_function(tf, block_collection, ray_length, nbins=1024):
     def from_texture(n):
         return n * vrange + vmin
 
-    tf_min = max(to_texture(10.0**lo), eps)
+    tf_min = max(to_texture(10.0**lo), tiny)
     tf_max = to_texture(10.0**hi)
     if tf_max <= tf_min:
         raise ValueError("the transfer function doesn't overlap the data range")

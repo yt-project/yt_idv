@@ -661,6 +661,11 @@ class SceneComponent(SerializableMixin, traitlets.HasTraits):
         if self.use_db:
             data[:, :, :3] = self.fb.depth_data[:, :, None]
         data = data[data[:, :, 3] > 0][:, 0]
+        if self.cmap_log:
+            # zero-valued texels are bumped to float32 tiny (or flushed back to
+            # 0 by the GPU depending on driver), neither of which can set a log
+            # lower bound
+            data = data[data > np.finfo(np.float32).tiny]
         if data.size > 0:
             self.cmap_min = data.min()
             self.cmap_max = data.max()
