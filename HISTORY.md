@@ -1,6 +1,11 @@
 # History
 
-## 0.6.1.dev0
+## 0.6.1
+
+Minor bug fix release to address some lingering issues from 0.6.0
+
+* Add unyt as an explicit dependency.
+
 
 ## 0.6.0
 
