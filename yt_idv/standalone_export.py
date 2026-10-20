@@ -42,6 +42,15 @@ _COMPONENT_CLASS = "yt_idv.scene_components.blocks.BlockRendering"
 _TEXTURE_CLASS = "yt_idv.opengl_support.Texture3D"
 
 
+def dataset_info(ds):
+    """yt_idv.serialization.dataset_info, repeated so this module needs no OpenGL."""
+    return {
+        "unit_registry": ds.unit_registry.to_json(),
+        "current_redshift": float(getattr(ds, "current_redshift", 0.0) or 0.0),
+        "current_time": str(getattr(ds, "current_time", "")),
+    }
+
+
 class _Archive:
     # Arrays are written to the zip file as they are added, so they are not
     # all held in memory at once.
@@ -249,6 +258,7 @@ def export_block_scene(
                 "annotations": [],
                 "data_objects": [block_collection],
                 "textures": archive.textures,
+                "dataset": dataset_info(ds),
             }
             archive.write_state(state)
     except BaseException:
