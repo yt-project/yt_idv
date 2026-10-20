@@ -2,10 +2,23 @@
 
 ## 0.6.1
 
-Minor bug fix release to address some lingering issues from 0.6.0
+Minor bug fix release to address some lingering issues from 0.6.0, primarily in transfer function rendering and standalone scene export.
 
-* Add unyt as an explicit dependency.
-* Update docs on pull request guidelines in CONTRIBUTING.md
+### Changes
+
+#### Bug Fixes
+* Fix tf conversion for high dynamic ranges, fix blank fragments in max intensity projections of regions with all-zero values (https://github.com/yt-project/yt_idv/issues/302) by @matthewturk in https://github.com/yt-project/yt_idv/pull/304
+* Address transfer function issues by @matthewturk in https://github.com/yt-project/yt_idv/pull/303
+
+#### New Features
+* Add units to standalone scene export by @matthewturk in https://github.com/yt-project/yt_idv/pull/306
+
+#### Project Maintenance
+* bump to next dev version by @chrishavlin in https://github.com/yt-project/yt_idv/pull/301
+* add unyt as an explicit dependency by @chrishavlin in https://github.com/yt-project/yt_idv/pull/307
+* update stale contributing docs by @chrishavlin in https://github.com/yt-project/yt_idv/pull/308
+
+**Full Changelog**: https://github.com/yt-project/yt_idv/compare/v0.6.0...v0.6.1
 
 ## 0.6.0
 
