@@ -169,27 +169,34 @@ class _CheckpointStore:
             return {k: f[k] for k in keys}
 
 
-def _generate_blocks(tiles, store):
-    for i, node in enumerate(tiles.tree.trunk.kd_traverse()):
-        if i in store:
-            continue
-        brick = tiles.get_brick_data(node)
-        data = brick.my_data[0]
-        abs_data = np.abs(data)
-        store.save(
-            i,
-            {
-                "data": np.asarray(data),
-                "mask": brick.source_mask,
-                "left_edge": brick.LeftEdge,
-                "right_edge": brick.RightEdge,
-                "dx": (brick.RightEdge - brick.LeftEdge) / brick.source_mask.shape,
-                "min_val": np.asarray(np.nanmin(abs_data)),
-                "max_val": np.asarray(np.nanmax(abs_data)),
-                "units": np.array(str(getattr(data, "units", ""))),
-            },
-        )
-        node.data = None
+def _generate_blocks(tiles, store, n_blocks):
+    from yt.funcs import get_pbar
+
+    pbar = get_pbar("Generating blocks", n_blocks)
+    try:
+        for i, node in enumerate(tiles.tree.trunk.kd_traverse()):
+            if i not in store:
+                brick = tiles.get_brick_data(node)
+                data = brick.my_data[0]
+                abs_data = np.abs(data)
+                store.save(
+                    i,
+                    {
+                        "data": np.asarray(data),
+                        "mask": brick.source_mask,
+                        "left_edge": brick.LeftEdge,
+                        "right_edge": brick.RightEdge,
+                        "dx": (brick.RightEdge - brick.LeftEdge)
+                        / brick.source_mask.shape,
+                        "min_val": np.asarray(np.nanmin(abs_data)),
+                        "max_val": np.asarray(np.nanmax(abs_data)),
+                        "units": np.array(str(getattr(data, "units", ""))),
+                    },
+                )
+                node.data = None
+            pbar.update(i + 1)
+    finally:
+        pbar.finish()
 
 
 def _camera_state(ds):
@@ -265,8 +272,8 @@ def export_block_scene(
             "bbox": bbox.tolist(),
         }
         store = _CheckpointStore(checkpoint_dir, manifest, tree)
-    _generate_blocks(tiles, store)
     n_blocks = int((tree["block"] >= 0).sum())
+    _generate_blocks(tiles, store, n_blocks)
 
     keys = ("left_edge", "right_edge", "dx", "min_val", "max_val")
     summary = [store.load(i, keys) for i in range(n_blocks)]
@@ -308,7 +315,7 @@ def export_block_scene(
             block_bitmaps = []
             for i in range(n_blocks):
                 block = store.load(i, ("data", "mask"))
-                n_data = np.abs(block["data"]).copy(order="F").astype(dtype)
+                n_data = np.abs(block["data"]).astype(dtype)
                 if max_val != min_val:
                     n_data = (n_data - min_val) / (max_val - min_val)
                     n_data[n_data < 0] = 0.0
