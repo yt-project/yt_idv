@@ -117,12 +117,18 @@ def _flatten_kd_tree(trunk):
     }
 
 
-class _MemoryStore(dict):
+class _MemoryStore:
+    def __init__(self):
+        self._store = {}
+
+    def __contains__(self, key):
+        return key in self._store
+
     def save(self, i, record):
-        self[i] = record
+        self._store[i] = record
 
     def load(self, i, keys):
-        return {k: self[i][k] for k in keys}
+        return {k: self._store[i][k] for k in keys}
 
 
 class _CheckpointStore:
@@ -278,7 +284,6 @@ def export_block_scene(
     keys = ("left_edge", "right_edge", "dx", "min_val", "max_val")
     summary = [store.load(i, keys) for i in range(n_blocks)]
     field_units = str(store.load(0, ("units",))["units"])
-    min_val = float(min(b["min_val"] for b in summary))
     max_val = float(max(b["max_val"] for b in summary))
 
     dx = np.array([b["dx"] for b in summary])
@@ -315,13 +320,15 @@ def export_block_scene(
             block_bitmaps = []
             for i in range(n_blocks):
                 block = store.load(i, ("data", "mask"))
-                n_data = np.abs(block["data"]).astype(dtype)
-                if max_val != min_val:
-                    n_data = (n_data - min_val) / (max_val - min_val)
-                    n_data[n_data < 0] = 0.0
-                    n_data[n_data > 1] = 1.0
+                n_data = np.abs(block["data"]).astype("f8")
+                if max_val > 0:
+                    # Divided by the maximum alone: subtracting the minimum
+                    # collapses values just above it toward 0, which a log
+                    # transfer function spreads over many decades.
+                    n_data /= max_val
                     # zero-valued blocks are skipped by the shader
-                    n_data[n_data == 0.0] += np.finfo(np.float32).eps
+                    n_data[n_data == 0.0] = np.finfo(np.float32).tiny
+                n_data = n_data.astype(dtype)
                 block_data.append([i, archive.add_array(n_data)])
                 block_bitmaps.append(
                     [i, archive.add_array((block["mask"] * 255).astype("uint8"))]
@@ -330,7 +337,8 @@ def export_block_scene(
             block_collection = {
                 "class": _DATA_CLASS,
                 "traits": {
-                    "min_val": min_val,
+                    # the data is normalized by max_val alone
+                    "min_val": 0.0,
                     "max_val": max_val,
                     "field": list(field),
                     "field_units": field_units,
