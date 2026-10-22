@@ -19,6 +19,12 @@ except ImportError:
     # AMRKDTree.traverse(viewpoint=...)
     viewpoint_node_ids = None
 
+try:
+    from yt.utilities.lib.amr_kdtools import viewpoint_order_arrays
+except ImportError:
+    # without it, a saved kd-tree is walked by _kd_viewpoint_order
+    viewpoint_order_arrays = None
+
 
 class BlockCollection(SceneData):
     name = "block_collection"
@@ -77,6 +83,8 @@ class BlockCollection(SceneData):
     # buffers for viewpoint_node_ids
     _order_node_ids = None
     _order_node_inds = None
+    # buffer for viewpoint_order_arrays
+    _order_blocks = None
 
     _saved_attributes = SceneData._saved_attributes + (
         "block_data",
@@ -387,6 +395,21 @@ class BlockCollection(SceneData):
         Returns a uint32 array that can be used directly as an index buffer.
         """
         viewpoint = self._tree_viewpoint(camera.position)
+        if self.data_source is None and viewpoint_order_arrays is not None:
+            kd = self._kd_tree
+            if self._order_blocks is None:
+                self._order_blocks = np.empty(len(kd["block"]), dtype="int64")
+            n = viewpoint_order_arrays(
+                kd["left"],
+                kd["right"],
+                kd["split_dim"],
+                kd["split_pos"],
+                kd["block"],
+                viewpoint,
+                self._order_blocks,
+                nearest_first,
+            )
+            return self._order_blocks[:n].astype("uint32")
         if self.data_source is None:
             order = _kd_viewpoint_order(self._kd_tree, viewpoint)
             if nearest_first:
