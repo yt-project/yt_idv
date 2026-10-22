@@ -203,7 +203,7 @@ def export_block_scene(
                     n_data[n_data < 0] = 0.0
                     n_data[n_data > 1] = 1.0
                     # zero-valued blocks are skipped by the shader
-                    n_data[n_data == 0.0] += np.finfo(np.float32).eps
+                    n_data[n_data == 0.0] = np.finfo(np.float32).tiny
                 block_data.append([i, archive.add_array(n_data)])
                 block_bitmaps.append(
                     [i, archive.add_array((block.source_mask * 255).astype("uint8"))]
