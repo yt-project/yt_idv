@@ -86,4 +86,16 @@ def test_unpadded_atlas_renders_as_padded(make_rc, monkeypatch, render_method):
         assert scene.data_objects[0].data_atlas.padding == padding
         images.append(np.asarray(rc.run(), dtype="float64"))
     assert images[0][..., 3].max() > 0  # something drew
-    np.testing.assert_allclose(images[1], images[0], atol=2 / 255)
+
+    # get a 2-d bool array where pixels differ by more than 2/255 in any channel
+    mismatched = (np.abs(images[1] - images[0]) > 2 / 255).any(axis=-1)
+
+    # check that less than .1% of pixels differ: with the small difference in atlas
+    # sizes between the two images, the normalized texture coordinates round slightly
+    # differently, so some isolated pixels may move a couple of colormap steps. The
+    # amount is also platform-dependent! So rather than checking that all pixels are
+    # close within a tolerance of 2/255, we check that a small fraction are mismatched.
+    n_mismatched = mismatched.sum()
+    assert n_mismatched / mismatched.size < 1e-3, (
+        f"{n_mismatched} of {mismatched.size} pixels differ"
+    )
