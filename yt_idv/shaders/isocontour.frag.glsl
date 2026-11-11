@@ -127,8 +127,6 @@ void main()
     bool sampled;
     bool ever_sampled = false;
 
-    vec4 v_clip_coord;
-    float f_ndc_depth;
     float depth = 1.0;
 
     ray_position = p0;
@@ -144,9 +142,7 @@ void main()
 
         if (sampled) {
             ever_sampled = true;
-            v_clip_coord = projection * modelview * vec4(ray_position, 1.0);
-            f_ndc_depth = v_clip_coord.z / v_clip_coord.w;
-            depth = min(depth, (1.0 - 0.0) * 0.5 * f_ndc_depth + (1.0 + 0.0) * 0.5);
+            depth = min(depth, window_depth(ray_position));
             data_value = curr_color.r;  // ds texture stores data in r channel
             // note that these texture values are already normalized. i.e.,
             // current_data_value = (raw block value - iso_min) / (iso_range);

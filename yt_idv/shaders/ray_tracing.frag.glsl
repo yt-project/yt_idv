@@ -332,8 +332,6 @@ void main()
     bool sampled = false;
     bool ever_sampled = false;
 
-    vec4 v_clip_coord;
-    float f_ndc_depth;
     float depth = 1.0;
 
     float external_max_depth = 1.0;
@@ -368,10 +366,7 @@ void main()
             ray_position = ray_origin + t * dir;
 
             if (use_external_depth_clip > 0.5) {
-                v_clip_coord = projection * modelview * vec4(ray_position, 1.0);
-                f_ndc_depth = v_clip_coord.z / v_clip_coord.w;
-                float current_depth = 0.5 * f_ndc_depth + 0.5;
-                if (current_depth >= external_max_depth) {
+                if (window_depth(ray_position) >= external_max_depth) {
                     depth_clipped = true;
                     break;
                 }
@@ -389,9 +384,7 @@ void main()
 
             if (sampled) {
                 ever_sampled = true;
-                v_clip_coord = projection * modelview * vec4(ray_position, 1.0);
-                f_ndc_depth = v_clip_coord.z / v_clip_coord.w;
-                depth = min(depth, (1.0 - 0.0) * 0.5 * f_ndc_depth + (1.0 + 0.0) * 0.5);
+                depth = min(depth, window_depth(ray_position));
             }
         }
     }
@@ -408,10 +401,7 @@ void main()
         ray_position = ray_origin + dir * (t + 0.5 * dt_step);
 
         if (use_external_depth_clip > 0.5) {
-            v_clip_coord = projection * modelview * vec4(ray_position, 1.0);
-            f_ndc_depth = v_clip_coord.z / v_clip_coord.w;
-            float current_depth = 0.5 * f_ndc_depth + 0.5;
-            if (current_depth >= external_max_depth) break;
+            if (window_depth(ray_position) >= external_max_depth) break;
         }
 
         ray_position_native = ray_position;
@@ -423,9 +413,7 @@ void main()
 
         if (sampled) {
             ever_sampled = true;
-            v_clip_coord = projection * modelview * vec4(ray_position, 1.0);
-            f_ndc_depth = v_clip_coord.z / v_clip_coord.w;
-            depth = min(depth, (1.0 - 0.0) * 0.5 * f_ndc_depth + (1.0 + 0.0) * 0.5);
+            depth = min(depth, window_depth(ray_position));
         }
 
         t += dt_step;

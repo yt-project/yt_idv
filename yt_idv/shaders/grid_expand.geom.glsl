@@ -54,6 +54,28 @@ uniform vec3 arrangement[8] = vec3[](
 uniform int aindex[14] = int[](6, 7, 4, 5, 1, 7, 3, 6, 2, 4, 0, 1, 2, 3);
 
 
+void set_block_outputs(vec4 model_pos)
+{
+    left_edge = vleft_edge[0];
+    right_edge = vright_edge[0];
+    inverse_pmvm = vinverse_pmvm[0];
+    inverse_proj = vinverse_proj[0];
+    inverse_mvm = vinverse_mvm[0];
+
+    #ifdef NONCARTESIAN_GEOM
+    left_edge_cart = vleft_edge_cart[0];
+    right_edge_cart = vright_edge_cart[0];
+    dx_cart = vdx_cart[0];
+    #endif
+
+    dx = vdx[0];
+    v_model = model_pos;
+    data_offset = vdata_offset[0];
+    data_size = vdata_size[0];
+    bitmap_offset = vbitmap_offset[0];
+    bitmap_size = vbitmap_size[0];
+}
+
 void main() {
 
     vec4 center = gl_in[0].gl_Position;
@@ -75,24 +97,7 @@ void main() {
 
         newPos = vec4(le + width * arrangement[aindex[i]], 1.0);
         gl_Position = projection * modelview * newPos;
-        left_edge = vleft_edge[0];
-        right_edge = vright_edge[0];
-        inverse_pmvm = vinverse_pmvm[0];
-        inverse_proj = vinverse_proj[0];
-        inverse_mvm = vinverse_mvm[0];
-
-        #ifdef NONCARTESIAN_GEOM
-        left_edge_cart = vleft_edge_cart[0];
-        right_edge_cart = vright_edge_cart[0];
-        dx_cart = vdx_cart[0];
-        #endif
-
-        dx = vdx[0];
-        v_model = newPos;
-        data_offset = vdata_offset[0];
-        data_size = vdata_size[0];
-        bitmap_offset = vbitmap_offset[0];
-        bitmap_size = vbitmap_size[0];
+        set_block_outputs(newPos);
         EmitVertex();
     }
 

@@ -24,6 +24,18 @@ bool within_bb(vec3 pos, vec3 left_edge, vec3 right_edge)
 uniform vec3 camera_pos;
 uniform vec3 camera_view_dir; // normalize(focus - position)
 uniform int projection_type;  // 0 = perspective (default), 1 = orthographic
+uniform mat4 modelview;
+uniform mat4 projection;
+uniform float far_plane;
+
+vec3 clamp_dir(vec3 dir)
+{
+    // clamp components away from zero; sign(0.0) == 0.0 would leave them
+    // zero (idir = inf).
+    vec3 dsign = sign(dir);
+    dsign += vec3(equal(dsign, vec3(0.0)));
+    return max(abs(dir), 0.0001) * dsign;
+}
 
 // Sets the origin and direction of the ray to march so that along-ray
 // distance, t, means is the distance in front of the camera
@@ -37,9 +49,12 @@ void get_ray_origin_and_dir(in vec3 ray_position, out vec3 ray_origin, out vec3 
         dir = -normalize(camera_pos.xyz - ray_position);
         ray_origin = camera_pos.xyz;
     }
-    // clamp components away from zero; sign(0.0) == 0.0 would leave them
-    // zero (idir = inf).
-    vec3 dsign = sign(dir);
-    dsign += vec3(equal(dsign, vec3(0.0)));
-    dir = max(abs(dir), 0.0001) * dsign;
+    dir = clamp_dir(dir);
+}
+
+// Window-space depth of a model-space point.
+float window_depth(vec3 p)
+{
+    vec4 clip = projection * modelview * vec4(p, 1.0);
+    return 0.5 * clip.z / clip.w + 0.5;
 }
