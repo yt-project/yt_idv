@@ -111,3 +111,46 @@ like a yt projection (note that particle and mesh components ignore
 
 See :meth:`~yt_idv.scene_components.blocks.BlockRendering.rendered_image_plane` for
 more details.
+
+--------------------------------------
+Panoramic and Other Non-Linear Cameras
+--------------------------------------
+
+Besides ``"perspective"`` and ``"orthographic"``, a camera's ``projection_type``
+can be ``"ray_table"``: the camera takes one ray direction per pixel, so it can
+render any lens, such as an equirectangular panorama or a fisheye. The table is
+a ``(height, width, 3)`` array of directions in camera space (the camera looks
+down -z with +y up), row 0 at the bottom of the image, with a zero vector for a
+pixel that has no ray. :mod:`yt_idv.cameras.ray_table` builds tables for
+equirectangular panoramas and equidistant fisheyes:
+
+.. code-block:: python
+   :linenos:
+
+   import yt
+
+   import yt_idv
+   from yt_idv.cameras.ray_table import equirectangular_rays
+
+   ds = yt.load_sample("IsolatedGalaxy")
+
+   rc = yt_idv.render_context("egl", width=2048, height=1024)
+   rc.add_scene(ds, "density", no_ghost=True)
+
+   camera = rc.scene.camera
+   camera.ray_table = equirectangular_rays(2048, 1024)
+   camera.projection_type = "ray_table"
+   image = rc.run()
+
+The table turns with the camera, and the panorama is centered on its view
+direction. Every ray starts at the camera's ``position`` unless
+``camera.ray_origins``, an array shaped like the table, gives each ray its own
+starting point as a camera-space offset; omnidirectional stereo panoramas need
+this, since each column of each eye's image has its own eye position. The
+offsets are multiplied by ``camera.ray_origin_scale``, so a fixed table can
+follow a changing model scale.
+
+With a ray table, the depth a render writes, and the depth an external depth
+buffer is compared against, is the distance along each ray from its origin over
+``far_plane``. Annotations are still drawn with the projection matrix, so they
+don't line up with a ray table image.

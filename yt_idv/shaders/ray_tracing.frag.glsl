@@ -269,7 +269,11 @@ void main()
     // Five samples
     vec3 ray_origin;
     vec3 dir;
-    get_ray_origin_and_dir(ray_position, ray_origin, dir);
+    if (projection_type == 2) {
+        if (!get_ray_table_ray(gl_FragCoord.xy, viewport, ray_origin, dir)) discard;
+    } else {
+        get_ray_origin_and_dir(ray_position, ray_origin, dir);
+    }
     vec4 curr_color = vec4(0.0);
 
     // We need to figure out where the ray intersects the box, if it intersects the box.
@@ -366,7 +370,7 @@ void main()
             ray_position = ray_origin + t * dir;
 
             if (use_external_depth_clip > 0.5) {
-                if (window_depth(ray_position) >= external_max_depth) {
+                if (window_depth(ray_position, ray_origin) >= external_max_depth) {
                     depth_clipped = true;
                     break;
                 }
@@ -384,7 +388,7 @@ void main()
 
             if (sampled) {
                 ever_sampled = true;
-                depth = min(depth, window_depth(ray_position));
+                depth = min(depth, window_depth(ray_position, ray_origin));
             }
         }
     }
@@ -401,7 +405,7 @@ void main()
         ray_position = ray_origin + dir * (t + 0.5 * dt_step);
 
         if (use_external_depth_clip > 0.5) {
-            if (window_depth(ray_position) >= external_max_depth) break;
+            if (window_depth(ray_position, ray_origin) >= external_max_depth) break;
         }
 
         ray_position_native = ray_position;
@@ -413,7 +417,7 @@ void main()
 
         if (sampled) {
             ever_sampled = true;
-            depth = min(depth, window_depth(ray_position));
+            depth = min(depth, window_depth(ray_position, ray_origin));
         }
 
         t += dt_step;

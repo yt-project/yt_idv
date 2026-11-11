@@ -244,7 +244,10 @@ class BlockRendering(SceneComponent):
             else contextlib.nullcontext()
         )
         data = self.data
-        with self.transfer_function.bind(target=2):
+        rays_ctx = scene.camera.bind_ray_table(
+            ray_target=4, tile_target=5, origin_target=6
+        )
+        with self.transfer_function.bind(target=2), rays_ctx:
             with depth_ctx, data.data_atlas.bind(0), data.bitmap_atlas.bind(1):
                 self._draw_blocks(scene)
 
@@ -283,6 +286,9 @@ class BlockRendering(SceneComponent):
         shader_program._set_uniform("bitmap_tex", 1)
         shader_program._set_uniform("tf_tex", 2)
         shader_program._set_uniform("external_depth_tex", 3)
+        shader_program._set_uniform("ray_table_tex", 4)
+        shader_program._set_uniform("ray_tile_tex", 5)
+        shader_program._set_uniform("ray_origin_tex", 6)
         shader_program._set_uniform(
             "use_external_depth_clip",
             float(

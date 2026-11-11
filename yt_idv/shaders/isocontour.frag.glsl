@@ -81,7 +81,11 @@ void main()
     vec3 step_size = dx/sample_factor;
     vec3 ray_origin;
     vec3 dir;
-    get_ray_origin_and_dir(ray_position, ray_origin, dir);
+    if (projection_type == 2) {
+        if (!get_ray_table_ray(gl_FragCoord.xy, viewport, ray_origin, dir)) discard;
+    } else {
+        get_ray_origin_and_dir(ray_position, ray_origin, dir);
+    }
     vec4 curr_color = vec4(0.0);
 
     // We need to figure out where the ray intersects the box, if it intersects the box.
@@ -142,7 +146,7 @@ void main()
 
         if (sampled) {
             ever_sampled = true;
-            depth = min(depth, window_depth(ray_position));
+            depth = min(depth, window_depth(ray_position, ray_origin));
             data_value = curr_color.r;  // ds texture stores data in r channel
             // note that these texture values are already normalized. i.e.,
             // current_data_value = (raw block value - iso_min) / (iso_range);
