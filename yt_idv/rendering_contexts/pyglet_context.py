@@ -1,5 +1,6 @@
 import numpy as np
 import pyglet
+from pyglet.window import key, mouse
 from yt import write_bitmap
 
 from yt_idv.utilities.logger import ytidv_log
@@ -121,12 +122,19 @@ class PygletRenderingContext(pyglet.window.Window, BaseContext):
         if self.gui and self.gui.mouse_event_handled:
             self._do_update = True
             return
-        start_x = -1.0 + 2.0 * x / self.width
-        end_x = -1.0 + 2.0 * (x - dx) / self.width
-        start_y = -1.0 + 2.0 * y / self.height
-        end_y = -1.0 + 2.0 * (y + dy) / self.height
+        if (modifiers & key.MOD_SHIFT) or (buttons & mouse.MIDDLE):
+            # get normalized device coordnates for the delta, in range (-1,1)
+            dx_ndc = 2.0 * dx / self.width
+            dy_ndc = 2.0 * dy / self.height
+            self.scene.camera.pan(dx_ndc, dy_ndc)
+        else:
+            # rotate
+            start_x = -1.0 + 2.0 * x / self.width
+            end_x = -1.0 + 2.0 * (x - dx) / self.width
+            start_y = -1.0 + 2.0 * y / self.height
+            end_y = -1.0 + 2.0 * (y + dy) / self.height
 
-        self.scene.camera.update_orientation(start_x, start_y, end_x, end_y)
+            self.scene.camera.update_orientation(start_x, start_y, end_x, end_y)
         self._do_update = True
 
     def on_mouse_scroll(self, x, y, scroll_x, scroll_y):

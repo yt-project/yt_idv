@@ -144,6 +144,23 @@ class TrackballCamera(BaseCamera):
         c.set_orientation(c.orientation)
         return c
 
+    def pan(self, dx, dy):
+
+        # get the left and right directions in world coordinates from the
+        # view matrix.
+        rot = self.view_matrix[0:3, 0:3]
+        x_dir = rot[0]
+        y_dir = rot[1]
+
+        # our scale on the focal plane
+        half_height = self.orthographic_scale
+        half_width = half_height * self.aspect_ratio
+        delta = -(dx * half_width * x_dir + dy * half_height * y_dir)
+
+        with self.hold_traits(self.update_matrices):
+            self.position = self.position + delta
+            self.focus = self.focus + delta
+
 
 def _get_camera_for_ds_geometry(ds):
 

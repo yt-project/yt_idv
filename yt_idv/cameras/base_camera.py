@@ -132,6 +132,10 @@ class BaseCamera(traitlets.HasTraits):
         """
         pass
 
+    def pan(self, dx, dy):
+        """Pan the camera by a given amount in normalized device coordinates."""
+        pass
+
     def _set_uniforms(self, scene, shader_program):
         GL.glDepthRange(0.0, 1.0)  # Not the same as near/far plane
         shader_program._set_uniform("projection", self.projection_matrix)

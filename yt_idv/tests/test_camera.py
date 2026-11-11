@@ -1,6 +1,7 @@
 import numpy as np
 import pytest
 from numpy.testing import assert_allclose
+from yt.utilities.math_utils import get_lookat_matrix
 
 from yt_idv.cameras.trackball_camera import TrackballCamera
 
@@ -248,3 +249,43 @@ def test_orthographic_zoom_rescales_projection():
     assert not np.allclose(cam.position, pos0)
     # moving toward the focus shrinks the view volume (zooms in)
     assert cam.projection_matrix[0, 0] > scale0
+
+
+@pytest.mark.parametrize("aspect", [1.0, 16 / 9, 9 / 16])
+@pytest.mark.parametrize("projection_type", ["perspective", "orthographic"])
+def test_pan_moves_focal_plane_by_ndc_delta(projection_type: str, aspect: float):
+    cam = _get_camera(projection_type)
+    cam.aspect_ratio = aspect
+    point = cam.focus.copy()
+    ndc0 = _to_ndc(cam, point)[:2]
+    cam.pan(0.3, -0.2)
+    ndc1 = _to_ndc(cam, point)[:2]
+    assert_allclose(ndc1 - ndc0, [0.3, -0.2], atol=1e-6)
+
+
+def test_pan_translates_position_and_focus_together(camera):
+    pos0, focus0 = camera.position.copy(), camera.focus.copy()
+    o0 = camera.orientation.copy()
+    camera.pan(0.4, 0.1)
+    assert not np.allclose(camera.position, pos0)
+    assert_allclose(camera.position - pos0, camera.focus - focus0)
+    assert_allclose(camera.orientation, o0, atol=1e-12)
+    assert_allclose(
+        np.linalg.norm(camera.position - camera.focus),
+        np.linalg.norm(pos0 - focus0),
+    )
+
+
+def test_pan_rebuilds_view_from_lookat(camera):
+    camera.pan(0.2, 0.3)
+    expected = get_lookat_matrix(camera.position, camera.focus, camera.up)
+    assert_allclose(camera.view_matrix, expected)
+
+
+def test_pan_after_rotation_follows_screen_axes(camera):
+    camera.update_orientation(0.0, 0.0, 0.3, 0.2)
+    point = camera.focus.copy()
+    ndc0 = _to_ndc(camera, point)[:2]
+    camera.pan(-0.25, 0.15)
+    ndc1 = _to_ndc(camera, point)[:2]
+    assert_allclose(ndc1 - ndc0, [-0.25, 0.15], atol=1e-6)
