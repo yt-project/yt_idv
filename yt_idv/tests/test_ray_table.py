@@ -43,6 +43,9 @@ def _render(rc):
 def test_perspective_ray_table_matches_perspective(amr_rc, method):
     component = amr_rc.scene.components[0]
     component.render_method = method
+    # the default log range starts at log(0), which makes the TF lookup
+    # coordinate NaN; Apple GPUs return NaN for that lookup
+    component.tf_log = False
     camera = amr_rc.scene.camera
     camera.update(position=[1.6, 1.3, 2.0], focus=[0.5, 0.5, 0.5])
     expected = _render(amr_rc)
@@ -83,7 +86,9 @@ def test_tile_culling_keeps_every_pixel(amr_rc, position, monkeypatch):
     full = _render(amr_rc)
 
     assert np.any(full[..., :3] != 0)
-    np.testing.assert_array_equal(culled, full)
+    # a dropped block would change pixels by their whole value; macOS GPUs
+    # differ by an ulp or two between the two draws
+    np.testing.assert_allclose(culled, full, rtol=0, atol=1e-6)
 
 
 def test_pixels_without_rays_stay_empty(amr_rc):
@@ -190,7 +195,9 @@ def test_tile_culling_keeps_every_pixel_with_ray_origins(amr_rc, monkeypatch):
     full = _render(amr_rc)
 
     assert np.any(full[..., :3] != 0)
-    np.testing.assert_array_equal(culled, full)
+    # a dropped block would change pixels by their whole value; macOS GPUs
+    # differ by an ulp or two between the two draws
+    np.testing.assert_allclose(culled, full, rtol=0, atol=1e-6)
 
 
 def test_alternating_ray_tables_reuse_their_textures(amr_rc):
