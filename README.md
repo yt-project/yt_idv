@@ -30,6 +30,7 @@ loaded in yt.  It is written to provide both scripting and interactive access.
 * Support for sub-selections of data via the yt data selection interface
 * Integration with the [ipywidgets](https://ipywidgets.readthedocs.org/) ``Image`` widget.
 * Direct volume rendering of block-AMR data in spherical coordinates.
+* Panoramic and other non-linear cameras, from a ray direction per pixel.
 
 ## Examples
 

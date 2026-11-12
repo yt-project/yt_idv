@@ -33,8 +33,24 @@ class BaseCamera(traitlets.HasTraits):
         The ratio between the height and the width of the camera's fov.
     projection_type : str, optional
         The projection used to map 3D space onto the image plane, either
-        "perspective" (default, rays diverge from the camera position) or
-        "orthographic" (parallel rays along the view direction).
+        "perspective" (default, rays diverge from the camera position),
+        "orthographic" (parallel rays along the view direction) or
+        "ray_table" (a ray direction per pixel from ``ray_table``, for
+        panoramic and other non-linear lenses).
+    ray_table : array, optional
+        For the "ray_table" projection, a ``(height, width, 3)`` array of
+        camera-space ray directions (the camera looks down -z with +y up), row
+        0 at the bottom, zero where a pixel has no ray; see
+        ``yt_idv.cameras.ray_table``. Depth is the distance from the ray's
+        origin over ``far_plane``.
+    ray_origins : array, optional
+        For the "ray_table" projection, each ray's origin as an offset from
+        ``position`` in camera space, times ``ray_origin_scale``, shaped like
+        ``ray_table`` (e.g. per-column eye positions for omnidirectional
+        stereo). By default every ray starts at ``position``.
+    ray_origin_scale : float, optional
+        Scales ``ray_origins`` into model units, so a fixed table can follow
+        a changing scale.
 
     """
 
@@ -53,8 +69,11 @@ class BaseCamera(traitlets.HasTraits):
         1.0
     )  # This was 8.0/6.0 for a long time. I don't know why.
     projection_type = traitlets.CaselessStrEnum(
-        ("perspective", "orthographic"), default_value="perspective"
+        ("perspective", "orthographic", "ray_table"), default_value="perspective"
     )
+    ray_table = traittypes.Array(None, allow_none=True)
+    ray_origins = traittypes.Array(None, allow_none=True)
+    ray_origin_scale = traitlets.Float(1.0)
 
     projection_matrix = traittypes.Array(np.zeros((4, 4))).valid(
         ndarray_shape(4, 4), ndarray_ro()
@@ -153,8 +172,63 @@ class BaseCamera(traitlets.HasTraits):
         view_dir = view_dir / np.linalg.norm(view_dir)
         shader_program._set_uniform("camera_view_dir", view_dir)
         shader_program._set_uniform(
-            "projection_type", int(self.projection_type == "orthographic")
+            "projection_type",
+            {"perspective": 0, "orthographic": 1, "ray_table": 2}[self.projection_type],
         )
+        if self.projection_type == "ray_table":
+            use_origins = self.ray_origins is not None
+            shader_program._set_uniform("use_ray_origins", float(use_origins))
+            shader_program._set_uniform("ray_origin_scale", self.ray_origin_scale)
+            spread = self._ray_table_entry()["spread"] * self.ray_origin_scale
+            shader_program._set_uniform("ray_origin_spread", spread)
+
+    def _ray_table_entry(self):
+        # Textures for the two most recent tables, so the eyes of a stereo
+        # pair can alternate without rebuilding them.
+        from yt_idv.cameras.ray_table import tile_cones
+        from yt_idv.opengl_support import Texture2D
+
+        if self.ray_table is None:
+            raise ValueError('projection_type "ray_table" needs a ray_table array')
+        cache = self.__dict__.setdefault("_ray_table_cache", [])
+        for entry in cache:
+            if entry["rays"] is self.ray_table and entry["origins"] is self.ray_origins:
+                return entry
+
+        def texture(array):
+            # Texture2D takes (x, y, channels) arrays
+            data = np.ascontiguousarray(np.asarray(array, dtype="f4").swapaxes(0, 1))
+            return Texture2D(data=data)
+
+        entry = {
+            "rays": self.ray_table,
+            "origins": self.ray_origins,
+            "textures": [texture(self.ray_table), texture(tile_cones(self.ray_table))],
+            "spread": 0.0,
+        }
+        if self.ray_origins is not None:
+            entry["textures"].append(texture(self.ray_origins))
+            entry["spread"] = float(np.linalg.norm(self.ray_origins, axis=-1).max())
+        cache.insert(0, entry)
+        for old in cache[2:]:
+            for tex in old["textures"]:
+                tex.release()
+        del cache[2:]
+        return entry
+
+    @contextlib.contextmanager
+    def bind_ray_table(self, ray_target, tile_target, origin_target):
+        """Bind the ray table, its tile cones and its origins, if this camera uses them."""
+        if self.projection_type != "ray_table":
+            yield
+            return
+        textures = self._ray_table_entry()["textures"]
+        with contextlib.ExitStack() as stack:
+            for tex, target in zip(
+                textures, (ray_target, tile_target, origin_target), strict=False
+            ):
+                stack.enter_context(tex.bind(target))
+            yield
 
     def dict(self):
         # array attributes
