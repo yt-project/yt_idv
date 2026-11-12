@@ -17,6 +17,8 @@ uniform float y_offset;
 uniform float y_origin;
 
 // Transfer function control
+uniform float tf_clamp_high;
+uniform float tf_clamp_low;
 uniform float tf_log;
 uniform float tf_max;
 uniform float tf_min;

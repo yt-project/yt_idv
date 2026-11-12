@@ -81,6 +81,13 @@ convert a string to the appropriate texture on the GPU.
   that has RGBA channels.  You can access or modify its ``data`` attribute to
   change the transfer function values.  This only has impact if you are using
   the ``render_method`` of ``"transfer_function"``.
+* ``tf_min``, ``tf_max`` and ``tf_log`` -- the range of data values the
+  transfer function spans, and whether it spans them in log.  Samples outside
+  the range are not drawn.
+* ``tf_clamp_low`` and ``tf_clamp_high`` -- when set, samples below or above
+  the transfer function's range are drawn with the transfer function's value at
+  that end of the range instead of being dropped.  With ``tf_log``, values of
+  zero or less are still dropped.
 
 Boxes can also be added as an annotation to show the 3D textures being rendered
 by a :class:`~yt_idv.scene_components.BlockRendering`.  This will re-use the
