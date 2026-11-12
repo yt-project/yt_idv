@@ -41,7 +41,9 @@ def test_clamping_draws_values_outside_the_range(
     clamped = tf_render(0.1, 0.2, clamp_low, clamp_high)
     covered = tf_render(*covering_range)
     assert covered[..., 3].max() > 0
-    np.testing.assert_array_equal(clamped, covered)
+    # macOS GPUs round the two renders a few ulps apart; a dropped sample
+    # would change pixels by far more
+    np.testing.assert_allclose(clamped, covered, rtol=0, atol=1e-6)
     assert np.any(tf_render(0.1, 0.2) != covered)
 
 
@@ -52,7 +54,9 @@ def test_clamped_samples_take_the_end_value(tf_render):
     unclamped = tf_render(0.1, 0.2, tf=tf)
     assert unclamped[..., 3].max() > 0
     # clamped low samples take the transparent lower end, so nothing changes
-    np.testing.assert_array_equal(tf_render(0.1, 0.2, clamp_low=True), unclamped)
+    np.testing.assert_allclose(
+        tf_render(0.1, 0.2, clamp_low=True), unclamped, rtol=0, atol=1e-6
+    )
     # clamped high samples take the opaque upper end
     clamped_high = tf_render(0.1, 0.2, clamp_high=True)
     assert np.all(clamped_high[..., 3] >= unclamped[..., 3])
