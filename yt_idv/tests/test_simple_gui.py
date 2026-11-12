@@ -4,7 +4,7 @@ import types
 
 import pytest
 
-pytest.importorskip("imgui")
+imgui = pytest.importorskip("imgui_bundle").imgui
 
 
 class _FakeWindow:
@@ -25,11 +25,18 @@ class _FakeWindow:
         return self._pixel_ratio
 
 
+@pytest.fixture
+def imgui_context():
+    context = imgui.create_context()
+    yield context
+    imgui.destroy_context(context)
+
+
 def _apply_fix(window):
     from yt_idv.simple_gui import SimpleGUI
 
     gui = types.SimpleNamespace(
-        renderer=types.SimpleNamespace(io=types.SimpleNamespace(font_global_scale=1.0))
+        renderer=types.SimpleNamespace(io=types.SimpleNamespace())
     )
     SimpleGUI._fix_hidpi_scaling(gui, window)
     return gui.renderer.io
@@ -50,16 +57,21 @@ def _apply_fix(window):
     ],
 )
 def test_hidpi_scaling(
-    size, framebuffer_size, pixel_ratio, expected_fb_scale, expected_font_scale
+    imgui_context,
+    size,
+    framebuffer_size,
+    pixel_ratio,
+    expected_fb_scale,
+    expected_font_scale,
 ):
     io = _apply_fix(_FakeWindow(size, framebuffer_size, pixel_ratio))
     assert io.display_size == size
-    assert io.display_fb_scale == expected_fb_scale
-    assert io.font_global_scale == expected_font_scale
+    assert io.display_framebuffer_scale == expected_fb_scale
+    assert imgui.get_style().font_scale_main == expected_font_scale
 
 
-def test_hidpi_scaling_ignores_unrealized_window():
+def test_hidpi_scaling_ignores_unrealized_window(imgui_context):
     """A zero-sized window must not raise; imgui's own guess is left alone."""
     io = _apply_fix(_FakeWindow((0, 0), (0, 0), 1.0))
     assert not hasattr(io, "display_size")
-    assert io.font_global_scale == 1.0
+    assert imgui.get_style().font_scale_main == 1.0

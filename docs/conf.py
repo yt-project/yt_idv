@@ -180,4 +180,4 @@ autodoc_default_options = {
     "show-inheritance": None,
 }
 
-autodoc_mock_imports = ["pyopengl", "pyglet", "imgui"]
+autodoc_mock_imports = ["pyopengl", "pyglet", "imgui_bundle"]
