@@ -1,14 +1,27 @@
 # History
 
-## 0.6.2.dev
+## 0.7.0
+
+### Highlights
+* A new ray table lookup projection lets the camera be described by per-pixel ray origins and directions, so arbitrary cameras (spherical, VR, fisheye, Blender-driven) can be rendered with the GPU volume renderer (https://github.com/yt-project/yt_idv/pull/322).
+* Interactive scenes can now be panned by holding shift or dragging with the middle mouse button (https://github.com/yt-project/yt_idv/pull/323).
 
 ### Changes
 
-#### Bug Fixes
-
 #### New Features
+* Add a ray table lookup projection by @matthewturk in https://github.com/yt-project/yt_idv/pull/322
+* interactive pan: hold shift or middle-button drag to pan by @chrishavlin in https://github.com/yt-project/yt_idv/pull/323
+* Optionally clamp transfer function outside bounds by @matthewturk in https://github.com/yt-project/yt_idv/pull/324
+* Use an exact optical thickness step integration by @matthewturk in https://github.com/yt-project/yt_idv/pull/312
+* Remove padding from Texture Atlas. by @matthewturk in https://github.com/yt-project/yt_idv/pull/311
+* Make the standalone export interruptible by @matthewturk in https://github.com/yt-project/yt_idv/pull/314
+* Use optimized walker if possible by @matthewturk in https://github.com/yt-project/yt_idv/pull/315
 
 #### Project Maintenance
+* set version to 0.6.2.dev, update history by @chrishavlin in https://github.com/yt-project/yt_idv/pull/310
+* allow isolated pixel flips in atlas padding render test by @chrishavlin in https://github.com/yt-project/yt_idv/pull/318
+
+**Full Changelog**: https://github.com/yt-project/yt_idv/compare/v0.6.1...v0.7.0
 
 ## 0.6.1
 
