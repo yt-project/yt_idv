@@ -26,6 +26,8 @@ class OctreeBlockRendering(SceneComponent):
     tf_min = traitlets.CFloat(0.0).tag(config=True)
     tf_max = traitlets.CFloat(1.0).tag(config=True)
     tf_log = traitlets.Bool(True).tag(config=True)
+    tf_clamp_low = traitlets.Bool(False).tag(config=True)
+    tf_clamp_high = traitlets.Bool(False).tag(config=True)
 
     priority = 10
 
@@ -135,3 +137,5 @@ class OctreeBlockRendering(SceneComponent):
         shader_program._set_uniform("tf_min", self.tf_min)
         shader_program._set_uniform("tf_max", self.tf_max)
         shader_program._set_uniform("tf_log", float(self.tf_log))
+        shader_program._set_uniform("tf_clamp_low", float(self.tf_clamp_low))
+        shader_program._set_uniform("tf_clamp_high", float(self.tf_clamp_high))

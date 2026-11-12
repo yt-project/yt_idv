@@ -19,8 +19,15 @@ bool sample_texture(vec3 tex_curr_pos, inout vec4 curr_color, float tdelta,
        tp = log(tp);
     }
 
-    if(tex_sample < tm) return false;
-    if(tex_sample > tp) return false;
+    // values outside the range are dropped, or with clamping take the end's value
+    if(tex_sample < tm) {
+        if(tf_clamp_low < 0.5) return false;
+        tex_sample = tm;
+    }
+    if(tex_sample > tp) {
+        if(tf_clamp_high < 0.5) return false;
+        tex_sample = tp;
+    }
     vec2 tex_sample_norm = vec2((tex_sample - tm)/(tp - tm), 0.5);
     tf_sample = texture(tf_tex, tex_sample_norm);
     float dt = length(tdelta * dir);
