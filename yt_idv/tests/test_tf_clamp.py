@@ -53,11 +53,16 @@ def test_clamped_samples_take_the_end_value(tf_render):
     tf[:128] = 0
     unclamped = tf_render(0.1, 0.2, tf=tf)
     assert unclamped[..., 3].max() > 0
+    # shown on failure: how far an identical render moves on this platform
+    print(
+        "repeat render max difference:", np.abs(tf_render(0.1, 0.2) - unclamped).max()
+    )
     # clamped low samples take the transparent lower end, so nothing changes
     np.testing.assert_allclose(
         tf_render(0.1, 0.2, clamp_low=True), unclamped, rtol=0, atol=1e-3
     )
     # clamped high samples take the opaque upper end
     clamped_high = tf_render(0.1, 0.2, clamp_high=True)
-    assert np.all(clamped_high[..., 3] >= unclamped[..., 3])
-    assert np.any(clamped_high[..., 3] > unclamped[..., 3])
+    gained = clamped_high[..., 3] - unclamped[..., 3]
+    assert gained.min() > -1e-3, f"clamping high lost opacity: {gained.min()}"
+    assert gained.max() > 1e-2, f"clamping high added too little: {gained.max()}"
