@@ -59,7 +59,7 @@ class SPHRendering(SceneComponent):
 
     def render_gui(self, imgui, renderer, scene):
         changed = super().render_gui(imgui, renderer, scene)
-        _, kernel_index = imgui.listbox(
+        _, kernel_index = imgui.list_box(
             "Kernel", KERNEL_TYPES.index(self.kernel_name), KERNEL_TYPES
         )
         if _:

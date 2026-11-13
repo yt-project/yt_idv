@@ -1,10 +1,10 @@
 import math
 
 try:
-    import imgui
+    from imgui_bundle import imgui
 except ImportError as err:
     raise ImportError(
-        "The interactive GUI requires imgui, which is not installed. Install it "
+        "The interactive GUI requires imgui-bundle, which is not installed. Install it "
         "with `pip install yt_idv[gui]`, or request a rendering context without "
         "a GUI (e.g. render_context('pyglet', gui=False), 'osmesa' or 'egl')."
     ) from err
@@ -26,7 +26,7 @@ class SimpleGUI:
         # import pyglet integration here rather than at module scope to avoid
         # creating a pyglet shadow window on import, which requires a display.
         # Allows us to run headless tests without a display.
-        from imgui.integrations.pyglet import create_renderer
+        from imgui_bundle.python_backends.pyglet_backend import create_renderer
 
         self.window = window
         self.context = imgui.create_context()
@@ -60,15 +60,15 @@ class SimpleGUI:
         # Note: This is a no-op on Linux and pyglet <= 2.0 where get_pixel_ratio()
         # already equals fb_size / window_size
         io.display_size = window_size
-        io.display_fb_scale = (
+        io.display_framebuffer_scale = (
             fb_size[0] / window_size[0],
             fb_size[1] / window_size[1],
         )
 
         # Scale font size up when imgui falls back to using raw physical pixels
-        ui_scale = window.get_pixel_ratio() / io.display_fb_scale[0]
+        ui_scale = window.get_pixel_ratio() / io.display_framebuffer_scale[0]
         if ui_scale != 1.0:
-            io.font_global_scale = ui_scale
+            imgui.get_style().font_scale_main = ui_scale
 
     def render(self, scene):
         imgui.new_frame()
@@ -77,7 +77,9 @@ class SimpleGUI:
             imgui.style_colors_classic()
             imgui.begin("Scene")
             imgui.text("Filename Template:")
-            _, self.snapshot_format = imgui.input_text("", self.snapshot_format, 256)
+            _, self.snapshot_format = imgui.input_text(
+                "##snapshot_format", self.snapshot_format
+            )
             if imgui.button("Save Snapshot"):
                 # Call render again, since we're in the middle of overlaying
                 # some stuff and we want a clean scene snapshot
@@ -112,11 +114,12 @@ class SimpleGUI:
         if not imgui.tree_node("Camera"):
             return
         changed = False
-        with imgui.begin_group():
-            imgui.text("Log of Scroll Delta")
-            _, scroll_delta = imgui.slider_float(
-                "value", math.log10(scene.camera.scroll_delta), -3.0, 0.0
-            )
+        imgui.begin_group()
+        imgui.text("Log of Scroll Delta")
+        _, scroll_delta = imgui.slider_float(
+            "value", math.log10(scene.camera.scroll_delta), -3.0, 0.0
+        )
+        imgui.end_group()
         if _:
             scene.camera.scroll_delta = 10**scroll_delta
             changed = True
@@ -125,21 +128,18 @@ class SimpleGUI:
                 arr = getattr(scene.camera, attr)
                 imgui.text(f"Camera {attr}")
                 _, values = imgui.input_float3(
-                    "",
-                    arr[0],
-                    arr[1],
-                    arr[2],
-                    flags=imgui.INPUT_TEXT_ENTER_RETURNS_TRUE,
+                    f"##camera_{attr}",
+                    [arr[0], arr[1], arr[2]],
+                    flags=imgui.InputTextFlags_.enter_returns_true,
                 )
                 changed = changed or _
                 if _:
                     setattr(scene.camera, attr, np.array(values))
             _, values = imgui.input_float2(
                 "Camera Planes",
-                scene.camera.near_plane,
-                scene.camera.far_plane,
+                [scene.camera.near_plane, scene.camera.far_plane],
                 format="%0.6f",
-                flags=imgui.INPUT_TEXT_ENTER_RETURNS_TRUE,
+                flags=imgui.InputTextFlags_.enter_returns_true,
             )
             changed = changed or _
             if _:
