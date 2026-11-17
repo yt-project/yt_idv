@@ -40,7 +40,6 @@ class ParticlePositions(SceneData):
             else:
                 self.size = field.shape[0]  # for positions
             ytidv_log.debug("Setting %s to a field of shape %s", attr, field.shape)
-            print(attr, field.min(), field.max())
             va.attributes.append(VertexAttribute(name=attr, data=field, divisor=1))
         if self.mass_field is not None and self.density_field is not None:
             ftype = self.particle_type
