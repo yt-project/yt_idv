@@ -8,4 +8,5 @@ void main(){
     float h2 = clamp(length(UV) * length(UV), 0.0, 1.0);
     float factor = texture(cm_tex, h2).r;
     color = vec4(factor * field_value);
+    color.a = float(dot(UV, UV) < 1.0); // inside the circle
 }

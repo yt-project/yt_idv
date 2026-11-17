@@ -149,10 +149,14 @@ shader_definitions:
     sph_kernel:
       info: Sample pre-integrated SPH kernel
       source: sph_kernel.frag.glsl
-      blend_func:
+      blend_func_separate:
         - one
         - one
-      blend_equation: func add
+        - one
+        - one
+      blend_equation_separate:
+        - func add
+        - max
     field_value:
       info: Use field values as input
       source: field_value.frag.glsl
