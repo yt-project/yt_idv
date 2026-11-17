@@ -16,6 +16,8 @@ pos = ParticlePositions(
     particle_type="gas",
     color_field="density",
     position_field="position",
+    mass_field="mass",
+    density_field="density",
 )
 pren = SPHRendering(data=pos, scale=1.0, max_particle_size=1.0)
 

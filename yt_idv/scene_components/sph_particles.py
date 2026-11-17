@@ -20,6 +20,10 @@ KERNEL_TYPES = [
     "flat",
 ]
 
+# q^2 at the texel centers of the kernel texture, so that linear filtering
+# returns the table value at exactly the sampled q^2
+_Q2_TEXEL_CENTERS = (np.arange(256) + 0.5) / 256
+
 
 class SPHRendering(SceneComponent):
     name = "sph_rendering"
@@ -39,7 +43,7 @@ class SPHRendering(SceneComponent):
             self.interpolation_texture = Texture1D(data=flat)
             return
         self.kernel_table = SPHKernelInterpolationTable(change["new"])
-        values = self.kernel_table.interpolate_array(np.mgrid[0.0:1.0:256j])
+        values = self.kernel_table.interpolate_array(_Q2_TEXEL_CENTERS)
         self.interpolation_texture = Texture1D(data=values.astype("f4"))
 
     @traitlets.default("kernel_table")
@@ -54,7 +58,7 @@ class SPHRendering(SceneComponent):
             flat = np.ones(256, dtype="f4")
             flat[-1] = 0.0
             return Texture1D(data=flat)
-        values = self.kernel_table.interpolate_array(np.mgrid[0.0:1.0:256j])
+        values = self.kernel_table.interpolate_array(_Q2_TEXEL_CENTERS)
         return Texture1D(data=values.astype("f4"))
 
     def render_gui(self, imgui, renderer, scene):
