@@ -422,7 +422,9 @@ class Shader(traitlets.HasTraits):
 
 
 def _validate_shader(shader_type, value, allow_null=True, preprocessor_defs=None):
-    shader_info = known_shaders[shader_type][value]
+    # a copy, so that per-component settings such as preprocessor_defs are not
+    # stored in the shared table and inherited by later shaders of this name
+    shader_info = dict(known_shaders[shader_type][value])
     shader_info.setdefault("shader_type", shader_type)
     shader_info["use_separate_blend"] = bool("blend_func_separate" in shader_info)
     shader_info.setdefault("shader_name", value)
