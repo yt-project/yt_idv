@@ -582,8 +582,7 @@ class BlockCollection(SceneData):
                 size_attribute_name=f"in_{name}_size",
                 **kwargs,
             )
-            for i in range(n_blocks):
-                atlas[i] = arrays[i]
+            atlas.set_blocks(arrays)
             atlases[name] = atlas
         self.data_atlas = atlases["data"]
         self.bitmap_atlas = atlases["bitmap"]

@@ -13,15 +13,19 @@ def _read_atlas(atlas):
     return np.frombuffer(raw, dtype="f4").reshape(nz, ny, nx).T
 
 
+@pytest.mark.parametrize("bulk", [False, True])
 @pytest.mark.parametrize("padding", [0, 1, 2])
-def test_atlas_upload(empty_rc, padding):
+def test_atlas_upload(empty_rc, padding, bulk):
     rng = np.random.default_rng(0)
     sizes = rng.integers(1, 9, size=(50, 3))
     va = VertexArray(name="atlas_test", each=1)
     atlas = TextureAtlas(sizes, padding=padding, vertex_array=va)
     blocks = [rng.random(tuple(s)).astype("f4") for s in sizes]
-    for i, block in enumerate(blocks):
-        atlas[i] = block
+    if bulk:
+        atlas.set_blocks(blocks)
+    else:
+        for i, block in enumerate(blocks):
+            atlas[i] = block
 
     assert len(atlas) == len(sizes)
     assert (atlas.dims <= GL.glGetInteger(GL.GL_MAX_3D_TEXTURE_SIZE)).all()
@@ -48,6 +52,8 @@ def test_atlas_rejects_wrong_shape(empty_rc):
     atlas = TextureAtlas([(2, 3, 4)])
     with pytest.raises(ValueError):
         atlas[0] = np.zeros((4, 3, 2), dtype="f4")
+    with pytest.raises(ValueError):
+        atlas.set_blocks([np.zeros((4, 3, 2), dtype="f4")])
     atlas.release()
 
 
