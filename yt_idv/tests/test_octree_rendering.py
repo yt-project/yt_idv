@@ -336,3 +336,90 @@ def test_ramses_ghost_zone_data_is_indexed_x_y_z(empty_rc, ramses_region):
             for c in (own, ghost)
         ]
         assert np.corrcoef(*gradients)[0, 1] > 0.6
+
+
+def _stream_octree(seed=0):
+    # an in-memory octree refined to between three and six levels, holding a
+    # smooth function of position
+    rng = np.random.default_rng(seed)
+    mask = []
+
+    def node(depth):
+        if depth < 3 or (depth < 6 and rng.random() < 0.2):
+            mask.append(8)
+            for _ in range(8):
+                node(depth + 1)
+        else:
+            mask.append(0)
+
+    node(0)
+    mask = np.array(mask, dtype="uint8")
+    n_leaves = int((mask == 0).sum())
+
+    def load(values):
+        # the data has to be shaped (n_leaves, 1)
+        return yt.load_octree(
+            octree_mask=mask,
+            data={("gas", "density"): values.reshape(-1, 1)},
+            bbox=np.array([[0.0, 1.0]] * 3),
+            num_zones=1,
+            partial_coverage=0,
+        )
+
+    # find where yt places each leaf, to set its value from its position
+    probe = load(np.arange(n_leaves, dtype="float64")).all_data()
+    position = np.empty((n_leaves, 3))
+    position[probe["gas", "density"].d.astype(int)] = np.stack(
+        [probe["index", ax].d for ax in "xyz"], axis=1
+    )
+    x, y, z = position.T
+    return load(np.exp(0.3 * np.sin(2 * np.pi * x) * np.cos(2 * np.pi * y) + 0.3 * z))
+
+
+@pytest.mark.image_test
+@pytest.mark.parametrize(
+    "render_method, method, median_tol, spread",
+    [
+        ("projection", "integrate", 0.01, (0.95, 1.05)),
+        ("max_intensity", "max", 0.03, (0.95, 1.3)),
+    ],
+)
+def test_stream_octree_matches_yt(make_rc, render_method, method, median_tol, spread):
+    ds = _stream_octree()
+    field = ("gas", "density")
+    rc = make_rc(width=128, height=128)
+    # the camera is explicit, as the stream octree index has no max_level for
+    # TrackballCamera.from_dataset to use
+    scene = SceneGraph(
+        camera=TrackballCamera(
+            position=[0.5, 0.5, 3.0],
+            focus=[0.5, 0.5, 0.5],
+            up=[0.0, 1.0, 0.0],
+            fov=30.0,
+            near_plane=0.1,
+            far_plane=10.0,
+            projection_type="orthographic",
+        )
+    )
+    rc.scene = scene
+    # ghost zones aren't available for stream octrees
+    component = scene.add_volume(ds.all_data(), field, no_ghost=True)
+    assert isinstance(component.data, OctreeBlockCollection)
+    component.store_first_pass_fb = True
+    component.render_method = render_method
+    scene.render()
+
+    image = component.rendered_image_plane()
+    width = ds.quan(float(image.width.to("code_length").d), "code_length")
+    center = ds.arr([0.5, 0.5, 0.5], "code_length")
+    reference = ds.proj(field, "z", method=method).to_frb(
+        width, image.data.shape[::-1], center=center
+    )
+    reference = np.asarray(reference[field].to(str(image.data.units)))
+    values = np.asarray(image.data)
+    compared = np.isfinite(values) & (values > 0) & (reference > 0)
+    assert compared.mean() > 0.5
+    ratio = values[compared] / reference[compared]
+    assert abs(np.median(ratio) - 1) < median_tol
+    assert spread[0] < np.quantile(ratio, 0.1)
+    assert np.quantile(ratio, 0.9) < spread[1]
