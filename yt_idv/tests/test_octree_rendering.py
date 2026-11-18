@@ -237,6 +237,33 @@ def test_save_load_octree_scene(make_rc, tmp_path):
     assert_allclose(np.array(rc.run()), original)
 
 
+@pytest.mark.image_test
+def test_rescale_keeps_the_octree_view(make_rc):
+    rc, scene, component = _octree_scene(make_rc)
+    # inside the domain along x and y, where the order depends on exactly
+    # where the camera is
+    scene.camera.set_position([0.7, 0.4, 2.2])
+    order = component.data.viewpoint_order(scene.camera)
+    component.render_method = "max_intensity"
+    scene.render()
+    before = component.first_pass_fb_rgba.copy()
+
+    scene.rescale([0.45, 0.5, 0.55], 0.2)
+    # the camera moves with the blocks, so it sees them in the same order
+    np.testing.assert_array_equal(component.data.viewpoint_order(scene.camera), order)
+    scene.render()
+    after = component.first_pass_fb_rgba
+    lit = before[..., 3] > 0
+    assert lit.any()
+    assert np.array_equal(lit, after[..., 3] > 0)
+    # as for grid data, a few pixels can change with float32 rounding near
+    # block faces, which moves with the coordinates
+    values, rescaled = before[..., 0][lit], after[..., 0][lit]
+    differs = np.abs(rescaled - values) > 1e-3 * values + 1e-6
+    assert differs.mean() < 0.05
+    assert_allclose(rescaled[~differs], values[~differs], rtol=1e-3, atol=1e-6)
+
+
 @pytest.fixture(scope="module")
 def ramses_region():
     pytest.importorskip("scipy")  # the RAMSES frontend needs it for cosmology
