@@ -9,8 +9,16 @@ void main(){
    #else
    scaled = texture(fb_tex, UV).x;
    #endif
+   #ifdef COVERAGE_FROM_VALUE
+   // single channel first passes have no alpha: undrawn pixels hold the
+   // cleared value, 0 for sums or the lowest float for maxima
+   float raw = texture(fb_tex, UV).r;
+   if (raw == 0.0 || raw < -1e38) discard;
+   float alpha = 1.0;
+   #else
    float alpha = texture(fb_tex, UV).a;  // the incoming framebuffer alpha
    if (alpha == 0.0) discard;
+   #endif
    float cm = cmap_min;
    float cp = cmap_max;
 

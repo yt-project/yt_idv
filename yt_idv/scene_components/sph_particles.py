@@ -7,7 +7,11 @@ from yt.utilities.lib.pixelization_routines import SPHKernelInterpolationTable
 
 from yt_idv.scene_components.base_component import SceneComponent
 from yt_idv.scene_data.particle_positions import ParticlePositions
-from yt_idv.shader_objects import component_shaders, get_shader_combos
+from yt_idv.shader_objects import (
+    PreprocessorDefinitionState,
+    component_shaders,
+    get_shader_combos,
+)
 
 from ..opengl_support import Texture1D
 
@@ -34,6 +38,21 @@ class SPHRendering(SceneComponent):
     kernel_name = traitlets.Unicode("cubic").tag(config=True)
     kernel_table = traitlets.Instance(SPHKernelInterpolationTable, allow_none=True)
     interpolation_texture = traitlets.Instance(Texture1D)
+
+    # only the summed or maximum value is needed, and a single channel target
+    # blends much faster; drawn pixels are then identified by value
+    _fb_channels = 1
+
+    @traitlets.default("_program2_pp_defs")
+    def _default_program2_pp_defs(self):
+        defs = PreprocessorDefinitionState()
+        defs.add_definition("fragment", ("COVERAGE_FROM_VALUE", ""))
+        return defs
+
+    def _drawn_pixel_mask(self, data):
+        # matches the COVERAGE_FROM_VALUE test in apply_colormap
+        value = data[:, :, 0]
+        return (value != 0.0) & (value >= -1e38)
 
     @traitlets.observe("kernel_name")
     def _change_kernel_name(self, change):
@@ -97,7 +116,7 @@ class SPHRendering(SceneComponent):
     def draw(self, scene, program):
         if self.render_method == "max_intensity":
             # the max blend would clamp negative values to the default zero
-            # clear; alpha stays 0 so uncovered pixels are still discarded
+            # clear; pixels left at the lowest float are treated as undrawn
             lowest = np.finfo("f4").min
             GL.glClearBufferfv(
                 GL.GL_COLOR, 0, np.array([lowest, lowest, lowest, 0.0], "f4")

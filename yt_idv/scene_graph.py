@@ -211,7 +211,7 @@ class SceneGraph(traitlets.HasTraits):
 
     def reset_framebuffers(self):
         for c in self:
-            c.fb = Framebuffer()
+            c.fb = c._new_framebuffer()
 
     def render(self):
         """

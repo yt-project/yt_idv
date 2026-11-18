@@ -80,6 +80,7 @@ class SceneComponent(SerializableMixin, traitlets.HasTraits):
     _program1_invalid = True
     _program2_invalid = True
     _cmap_bounds_invalid = True
+    _fb_channels = 4
     _data_geometry = traitlets.Unicode(default_value="cartesian")
 
     display_name = traitlets.Unicode(allow_none=True).tag(config=True)
@@ -161,7 +162,7 @@ class SceneComponent(SerializableMixin, traitlets.HasTraits):
         new_width = change["new"][1] - change["new"][0]
         new_height = change["new"][3] - change["new"][2]
         if old_width != new_width or old_height != new_height:
-            self.fb = Framebuffer()
+            self.fb = self._new_framebuffer()
 
     @traitlets.observe("fb")
     def _release_old_fb(self, change):
@@ -272,7 +273,10 @@ class SceneComponent(SerializableMixin, traitlets.HasTraits):
 
     @traitlets.default("fb")
     def _fb_default(self):
-        return Framebuffer()
+        return self._new_framebuffer()
+
+    def _new_framebuffer(self):
+        return Framebuffer(channels=self._fb_channels)
 
     @traitlets.observe("fragment_shader")
     def _change_fragment(self, change):
@@ -341,7 +345,12 @@ class SceneComponent(SerializableMixin, traitlets.HasTraits):
 
     @traitlets.default("colormap_fragment")
     def _colormap_fragment_default(self):
-        return component_shaders[self.name][self.render_method]["second_fragment"]
+        # pass this component's definitions, even if empty: _validate_shader
+        # otherwise reuses whatever definitions another component last set
+        return (
+            component_shaders[self.name][self.render_method]["second_fragment"],
+            self._program2_pp_defs["fragment"],
+        )
 
     @traitlets.default("final_pass_vertex")
     def _final_pass_vertex_default(self):
@@ -656,11 +665,28 @@ class SceneComponent(SerializableMixin, traitlets.HasTraits):
 
         return changed
 
+    def _drawn_pixel_mask(self, data):
+        """
+        Which pixels of the first pass framebuffer were drawn to.
+
+        Parameters
+        ----------
+        data : np.ndarray
+            The (ny, nx, 4) first pass framebuffer, as read by ``Framebuffer.data``.
+
+        Returns
+        -------
+        np.ndarray
+            A (ny, nx) boolean array, True where the pixel was drawn.
+        """
+        return data[:, :, 3] > 0
+
     def _reset_cmap_bounds(self, print_new_bounds=True):
         data = self.fb.data
+        drawn = self._drawn_pixel_mask(data)
         if self.use_db:
             data[:, :, :3] = self.fb.depth_data[:, :, None]
-        data = data[data[:, :, 3] > 0][:, 0]
+        data = data[drawn][:, 0]
         if self.cmap_log:
             # zero-valued texels are bumped to float32 tiny (or flushed back to
             # 0 by the GPU depending on driver), neither of which can set a log
