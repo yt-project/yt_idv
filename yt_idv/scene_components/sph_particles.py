@@ -7,6 +7,7 @@ from yt.utilities.lib.pixelization_routines import SPHKernelInterpolationTable
 
 from yt_idv.scene_components.base_component import SceneComponent
 from yt_idv.scene_data.particle_positions import ParticlePositions
+from yt_idv.shader_objects import component_shaders, get_shader_combos
 
 from ..opengl_support import Texture1D
 
@@ -69,6 +70,15 @@ class SPHRendering(SceneComponent):
         if _:
             self.kernel_name = KERNEL_TYPES[kernel_index]
         changed = changed or _
+        valid_shaders = get_shader_combos(self.name)
+        descriptions = [
+            component_shaders[self.name][_]["description"] for _ in valid_shaders
+        ]
+        selected = valid_shaders.index(self.render_method)
+        _, shader_ind = imgui.listbox("Shader", selected, descriptions)
+        if _:
+            self.render_method = valid_shaders[shader_ind]
+        changed = changed or _
         _, new_value = imgui.slider_float(
             "Log Scale", math.log10(self.scale), -8.0, 2.0
         )
@@ -85,6 +95,13 @@ class SPHRendering(SceneComponent):
         return changed
 
     def draw(self, scene, program):
+        if self.render_method == "max_intensity":
+            # the max blend would clamp negative values to the default zero
+            # clear; alpha stays 0 so uncovered pixels are still discarded
+            lowest = np.finfo("f4").min
+            GL.glClearBufferfv(
+                GL.GL_COLOR, 0, np.array([lowest, lowest, lowest, 0.0], "f4")
+            )
         GL.glEnable(GL.GL_CULL_FACE)
         GL.glCullFace(GL.GL_BACK)
         with self.interpolation_texture.bind(0):

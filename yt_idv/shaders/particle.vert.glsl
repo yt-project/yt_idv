@@ -9,6 +9,7 @@ flat out mat4 inverse_proj;
 flat out mat4 inverse_mvm;
 flat out mat4 inverse_pmvm;
 flat out float field_value;
+flat out float column_weight;
 flat out vec4 v_model;
 
 out vec2 UV;
@@ -31,7 +32,9 @@ void main()
     }
     // SPH projection weight, m / (rho h^2), as in yt's pixelize_sph_kernel_projection
     if (particle_volume > 0.0) {
-        field_value *= particle_volume / (vradius * vradius);
+        column_weight = particle_volume / (vradius * vradius);
+    } else {
+        column_weight = 1.0;
     }
 
     // Making radius zero will make our vertices degenerate and serve as a filter.
