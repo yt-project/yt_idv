@@ -204,15 +204,21 @@ def test_octree_transfer_function_renders(make_rc):
 def test_octree_depth_buffer_and_external_clip(make_rc):
     rc, scene, component = _octree_scene(make_rc)
     component.render_method = "max_intensity"
+    # compared against the background itself, since not every backend's
+    # framebuffer has an alpha channel to show where nothing was drawn
+    component.visible = False
+    background = np.array(rc.run())
+    component.visible = True
     image = np.array(rc.run())
-    drawn = image[..., 3] > 0
+    drawn = np.any(image != background, axis=-1)
+    assert drawn.any()
     # the volume writes its depth, which Blender composites against
     depth = np.asarray(scene.depth)
     assert (depth[drawn] < 1.0).all()
 
     # an external depth at the near plane clips every ray, and one at the far
     # plane none of them
-    for clip_depth, expected in ((0.0, np.zeros_like(image)), (1.0, image)):
+    for clip_depth, expected in ((0.0, background), (1.0, image)):
         component.external_depth_texture = Texture2D(
             data=np.full(image.shape[1::-1], clip_depth, dtype="f4")
         )
