@@ -92,10 +92,14 @@ def test_sph_integration(make_rc):
 @pytest.mark.image_test
 @pytest.mark.parametrize("render_method", ["default", "max_intensity"])
 def test_sph_undrawn_pixels_are_background(make_rc, render_method):
-    _, component, _, image = _render(make_rc, render_method)
+    rc, component, _, image = _render(make_rc, render_method)
     drawn = component._drawn_pixel_mask(component.first_pass_fb_rgba)
     assert 0 < drawn.sum() < drawn.size
-    assert (image[:, :, 3] > 0).sum() == drawn.sum()
+    # compare against the background itself, since not every backend's
+    # framebuffer has an alpha channel to show where nothing was drawn
+    component.visible = False
+    background = rc.run()
+    assert np.any(image != background, axis=-1).sum() == drawn.sum()
 
 
 @pytest.mark.image_test
