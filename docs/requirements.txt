@@ -7,7 +7,7 @@ matplotlib>=3.0
 numpy>=1.18.0
 pyglet>=2.0.dev0
 pyyaml>=5.3.1
-imgui>=1.2.0
+imgui-bundle>=1.92
 m2r2>=0.2.5
 sphinx==7.3.7
 more_itertools>=8.6.0

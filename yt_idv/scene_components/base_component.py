@@ -179,7 +179,7 @@ class SceneComponent(SerializableMixin, traitlets.HasTraits):
 
         if imgui.button("Recompile Shader"):
             changed = self._recompile_shader()
-        _, cmap_index = imgui.listbox(
+        _, cmap_index = imgui.list_box(
             "Colormap", _cmaps.index(self.colormap.colormap_name), _cmaps
         )
         if _:
@@ -599,7 +599,7 @@ class SceneComponent(SerializableMixin, traitlets.HasTraits):
             _, self.iso_tolerance = imgui.input_float(
                 "tol",
                 self.iso_tolerance,
-                flags=imgui.INPUT_TEXT_ENTER_RETURNS_TRUE,
+                flags=imgui.InputTextFlags_.enter_returns_true,
             )
             _ = add_popup_help(imgui, "The tolerance for selecting an isocontour.")
             changed = changed or _
@@ -629,7 +629,7 @@ class SceneComponent(SerializableMixin, traitlets.HasTraits):
             _, self.iso_layers[i] = imgui.input_float(
                 f"Layer {i + 1}",
                 self.iso_layers[i],
-                flags=imgui.INPUT_TEXT_ENTER_RETURNS_TRUE,
+                flags=imgui.InputTextFlags_.enter_returns_true,
             )
             _ = add_popup_help(imgui, "The value of the isocontour layer.")
             changed = changed or _
@@ -638,7 +638,7 @@ class SceneComponent(SerializableMixin, traitlets.HasTraits):
             _, self.iso_layers_alpha[i] = imgui.input_float(
                 f"alpha {i}",
                 self.iso_layers_alpha[i],
-                flags=imgui.INPUT_TEXT_ENTER_RETURNS_TRUE,
+                flags=imgui.InputTextFlags_.enter_returns_true,
             )
             _ = add_popup_help(imgui, "The opacity of the isocontour layer.")
             changed = changed or _

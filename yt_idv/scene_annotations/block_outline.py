@@ -31,7 +31,7 @@ class BlockOutline(SceneAnnotation):
         if _:
             self.box_width = bw
         changed = changed or _
-        _, (r, g, b) = imgui.color_edit3("Color", *self.box_color)
+        _, (r, g, b) = imgui.color_edit3("Color", list(self.box_color))
         if _:
             self.box_color = (r, g, b)
         changed = changed or _

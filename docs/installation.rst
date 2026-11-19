@@ -34,7 +34,8 @@ Interactive GUI (optional)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The interactive control panel drawn over the ``pyglet`` window is built on
-`imgui <https://pypi.org/project/imgui/>`_, which is an optional dependency.
+`imgui-bundle <https://pypi.org/project/imgui-bundle/>`_, which is an optional
+dependency.
 To use the GUI, install ``yt_idv`` with the ``gui`` extra:
 
 .. code-block:: console
@@ -44,12 +45,12 @@ To use the GUI, install ``yt_idv`` with the ``gui`` extra:
 Without the extra, ``yt_idv`` can still render offscreen with the ``osmesa``
 or ``egl`` contexts, or in a hidden ``pyglet`` window with
 ``render_context("pyglet", visible=False, gui=False)`` (see :doc:`usage`).
-Requesting a GUI without ``imgui`` installed raises an ``ImportError``.
+Requesting a GUI without ``imgui-bundle`` installed raises an ``ImportError``.
 
 .. note::
 
-   ``imgui`` does not currently build on python 3.13 or newer, so on those
-   versions only the headless install is available.
+   ``imgui-bundle`` does not publish wheels for Intel macOS, so there ``pip``
+   builds it from source, which requires a C++ compiler and CMake.
 
 .. _pip: https://pip.pypa.io
 .. _Python installation guide: http://docs.python-guide.org/en/latest/starting/installation/

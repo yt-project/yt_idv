@@ -102,7 +102,7 @@ class BlockRendering(SceneComponent):
             component_shaders[self.name][_]["description"] for _ in valid_shaders
         ]
         selected = valid_shaders.index(self.render_method)
-        _, shader_ind = imgui.listbox("Shader", selected, descriptions)
+        _, shader_ind = imgui.list_box("Shader", selected, descriptions)
         if _:
             self.render_method = valid_shaders[shader_ind]
         changed = changed or _
@@ -143,9 +143,13 @@ class BlockRendering(SceneComponent):
 
         if self.render_method == "transfer_function":
             # Now for the transfer function stuff
+            imgui.push_style_var(imgui.StyleVar_.frame_padding, imgui.ImVec2(0, 0))
             imgui.image_button(
-                self.transfer_function.texture_name, 256, 32, frame_padding=0
+                "##transfer_function",
+                imgui.ImTextureRef(int(self.transfer_function.texture_name)),
+                imgui.ImVec2(256, 32),
             )
+            imgui.pop_style_var()
             imgui.text("Right click and drag to change")
             update = False
             data = self.transfer_function.data.astype("f4") / 255
@@ -157,7 +161,7 @@ class BlockRendering(SceneComponent):
                     scale_max=1.0,
                     graph_size=(256, 32),
                 )
-                if imgui.is_item_hovered() and imgui.is_mouse_dragging(2):
+                if imgui.is_item_hovered() and imgui.is_mouse_dragging(1):
                     update = True
                     dx, dy = renderer.io.mouse_delta
                     dy = -dy
@@ -189,13 +193,15 @@ class BlockRendering(SceneComponent):
         elif self.render_method == "slice":
             imgui.text("Set slicing parameters:")
 
-            _, self.slice_position = imgui.input_float3(
-                "Position", *self.slice_position
+            _, slice_position = imgui.input_float3(
+                "Position", list(self.slice_position)
             )
+            self.slice_position = tuple(slice_position)
             changed = changed or _
             _ = add_popup_help(imgui, "The position of a point on the slicing plane.")
             changed = changed or _
-            _, self.slice_normal = imgui.input_float3("Normal", *self.slice_normal)
+            _, slice_normal = imgui.input_float3("Normal", list(self.slice_normal))
+            self.slice_normal = tuple(slice_normal)
             changed = changed or _
             _ = add_popup_help(imgui, "The normal vector of the slicing plane.")
             changed = changed or _

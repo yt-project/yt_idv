@@ -21,7 +21,7 @@ class CurveRendering(SceneComponent):
     def render_gui(self, imgui, renderer, scene):
         changed, self.visible = imgui.checkbox("Visible", self.visible)
 
-        _, newRGBa = imgui.input_float4("RGBa", *self.curve_rgba)
+        _, newRGBa = imgui.input_float4("RGBa", list(self.curve_rgba))
         if _:
             self.curve_rgba = tuple(newRGBa)
         changed = changed or _

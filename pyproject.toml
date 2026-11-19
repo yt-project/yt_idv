@@ -16,7 +16,7 @@ license-files = ["LICENSE"]
 authors = [
   { name = "Matthew Turk", email = "matthewturk@gmail.com" },
 ]
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 classifiers = [
   "Development Status :: 4 - Beta",
   "Intended Audience :: Science/Research",
@@ -25,7 +25,6 @@ classifiers = [
   "Programming Language :: Cython",
   "Programming Language :: Python :: 3",
   "Programming Language :: Python :: 3 :: Only",
-  "Programming Language :: Python :: 3.10",
   "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3.12",
   "Programming Language :: Python :: 3.13",
@@ -51,7 +50,7 @@ dependencies = [
 
 [project.optional-dependencies]
 gui = [
-  "imgui>=1.2.0",
+  "imgui-bundle>=1.92",
 ]
 minimal = [
   "matplotlib<3.10",
@@ -82,7 +81,7 @@ include = ["yt_idv", "yt_idv.*"]
 yt_idv = ["**/*.glsl", "**/*.yaml", "**/*.pyx", "**/*.pxd"]
 
 [tool.ruff]
-target-version = "py310"
+target-version = "py311"
 line-length = 88
 extend-exclude = ["docs"]
 
@@ -118,7 +117,7 @@ markers = [
 ]
 
 [tool.cibuildwheel]
-build = ["cp310-*", "cp311-*", "cp312-*", "cp313-*", "cp314-*"]
+build = ["cp311-*", "cp312-*", "cp313-*", "cp314-*"]
 skip = "*-musllinux_*"
 test-command = "python -c 'import yt_idv.utilities.camera_utilities, yt_idv.utilities.coordinate_utilities'"
 # yt ships no aarch64 wheels, so installing the test dependencies there
