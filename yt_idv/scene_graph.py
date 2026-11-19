@@ -4,6 +4,7 @@ import numpy as np
 import traitlets
 from OpenGL import GL
 from yt.data_objects.static_output import Dataset
+from yt.geometry.oct_geometry_handler import OctreeIndex
 
 from yt_idv.cameras.base_camera import BaseCamera
 from yt_idv.cameras.trackball_camera import TrackballCamera
@@ -16,6 +17,7 @@ from yt_idv.scene_components.blocks import BlockRendering
 from yt_idv.scene_data.base_data import SceneData
 from yt_idv.scene_data.block_collection import BlockCollection
 from yt_idv.scene_data.box import BoxData
+from yt_idv.scene_data.octree_block_collection import OctreeBlockCollection
 from yt_idv.scene_data.text_characters import TextCharacters
 from yt_idv.utilities.spherical_mapping import render_geometry
 
@@ -65,11 +67,19 @@ class SceneGraph(traitlets.HasTraits):
 
         component: BlockRendering
 
+        Notes
+        -----
+        The data of an octree dataset, such as RAMSES, is held by an
+        :class:`~yt_idv.scene_data.octree_block_collection.OctreeBlockCollection`.
         """
-        self.data_objects.append(
-            BlockCollection(data_source=data_source, reference_height=reference_height)
-        )
-        self.data_objects[-1].add_data(field_name, no_ghost=no_ghost)
+        if isinstance(data_source.ds.index, OctreeIndex):
+            collection = OctreeBlockCollection(data_source=data_source)
+        else:
+            collection = BlockCollection(
+                data_source=data_source, reference_height=reference_height
+            )
+        self.data_objects.append(collection)
+        collection.add_data(field_name, no_ghost=no_ghost)
         self.components.append(BlockRendering(data=self.data_objects[-1]))
         return self.components[-1]  # Only the rendering object
 

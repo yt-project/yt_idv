@@ -29,7 +29,6 @@ def pack(sizes, padding=0, max_dim=2048):
     max_size = max(max_size, psizes.max())
     if psizes.max() > max_dim:
         raise ValueError(f"Padded block size {psizes.max()} exceeds {max_dim}")
-    psizes = psizes.tolist()
     results = []
     for factor in [0.85, 0.9, 1.1, 1.3]:
         # The rows and columns can't be wider than max_dim, either.
@@ -64,29 +63,47 @@ def _pack_with_size(psizes, max_size, max_dim):
     # This breaks if it's not sorted.
     dims = np.zeros(3, dtype="int64")
     current_i = current_j = current_k = 0
-    _, size_y, size_z = psizes[0]
+    psizes = np.asarray(psizes, dtype="int64")
+    _, size_y, size_z = psizes[0].tolist()
     placed = []
-    for ps in psizes:
+    # Boxes of one size are adjacent once sorted, and after the first box of a
+    # row the rest of the row passes the same checks, so a run of boxes of one
+    # size is placed a row at a time.
+    run_starts = np.flatnonzero((np.diff(psizes, axis=0) != 0).any(axis=1)) + 1
+    run_bounds = np.concatenate([[0], run_starts, [len(psizes)]]).tolist()
+    for start, end in zip(run_bounds[:-1], run_bounds[1:], strict=True):
+        ps = psizes[start].tolist()
         size_x = ps[0]
-        # If this pushes us past our bounds along x, we go to the next j
-        if current_i + size_x > max_size:
-            current_i = 0
-            current_j += size_y
-            # Reset our current height
-            size_y = 0
-        # Same, if this pushes us beyond bounds in y, we go to next k as well
-        # as resetting i.
-        if current_j + max(size_y, ps[1]) > max_size:
-            current_i = 0
-            current_j = 0
-            current_k += size_z
-            size_y = 0
-            size_z = ps[2]  # always monotonic as it's primary
-        if current_k + size_z > max_dim:
-            raise _AtlasFull
-        placed.append((current_i, current_j, current_k))
-        size_y = max(size_y, ps[1])
-        current_i += size_x
-    offsets = np.array(placed, dtype="int64")
+        while start < end:
+            # If this pushes us past our bounds along x, we go to the next j
+            if current_i + size_x > max_size:
+                current_i = 0
+                current_j += size_y
+                # Reset our current height
+                size_y = 0
+            # Same, if this pushes us beyond bounds in y, we go to next k as
+            # well as resetting i.
+            if current_j + max(size_y, ps[1]) > max_size:
+                current_i = 0
+                current_j = 0
+                current_k += size_z
+                size_y = 0
+                size_z = ps[2]  # always monotonic as it's primary
+            if current_k + size_z > max_dim:
+                raise _AtlasFull
+            count = min(end - start, max((max_size - current_i) // size_x, 1))
+            placed.append(
+                np.column_stack(
+                    [
+                        current_i + size_x * np.arange(count),
+                        np.full(count, current_j),
+                        np.full(count, current_k),
+                    ]
+                )
+            )
+            size_y = max(size_y, ps[1])
+            current_i += size_x * count
+            start += count
+    offsets = np.concatenate(placed).astype("int64")
     dims = (offsets + psizes).max(axis=0)
     return offsets, dims

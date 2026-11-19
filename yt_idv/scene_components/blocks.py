@@ -124,7 +124,8 @@ class BlockRendering(SceneComponent):
                 scene.data_objects.append(cc)
                 scene.components.append(cc_render)
 
-        if imgui.button("Add Grid Outline"):
+        # octree data, and scenes loaded from a file, have no grids to outline
+        if self.data.grids_by_block and imgui.button("Add Grid Outline"):
             if self.data._render_geom == "cartesian":
                 from ..scene_annotations.grid_outlines import GridOutlines
                 from ..scene_data.grid_positions import GridPositions

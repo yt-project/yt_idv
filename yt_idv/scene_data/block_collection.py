@@ -433,6 +433,10 @@ class BlockCollection(SceneData):
             return self._order_node_inds[:n][::-1].astype("uint32")
         return self._order_node_inds[:n].astype("uint32")
 
+    def _flattened_kd_tree(self):
+        # the kd-tree saved with the scene, in the form _flatten_kd_tree makes
+        return _flatten_kd_tree(self.data_source.tiles.tree.trunk)
+
     @property
     def spherical_mapping(self):
         """
@@ -465,7 +469,7 @@ class BlockCollection(SceneData):
         if self.data_source is not None:
             bbox = self.bbox
             self._bbox = None if bbox is None else np.array(bbox)
-            self._kd_tree = _flatten_kd_tree(self.data_source.tiles.tree.trunk)
+            self._kd_tree = self._flattened_kd_tree()
         mapping = self._spherical_mapping
         if mapping is not None:
             max_r = mapping.max_r
@@ -582,8 +586,7 @@ class BlockCollection(SceneData):
                 size_attribute_name=f"in_{name}_size",
                 **kwargs,
             )
-            for i in range(n_blocks):
-                atlas[i] = arrays[i]
+            atlas.set_blocks(arrays)
             atlases[name] = atlas
         self.data_atlas = atlases["data"]
         self.bitmap_atlas = atlases["bitmap"]

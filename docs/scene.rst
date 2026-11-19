@@ -105,6 +105,22 @@ can be added by manually constructing an annotation:
 The block outlines here will match the textures rendered, which will likely be
 different from the underlying grid structure.
 
+Octree data, such as from RAMSES, is held by an
+:class:`~yt_idv.scene_data.octree_block_collection.OctreeBlockCollection`
+instead, which ``add_scene`` uses for any dataset with an octree index. Each oct
+whose eight cells are all leaves is a block of 2x2x2 cells, and each leaf cell
+of a partially refined oct is a block of its own, so that no region is rendered
+twice. These blocks are rendered by a
+:class:`~yt_idv.scene_components.blocks.BlockRendering` like any others, with
+every render method and the external depth clip. With ``no_ghost=True``, the
+vertex values of each oct come from its own cells rather than from ghost zones,
+which is faster to load but less smooth across oct boundaries.
+
+.. code-block:: python
+
+   ds = yt.load("output_00080/info_00080.txt")
+   sg = rc.add_scene(ds, ("gas", "density"))
+
 ----------------
 Text Annotations
 ----------------

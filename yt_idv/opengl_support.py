@@ -559,6 +559,44 @@ class TextureAtlas(traitlets.HasTraits):
             data = np.pad(data, pad, mode="edge")
         self.texture.set_subdata(self.offsets[index] - self.padding, data)
 
+    def set_blocks(self, arrays):
+        """
+        Upload every block's data, arrays[i] for block i, as atlas[i] = arrays[i]
+        does, but with one upload per layer of the atlas rather than per block.
+        """
+        if self.padding > 0:
+            for i in range(len(self)):
+                self[i] = arrays[i]
+            return
+        # pack places blocks in layers along z that share their z offset
+        z_offsets = self.offsets[:, 2]
+        for z0 in np.unique(z_offsets):
+            members = np.flatnonzero(z_offsets == z0)
+            depth = self.sizes[members, 2].max()
+            layer = None
+            sizes = self.sizes[members]
+            for size in np.unique(sizes, axis=0):
+                group = members[(sizes == size).all(axis=1)]
+                data = np.stack(
+                    [np.asarray(arrays[i], dtype=self.dtype) for i in group]
+                )
+                if data.shape[1:4] != tuple(size):
+                    raise ValueError(
+                        f"Blocks of size {tuple(size)} got data of shape "
+                        f"{data.shape[1:]}"
+                    )
+                if layer is None:
+                    shape = (self.dims[0], self.dims[1], depth) + data.shape[4:]
+                    layer = np.zeros(shape, dtype=self.dtype)
+                ix, iy, iz = np.indices(size).reshape(3, 1, *size)
+                offsets = self.offsets[group] - (0, 0, z0)
+                layer[
+                    offsets[:, 0, None, None, None] + ix,
+                    offsets[:, 1, None, None, None] + iy,
+                    offsets[:, 2, None, None, None] + iz,
+                ] = data
+            self.texture.set_subdata((0, 0, z0), layer)
+
     @traitlets.observe("vertex_array")
     def _observe_vertex_array(self, change):
         self._set_attributes()
