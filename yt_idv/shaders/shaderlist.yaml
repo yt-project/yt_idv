@@ -149,14 +149,10 @@ shader_definitions:
     sph_kernel:
       info: Sample pre-integrated SPH kernel
       source: sph_kernel.frag.glsl
-      blend_func_separate:
+      blend_func:
         - one
         - one
-        - one
-        - one
-      blend_equation_separate:
-        - func add
-        - max
+      blend_equation: func add
     sph_max_intensity:
       info: Maximum particle value over the SPH kernel footprint
       source: sph_max_intensity.frag.glsl
