@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./shaderlist.schema.json
 shader_definitions:
   fragment:
     constant:
