@@ -1,0 +1,228 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "yt_idv shader list",
+  "description": "Shader definitions and the per-component shader combinations built from them.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["shader_definitions", "component_shaders"],
+  "properties": {
+    "shader_definitions": {
+      "description": "Individual shaders, grouped by shader type and keyed by shader name.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["fragment", "vertex", "geometry"],
+      "properties": {
+        "fragment": {
+          "description": "Fragment shaders, keyed by name.",
+          "type": "object",
+          "additionalProperties": { "$ref": "#/definitions/shader" }
+        },
+        "vertex": {
+          "description": "Vertex shaders, keyed by name.",
+          "type": "object",
+          "additionalProperties": { "$ref": "#/definitions/shader" }
+        },
+        "geometry": {
+          "description": "Geometry shaders, keyed by name.",
+          "type": "object",
+          "additionalProperties": { "$ref": "#/definitions/shader" }
+        }
+      }
+    },
+    "component_shaders": {
+      "description": "Shader combinations (render methods) available to each scene component, keyed by component name.",
+      "type": "object",
+      "additionalProperties": { "$ref": "#/definitions/component" }
+    }
+  },
+  "definitions": {
+    "shader": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["info", "source"],
+      "properties": {
+        "info": {
+          "description": "Human-readable description of the shader.",
+          "type": "string"
+        },
+        "source": {
+          "description": "GLSL source file in yt_idv/shaders, or a list of files that are concatenated in order.",
+          "oneOf": [
+            { "$ref": "#/definitions/sourceFile" },
+            {
+              "type": "array",
+              "minItems": 1,
+              "items": { "$ref": "#/definitions/sourceFile" }
+            }
+          ]
+        },
+        "blend_func": {
+          "description": "Arguments to glBlendFunc: [source factor, destination factor]. Defaults to [src alpha, dst alpha].",
+          "type": "array",
+          "items": { "$ref": "#/definitions/blendFactor" },
+          "minItems": 2,
+          "maxItems": 2
+        },
+        "blend_equation": {
+          "description": "Argument to glBlendEquation. Defaults to func add.",
+          "$ref": "#/definitions/blendEquation"
+        },
+        "blend_func_separate": {
+          "description": "Arguments to glBlendFuncSeparate: [source RGB, destination RGB, source alpha, destination alpha]. When present, the separate blend functions and equations are used instead of blend_func and blend_equation.",
+          "type": "array",
+          "items": { "$ref": "#/definitions/blendFactor" },
+          "minItems": 4,
+          "maxItems": 4
+        },
+        "blend_equation_separate": {
+          "description": "Arguments to glBlendEquationSeparate: [RGB equation, alpha equation].",
+          "type": "array",
+          "items": { "$ref": "#/definitions/blendEquation" },
+          "minItems": 2,
+          "maxItems": 2
+        },
+        "depth_test": {
+          "description": "Argument to glDepthFunc. Defaults to always.",
+          "$ref": "#/definitions/depthFunc"
+        }
+      },
+      "dependencies": {
+        "blend_func_separate": ["blend_equation_separate"],
+        "blend_equation_separate": ["blend_func_separate"]
+      }
+    },
+    "sourceFile": {
+      "type": "string",
+      "pattern": "\\.glsl$"
+    },
+    "blendFactor": {
+      "enum": [
+        "zero",
+        "one",
+        "src color",
+        "one minus src color",
+        "dst color",
+        "one minus dst color",
+        "src alpha",
+        "one minus src alpha",
+        "dst alpha",
+        "one minus dst alpha",
+        "constant color",
+        "one minus constant color",
+        "constant alpha",
+        "one minus constant alpha",
+        "src alpha saturate"
+      ]
+    },
+    "blendEquation": {
+      "enum": ["func add", "func subtract", "func reverse subtract", "min", "max"]
+    },
+    "depthFunc": {
+      "enum": [
+        "never",
+        "less",
+        "equal",
+        "lequal",
+        "greater",
+        "notequal",
+        "gequal",
+        "always"
+      ]
+    },
+    "vertexShaderName": {
+      "enum": [
+        "default",
+        "mesh",
+        "passthrough",
+        "grid_position",
+        "draw_lines",
+        "text_overlay",
+        "particle",
+        "octree_position"
+      ]
+    },
+    "geometryShaderName": {
+      "enum": ["grid_expand", "particle_expand"]
+    },
+    "fragmentShaderName": {
+      "enum": [
+        "constant",
+        "constant_rgba",
+        "apply_colormap",
+        "apply_colormap_alpha",
+        "expand_1d",
+        "draw_blocks",
+        "isocontour",
+        "max_intensity",
+        "mesh",
+        "noop",
+        "passthrough",
+        "passthrough_alpha",
+        "display_border",
+        "draw_lines",
+        "projection",
+        "text_overlay",
+        "transfer_function",
+        "sph_kernel",
+        "field_value",
+        "slice_sample"
+      ]
+    },
+    "component": {
+      "description": "Render methods for one scene component, keyed by render method name, plus the default_value naming the method used by default.",
+      "type": "object",
+      "required": ["default_value"],
+      "minProperties": 2,
+      "properties": {
+        "default_value": {
+          "description": "Name of the render method this component uses by default. Must be one of the other keys of this component.",
+          "type": "string"
+        }
+      },
+      "additionalProperties": { "$ref": "#/definitions/renderMethod" }
+    },
+    "renderMethod": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "description",
+        "first_vertex",
+        "first_fragment",
+        "second_vertex",
+        "second_fragment"
+      ],
+      "properties": {
+        "description": {
+          "description": "Human-readable name of the render method, shown in the GUI.",
+          "type": "string"
+        },
+        "first_vertex": {
+          "description": "Vertex shader of the first pass, a key of shader_definitions.vertex.",
+          "$ref": "#/definitions/vertexShaderName"
+        },
+        "first_geometry": {
+          "description": "Optional geometry shader of the first pass, a key of shader_definitions.geometry.",
+          "$ref": "#/definitions/geometryShaderName"
+        },
+        "first_fragment": {
+          "description": "Fragment shader of the first pass, a key of shader_definitions.fragment.",
+          "$ref": "#/definitions/fragmentShaderName"
+        },
+        "second_vertex": {
+          "description": "Vertex shader of the second pass, a key of shader_definitions.vertex.",
+          "$ref": "#/definitions/vertexShaderName"
+        },
+        "second_fragment": {
+          "description": "Fragment shader of the second pass, a key of shader_definitions.fragment.",
+          "$ref": "#/definitions/fragmentShaderName"
+        },
+        "coordinate_systems": {
+          "description": "Coordinate systems this render method supports. Methods without this key are only offered for cartesian data.",
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "enum": ["cartesian", "spherical"] }
+        }
+      }
+    }
+  }
+}
