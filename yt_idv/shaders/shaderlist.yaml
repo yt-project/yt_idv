@@ -153,6 +153,13 @@ shader_definitions:
         - one
         - one
       blend_equation: func add
+    sph_max_intensity:
+      info: Maximum particle value over the SPH kernel footprint
+      source: sph_max_intensity.frag.glsl
+      blend_func:
+        - one
+        - one
+      blend_equation: max
     field_value:
       info: Use field values as input
       source: field_value.frag.glsl
@@ -360,6 +367,12 @@ component_shaders:
       description: Display the particles as integrated SPH splats
       first_vertex: particle
       first_fragment: sph_kernel
+      second_vertex: passthrough
+      second_fragment: apply_colormap
+    max_intensity:
+      description: Maximum Intensity
+      first_vertex: particle
+      first_fragment: sph_max_intensity
       second_vertex: passthrough
       second_fragment: apply_colormap
   particle_rendering:

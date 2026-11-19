@@ -15,6 +15,8 @@ class ParticlePositions(SceneData):
     radius_field = traitlets.Unicode(None, allow_none=True).tag(config=True)
     color_field = traitlets.Unicode(None, allow_none=True).tag(config=True)
     position_field = traitlets.Unicode("particle_position").tag(config=True)
+    mass_field = traitlets.Unicode(None, allow_none=True).tag(config=True)
+    density_field = traitlets.Unicode(None, allow_none=True).tag(config=True)
     size = traitlets.CInt(-1).tag(config=True)
 
     @traitlets.default("vertex_array")
@@ -39,5 +41,15 @@ class ParticlePositions(SceneData):
                 self.size = field.shape[0]  # for positions
             ytidv_log.debug("Setting %s to a field of shape %s", attr, field.shape)
             va.attributes.append(VertexAttribute(name=attr, data=field, divisor=1))
+        if self.mass_field is not None and self.density_field is not None:
+            ftype = self.particle_type
+            volume = (
+                self.data_source[ftype, self.mass_field]
+                / self.data_source[ftype, self.density_field]
+            ).to("unitary**3")
+            volume = volume.astype("f4").d.reshape((-1, 1))
+            va.attributes.append(
+                VertexAttribute(name="particle_volume", data=volume, divisor=1)
+            )
         ytidv_log.debug("Size is now: %s", self.size)
         return va

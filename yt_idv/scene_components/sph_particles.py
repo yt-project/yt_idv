@@ -7,6 +7,11 @@ from yt.utilities.lib.pixelization_routines import SPHKernelInterpolationTable
 
 from yt_idv.scene_components.base_component import SceneComponent
 from yt_idv.scene_data.particle_positions import ParticlePositions
+from yt_idv.shader_objects import (
+    PreprocessorDefinitionState,
+    component_shaders,
+    get_shader_combos,
+)
 
 from ..opengl_support import Texture1D
 
@@ -20,6 +25,10 @@ KERNEL_TYPES = [
     "flat",
 ]
 
+# q^2 at the texel centers of the kernel texture, so that linear filtering
+# returns the table value at exactly the sampled q^2
+_Q2_TEXEL_CENTERS = (np.arange(256) + 0.5) / 256
+
 
 class SPHRendering(SceneComponent):
     name = "sph_rendering"
@@ -30,6 +39,21 @@ class SPHRendering(SceneComponent):
     kernel_table = traitlets.Instance(SPHKernelInterpolationTable, allow_none=True)
     interpolation_texture = traitlets.Instance(Texture1D)
 
+    # only the summed or maximum value is needed, and a single channel target
+    # blends much faster; drawn pixels are then identified by value
+    _fb_channels = 1
+
+    @traitlets.default("_program2_pp_defs")
+    def _default_program2_pp_defs(self):
+        defs = PreprocessorDefinitionState()
+        defs.add_definition("fragment", ("COVERAGE_FROM_VALUE", ""))
+        return defs
+
+    def _drawn_pixel_mask(self, data):
+        # matches the COVERAGE_FROM_VALUE test in apply_colormap
+        value = data[:, :, 0]
+        return (value != 0.0) & (value >= -1e38)
+
     @traitlets.observe("kernel_name")
     def _change_kernel_name(self, change):
         if change["new"] == "flat":
@@ -39,7 +63,7 @@ class SPHRendering(SceneComponent):
             self.interpolation_texture = Texture1D(data=flat)
             return
         self.kernel_table = SPHKernelInterpolationTable(change["new"])
-        values = self.kernel_table.interpolate_array(np.mgrid[0.0:1.0:256j])
+        values = self.kernel_table.interpolate_array(_Q2_TEXEL_CENTERS)
         self.interpolation_texture = Texture1D(data=values.astype("f4"))
 
     @traitlets.default("kernel_table")
@@ -54,7 +78,7 @@ class SPHRendering(SceneComponent):
             flat = np.ones(256, dtype="f4")
             flat[-1] = 0.0
             return Texture1D(data=flat)
-        values = self.kernel_table.interpolate_array(np.mgrid[0.0:1.0:256j])
+        values = self.kernel_table.interpolate_array(_Q2_TEXEL_CENTERS)
         return Texture1D(data=values.astype("f4"))
 
     def render_gui(self, imgui, renderer, scene):
@@ -64,6 +88,15 @@ class SPHRendering(SceneComponent):
         )
         if _:
             self.kernel_name = KERNEL_TYPES[kernel_index]
+        changed = changed or _
+        valid_shaders = get_shader_combos(self.name)
+        descriptions = [
+            component_shaders[self.name][_]["description"] for _ in valid_shaders
+        ]
+        selected = valid_shaders.index(self.render_method)
+        _, shader_ind = imgui.listbox("Shader", selected, descriptions)
+        if _:
+            self.render_method = valid_shaders[shader_ind]
         changed = changed or _
         _, new_value = imgui.slider_float(
             "Log Scale", math.log10(self.scale), -8.0, 2.0
@@ -81,6 +114,13 @@ class SPHRendering(SceneComponent):
         return changed
 
     def draw(self, scene, program):
+        if self.render_method == "max_intensity":
+            # the max blend would clamp negative values to the default zero
+            # clear; pixels left at the lowest float are treated as undrawn
+            lowest = np.finfo("f4").min
+            GL.glClearBufferfv(
+                GL.GL_COLOR, 0, np.array([lowest, lowest, lowest, 0.0], "f4")
+            )
         GL.glEnable(GL.GL_CULL_FACE)
         GL.glCullFace(GL.GL_BACK)
         with self.interpolation_texture.bind(0):

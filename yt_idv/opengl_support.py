@@ -610,6 +610,9 @@ class Framebuffer(traitlets.HasTraits):
         traitlets.CInt(), traitlets.CInt(), traitlets.CInt(), traitlets.CInt()
     )
     initialized = traitlets.Bool(False)
+    # float32 channels in the color attachment; blending throughput scales
+    # with the bytes per pixel, so single-valued renders can use 1
+    channels = traitlets.CInt(4)
 
     @property
     def data(self):
@@ -649,7 +652,7 @@ class Framebuffer(traitlets.HasTraits):
 
     @traitlets.default("fb_tex")
     def _fb_tex_default(self):
-        data = np.zeros((self.viewport[2], self.viewport[3], 4), "f4")
+        data = np.zeros((self.viewport[2], self.viewport[3], self.channels), "f4")
         return Texture2D(data=data, boundary_x="repeat", boundary_y="repeat")
 
     @traitlets.default("db_tex")
